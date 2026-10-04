@@ -1,0 +1,3 @@
+# Núcleo (obligatorio). El servidor, la API y el mapa usan solo la biblioteca estándar de Python.
+duckdb>=1.1
+openpyxl>=3.1

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/oprbguitar/mapa-peru-analitico-04-10-26/plugins/vision-edge/event.schema.json",
+  "title": "Evento de visión (vision-edge)",
+  "type": "object",
+  "required": ["event_id", "camera_id", "ts", "class", "location", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": { "type": "string", "description": "UUID generado en el nodo edge" },
+    "camera_id": { "type": "string" },
+    "vendor": { "type": "string", "enum": ["dahua", "hikvision", "axis", "onvif", "rtsp", "otro"] },
+    "ts": { "type": "string", "format": "date-time" },
+    "class": { "type": "string", "enum": ["person", "vehicle", "plate", "count"] },
+    "count": { "type": "integer", "minimum": 0 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "track_id": { "type": "string", "description": "ByteTrack; local al nodo, no identifica personas" },
+    "plate": { "type": "string", "description": "Solo si existe base legal y autorización" },
+    "location": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "properties": { "lat": { "type": "number" }, "lon": { "type": "number" }, "ubigeo": { "type": "string", "pattern": "^\\d{6}$" } }
+    },
+    "source": { "type": "object", "required": ["node", "model"], "properties": { "node": { "type": "string" }, "model": { "type": "string" } } }
+  }
+}

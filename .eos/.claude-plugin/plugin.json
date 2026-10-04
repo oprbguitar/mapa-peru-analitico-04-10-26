@@ -1,0 +1,11 @@
+{
+  "name": "eos-agents",
+  "version": "4.1.0",
+  "description": "Pierre R. Boss (oprbguitar) EOS: sistema de agentes y skills para orquestar ingeniería con evidencia, permisos acotados y transferencia verificable. Desarrollo documental asistido por IA.",
+  "author": {
+    "name": "Pierre R. Boss (oprbguitar)"
+  },
+  "homepage": "https://github.com/oprbguitar/dev-funcy-agents-03-10-26",
+  "repository": "https://github.com/oprbguitar/dev-funcy-agents-03-10-26",
+  "keywords": ["agents", "orchestration", "eos", "engineering", "spanish"]
+}

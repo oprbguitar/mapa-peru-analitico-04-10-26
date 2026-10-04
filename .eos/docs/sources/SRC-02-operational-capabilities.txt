@@ -1,0 +1,1145 @@
+Sí. Revisando la constitución EOS que construimos, varias piezas ya estaban parcialmente contempladas, pero no con el nivel de precisión que acabas de definir. **El monitoreo detallado de IP/sesiones no estaba formalizado; pagos estaba previsto solo como perfil regulatorio; almacenamiento estaba distribuido entre arquitectura, backup y recursos; y actualizaciones sí estaban contempladas, pero faltaba un gestor unificado.**
+
+Yo incorporaría este bloque como una **ampliación EOS v3 — Infraestructura Operacional, Red, Pagos y Storage**, sin sustituir lo anterior.
+
+### Estado respecto de la versión anterior
+
+| Capacidad | Ya estaba | Cambio |
+|---|---:|---|
+| Auditoría interna | ✅ | Se amplía a conexiones, pagos y almacenamiento |
+| Logs/métricas/trazas | ✅ | Se integra con usuarios, sesiones e IP |
+| Escalabilidad | ✅ | Se agrega escalado específico de almacenamiento |
+| IA universal | ✅ | Se mantiene `AI Integration Port` siempre disponible |
+| Conectores externos | ✅ | Se crea `Payment Integration Port` especializado |
+| Pagos | ⚠️ Parcial | Se convierte en subsistema completo |
+| Normativa Perú | ✅ | Se agrega perfil financiero/de pagos |
+| IP y sesiones | ❌ | Nuevo `Connection & Session Observatory` |
+| Capacidad de almacenamiento | ⚠️ Parcial | Nuevo `Storage Capacity Manager` |
+| Local + nube | ✅ Parcial | Se formaliza como storage multinivel |
+| Actualizaciones | ✅ Parcial | Nuevo `Update & Evolution Manager` |
+| Selección según tipo de app | ⚠️ | Se vuelve obligatoria mediante `Capability Profiler` |
+
+## COMPLEMENTO PARA AÑADIR A EOS
+
+### 1. CAPABILITY PROFILER — no instalar todo en todos los sistemas
+
+EOS debe comenzar clasificando qué clase de sistema está analizando.
+
+```text
+SYSTEM
+   ↓
+CAPABILITY PROFILER
+   ↓
+STATIC WEB?
+CRM?
+ERP?
+SAAS?
+ECOMMERCE?
+PUBLIC SECTOR?
+DESKTOP?
+MOBILE?
+AI SYSTEM?
+PAYMENT SYSTEM?
+DATA PLATFORM?
+```
+
+La regla será:
+
+```text
+CAPABILITY AVAILABLE
+≠
+CAPABILITY ACTIVE
+```
+
+Por ejemplo:
+
+```text
+Simple institutional website
+→ security baseline
+→ observability baseline
+→ documentation
+→ AI Integration Port available
+→ NO payment engine
+→ NO complex storage manager
+
+CRM
+→ identity
+→ session monitoring
+→ IP monitoring
+→ audit
+→ storage
+→ backup
+→ optional billing
+
+ERP
+→ full audit
+→ user/session monitoring
+→ storage governance
+→ financial controls
+→ payment capability assessment
+→ reconciliation
+→ backup/restore
+→ compliance
+
+E-commerce / SaaS
+→ payment engine
+→ subscriptions if applicable
+→ consumer controls
+→ fraud/risk signals
+→ refunds
+→ chargebacks
+→ transaction reconciliation
+```
+
+De esta manera EOS continúa siendo un **estándar único**, pero no convierte una página de cinco secciones en una arquitectura bancaria.
+
+---
+
+### 2. CONNECTION & SESSION OBSERVATORY
+
+Agregar obligatoriamente para aplicaciones con usuarios autenticados:
+
+```text
+CONNECTION_OBSERVABILITY
+```
+
+Debe poder determinar:
+
+```text
+USER
+↓
+SESSION
+↓
+CONNECTION
+↓
+NETWORK CONTEXT
+↓
+APPLICATION ACTIVITY
+```
+
+Registrar cuando corresponda:
+
+```yaml
+user_id:
+session_id:
+connection_id:
+source_ip:
+ip_version:
+trusted_proxy_chain:
+country:
+region:
+asn:
+network_provider:
+user_agent:
+device_type:
+operating_system:
+browser:
+login_time:
+last_activity:
+logout_time:
+session_duration:
+concurrent_sessions:
+authentication_method:
+failed_logins:
+rate_limit_events:
+risk_score:
+```
+
+La geolocalización por IP debe tratarse como **aproximada**, nunca como ubicación física exacta.
+
+Además:
+
+```text
+IF same_account concurrent_sessions > policy:
+    alert
+
+IF impossible_geographic_change:
+    risk_event
+
+IF repeated_login_failure:
+    increase_risk
+
+IF abnormal_request_rate:
+    rate_limit
+
+IF known_session changes network abruptly:
+    evaluate_risk
+```
+
+Pero **IP no debe utilizarse como identidad**. NAT, VPN, CGNAT, redes corporativas, IPv6 y redes móviles hacen que una IP por sí sola no identifique confiablemente a una persona.
+
+Por eso:
+
+```text
+IDENTITY =
+authenticated_user
++
+session
++
+security context
+
+IP =
+risk signal
+```
+
+No:
+
+```text
+IP = person
+```
+
+---
+
+### 3. PROXY/IP SECURITY
+
+EOS debe conocer si existen:
+
+```text
+Cloudflare
+CDN
+reverse proxy
+load balancer
+API gateway
+```
+
+No confiar arbitrariamente en:
+
+```text
+X-Forwarded-For
+```
+
+porque puede falsificarse.
+
+Solo aceptar información de proxy desde infraestructura previamente declarada como confiable.
+
+---
+
+### 4. CONNECTION ADMIN PANEL
+
+Agregar:
+
+```text
+/admin/engineering/connections
+```
+
+El administrador podrá observar:
+
+```text
+usuarios conectados
+sesiones activas
+sesiones concurrentes
+IP origen
+país/región aproximada
+duración
+última actividad
+dispositivo
+navegador
+errores de autenticación
+bloqueos
+rate limiting
+eventos anómalos
+```
+
+Y disponer de acciones gobernadas:
+
+```text
+terminate session
+revoke token
+force reauthentication
+block credential
+temporarily restrict IP
+```
+
+Bloquear permanentemente una IP no debe ser el mecanismo primario de seguridad.
+
+---
+
+### 5. PRIVACIDAD DEL MONITOREO
+
+La telemetría de conexión debe ingresar al inventario de datos y estar sometida a:
+
+```text
+purpose
+retention
+access control
+security
+minimization
+audit
+```
+
+En Perú debe evaluarse bajo la Ley 29733 y su Reglamento aprobado mediante DS 016-2024-JUS, vigente desde el 31 de marzo de 2025. [Gob Perú](https://www.gob.pe/institucion/anpd/normas-legales/6554453-16-2024-jus?utm_source=chatgpt.com)
+
+Por tanto, EOS debe impedir:
+
+```text
+guardar IP y telemetría indefinidamente
+```
+
+sin finalidad y política de conservación definida.
+
+---
+
+# 6. PAYMENT CAPABILITY PROFILER
+
+Agregar:
+
+```text
+PAYMENT_REQUIREMENT_ANALYZER
+```
+
+Antes de incorporar una pasarela:
+
+```text
+IF system does not collect money:
+    payments = inactive
+
+ELIF system only records invoices:
+    accounting integration only
+
+ELIF system accepts online payments:
+    activate PAYMENT INTEGRATION PORT
+
+ELIF recurring business model:
+    activate subscriptions
+
+ELIF marketplace:
+    activate marketplace/payment-split assessment
+```
+
+---
+
+# 7. PAYMENT INTEGRATION PORT
+
+Crear el equivalente financiero del AI Gateway:
+
+```text
+APPLICATION
+     ↓
+PAYMENT INTEGRATION PORT
+     ↓
+PAYMENT POLICY ENGINE
+     ↓
+PAYMENT ROUTER
+     ↓
+PROVIDER ADAPTER
+     ↓
+PAYMENT PROVIDER
+```
+
+La lógica principal **no debe quedar amarrada** a una empresa concreta.
+
+Ejemplo:
+
+```text
+Order Service
+      ↓
+Payment Gateway Interface
+      ├── MercadoPagoAdapter
+      ├── CulqiAdapter
+      ├── ProviderXAdapter
+      └── future provider
+```
+
+---
+
+# 8. PROVEEDORES ACTUALES
+
+A octubre de 2026, las fuentes oficiales verificables muestran, por ejemplo, integraciones operativas de **Mercado Pago** y **Culqi** para Perú.
+
+Mercado Pago mantiene Checkout API/Orders y actualmente documenta para Perú tarjetas, Yape y PagoEfectivo ATM, entre otras modalidades. [Mercado Pago](https://www.mercadopago.com.pe/developers/es/reference/online-payments/checkout-api/overview?utm_source=chatgpt.com)
+
+Culqi mantiene APIs y mecanismos para tarjetas, Yape, PagoEfectivo, billeteras móviles y Cuotéalo. [Culqi](https://apidocs.culqi.com/?utm_source=chatgpt.com)
+
+EOS no debe codificar esa lista permanentemente. Debe existir:
+
+```text
+PAYMENT PROVIDER REGISTRY
++
+PAYMENT PROVIDER SCOUT
+```
+
+que compruebe periódicamente:
+
+```yaml
+provider:
+country:
+operational:
+api_version:
+payment_methods:
+subscriptions:
+refunds:
+chargebacks:
+webhooks:
+sdk_languages:
+fees:
+documentation:
+PCI_model:
+last_verified:
+```
+
+Otros proveedores/acquirentes se incorporan cuando el Scout compruebe documentación oficial, disponibilidad y condiciones actuales.
+
+---
+
+# 9. PAYMENT ENGINE
+
+El núcleo interno debe manejar independientemente:
+
+```text
+ORDER
+↓
+PAYMENT INTENT
+↓
+AUTHORIZATION
+↓
+CAPTURE
+↓
+SETTLEMENT
+```
+
+y también:
+
+```text
+REFUND
+CHARGEBACK
+CANCELLATION
+FAILURE
+EXPIRATION
+RECONCILIATION
+```
+
+Nunca depender únicamente del texto de respuesta de una pasarela.
+
+---
+
+# 10. PAYMENT LEDGER
+
+Crear un registro interno:
+
+```yaml
+payment_id:
+order_id:
+provider:
+provider_transaction_id:
+amount:
+currency:
+status:
+created_at:
+authorized_at:
+captured_at:
+refunded_amount:
+settlement_status:
+webhook_verified:
+reconciliation_status:
+```
+
+Debe existir trazabilidad completa.
+
+---
+
+# 11. IDEMPOTENCIA
+
+Toda operación financiera sensible debe ser idempotente.
+
+```text
+same_request
++
+same_idempotency_key
+=
+one financial operation
+```
+
+Evita cobros duplicados por:
+
+```text
+timeout
+retry
+refresh
+network failure
+```
+
+---
+
+# 12. WEBHOOK SECURITY
+
+Todo webhook:
+
+```text
+VERIFY SIGNATURE
+↓
+CHECK EVENT ID
+↓
+CHECK DUPLICATE
+↓
+PROCESS
+↓
+AUDIT
+```
+
+No confiar simplemente en:
+
+```text
+"payment successful"
+```
+
+enviado por el navegador.
+
+---
+
+# 13. PAYMENT RECONCILIATION AGENT
+
+Debe comparar:
+
+```text
+ERP/CRM
+      ↕
+Internal payment ledger
+      ↕
+Payment provider
+      ↕
+Bank settlement
+```
+
+Y encontrar:
+
+```text
+missing payment
+duplicate
+wrong amount
+refund mismatch
+settlement mismatch
+orphan transaction
+```
+
+---
+
+# 14. PAYMENT REGULATION — PERÚ
+
+La capa Perú deberá activar automáticamente:
+
+```text
+PERU_PAYMENT_PROFILE
+```
+
+El nuevo Reglamento General del Sistema Nacional de Pagos fue publicado por el BCRP mediante la Circular 022-2025-BCRP y entró en vigor el **1 de abril de 2026**; amplía el marco hacia nuevos actores y servicios y enfatiza seguridad, eficiencia, transparencia, interoperabilidad y competencia. [BCRP](https://www.bcrp.gob.pe/docs/Publicaciones/reporte-del-sistema-nacional-de-pagos/2026/marzo/rspf-marzo-2026-recuadro-1.pdf?utm_source=chatgpt.com)
+
+Por tanto:
+
+```text
+IF country == PE
+AND payment capability active:
+
+    identify business role
+
+    determine whether BCRP rules apply
+
+    determine whether SBS rules apply
+
+    evaluate consumer regulation
+
+    evaluate personal-data regulation
+
+    evaluate tax/invoicing obligations
+
+    determine PCI scope
+```
+
+No debe suponerse que todo comercio con un botón de pago pasa a ser automáticamente una entidad regulada por el BCRP; EOS debe determinar **qué papel cumple realmente la organización**.
+
+---
+
+# 15. PCI DSS
+
+Si la arquitectura almacena, procesa o transmite datos de tarjetas o puede afectar el Cardholder Data Environment:
+
+```text
+ACTIVATE PCI PROFILE
+```
+
+La biblioteca oficial de PCI SSC mantiene **PCI DSS v4.0.1** como versión publicada actual. [PCI Security Standards Council](https://www.pcisecuritystandards.org/es/document_library/?utm_source=chatgpt.com)
+
+EOS debe preferir siempre:
+
+```text
+tokenization
+hosted fields
+provider checkout
+```
+
+cuando permitan reducir la exposición de datos de tarjeta.
+
+Nunca almacenar:
+
+```text
+CVV
+```
+
+como dato permanente.
+
+---
+
+# 16. PAYMENT FAILOVER
+
+Una diferencia importante:
+
+El failover de pagos **no debe comportarse igual que el failover de una API normal**.
+
+No:
+
+```text
+MercadoPago failed
+→ silently charge same transaction with Culqi
+```
+
+Eso podría producir dobles cargos o problemas de autorización.
+
+Sí:
+
+```text
+transaction failed before authorization
+↓
+offer alternative provider/payment method
+↓
+new explicit payment attempt
+```
+
+---
+
+# 17. STORAGE CAPACITY MANAGER
+
+Agregar un nuevo agente:
+
+```text
+STORAGE ARCHITECT
++
+STORAGE CAPACITY MANAGER
+```
+
+que controle:
+
+```text
+LOCAL DISK
+DATABASE
+OBJECT STORAGE
+BACKUPS
+CACHE
+ARCHIVES
+CLOUD STORAGE
+```
+
+---
+
+# 18. “ALMACENAMIENTO ILIMITADO”
+
+EOS nunca debe declarar:
+
+```text
+UNLIMITED STORAGE
+```
+
+literalmente.
+
+Debe utilizar:
+
+```text
+ELASTIC STORAGE
+```
+
+Es decir:
+
+> la arquitectura puede ampliar capacidad progresivamente sin rediseñar completamente el sistema.
+
+---
+
+# 19. STORAGE OBSERVABILITY
+
+Medir:
+
+```text
+total capacity
+used
+available
+daily growth
+weekly growth
+monthly growth
+IOPS
+latency
+file count
+largest datasets
+backup size
+replication size
+estimated exhaustion date
+cost
+```
+
+---
+
+# 20. STORAGE FORECAST
+
+Ejemplo:
+
+```text
+2 TB available
+growth = 8 GB/day
+
+estimated exhaustion:
+~250 days
+```
+
+El sistema debe avisar antes de alcanzar el límite.
+
+---
+
+# 21. STORAGE THRESHOLDS
+
+Configurables:
+
+```text
+NORMAL
+WARNING
+CRITICAL
+EMERGENCY
+```
+
+Por ejemplo:
+
+```text
+70% → forecast
+80% → warning
+90% → critical
+95% → emergency
+```
+
+No deben ser valores universales; deben poder modificarse por sistema.
+
+---
+
+# 22. STORAGE TIERS
+
+EOS debe permitir:
+
+```text
+HOT
+↓
+WARM
+↓
+COLD
+↓
+ARCHIVE
+```
+
+Ejemplo:
+
+```text
+últimos 30 días
+→ almacenamiento rápido
+
+31–365 días
+→ object storage
+
+histórico
+→ archive tier
+```
+
+---
+
+# 23. LOCAL + CLOUD + HYBRID STORAGE
+
+Arquitectura:
+
+```text
+STORAGE ABSTRACTION
+       │
+       ├── local filesystem
+       ├── NAS
+       ├── object storage
+       ├── cloud blob
+       └── remote private storage
+```
+
+Sin acoplar la aplicación directamente a un proveedor.
+
+---
+
+# 24. STORAGE POLICY
+
+Cada clase de dato debe declarar:
+
+```yaml
+data_class:
+location:
+retention:
+backup:
+replication:
+encryption:
+allowed_regions:
+max_size:
+archive_policy:
+delete_policy:
+```
+
+---
+
+# 25. STORAGE SCALING
+
+```text
+IF local_storage_near_limit:
+    cleanup disposable data
+
+IF still insufficient:
+    extend local storage
+
+IF remote storage allowed:
+    tier cold data remotely
+
+IF cloud:
+    elastic expansion
+
+IF cost grows abnormally:
+    storage cost audit
+```
+
+---
+
+# 26. BACKUP ≠ STORAGE
+
+Mantener separados:
+
+```text
+PRODUCTION STORAGE
+```
+
+y:
+
+```text
+BACKUP
+```
+
+Una copia en otra carpeta del mismo disco **no es una estrategia suficiente de backup**.
+
+---
+
+# 27. RESTORE TESTING
+
+EOS debe probar periódicamente:
+
+```text
+BACKUP
+↓
+RESTORE
+↓
+VERIFY DATA
+↓
+VERIFY APPLICATION
+```
+
+---
+
+# 28. STORAGE ADMIN PANEL
+
+Agregar:
+
+```text
+/admin/engineering/storage
+```
+
+con:
+
+```text
+capacity
+growth
+forecast
+local
+cloud
+backup
+restore status
+cost
+largest datasets
+retention
+health
+```
+
+---
+
+# 29. UPDATE & EVOLUTION MANAGER
+
+Esto ya estaba parcialmente en EOS, pero conviene consolidarlo.
+
+Debe controlar:
+
+```text
+application
+backend
+frontend
+desktop client
+mobile client
+database schema
+dependencies
+runtime
+connectors
+agents
+AI models
+data packs
+policies
+regulatory packs
+```
+
+---
+
+# 30. ACTUALIZACIÓN SEGURA
+
+Flujo:
+
+```text
+UPDATE FOUND
+↓
+CLASSIFY
+↓
+SECURITY?
+BUGFIX?
+FEATURE?
+BREAKING?
+REGULATORY?
+↓
+TEST
+↓
+COMPATIBILITY
+↓
+BACKUP
+↓
+CANARY
+↓
+DEPLOY
+↓
+VERIFY
+↓
+ROLLBACK IF NEEDED
+```
+
+---
+
+# 31. DESKTOP UPDATE
+
+Para aplicaciones instalables:
+
+```text
+signed package
++
+version manifest
++
+integrity verification
++
+rollback
+```
+
+Nunca descargar y ejecutar binarios arbitrarios.
+
+---
+
+# 32. DATABASE UPDATE
+
+Preferir migraciones:
+
+```text
+backward compatible
+↓
+deploy
+↓
+migrate
+↓
+verify
+↓
+remove legacy later
+```
+
+Evitar migraciones destructivas simultáneas con una release salvo necesidad justificada.
+
+---
+
+# 33. CONNECTOR UPDATE WATCH
+
+Cada proveedor externo debe informar:
+
+```text
+current API version
+deprecated version
+sunset date
+breaking changes
+migration required
+```
+
+---
+
+# 34. AI MODEL UPDATE
+
+Conservar la regla existente:
+
+```text
+NEW MODEL
+↓
+LICENSE
+↓
+SECURITY
+↓
+RAM/VRAM
+↓
+BENCHMARK
+↓
+QUALITY
+↓
+CANARY
+↓
+ADOPT
+```
+
+---
+
+# 35. AUDIT LEDGER
+
+Ampliar el auditor EOS para crear un:
+
+```text
+UNIFIED AUDIT LEDGER
+```
+
+que reúna eventos de:
+
+```text
+users
+authentication
+sessions
+connections
+administrators
+configuration
+payments
+refunds
+storage
+AI
+connectors
+deployments
+database migrations
+policy changes
+legal/compliance changes
+```
+
+---
+
+# 36. EVENT STRUCTURE
+
+```yaml
+event_id:
+timestamp:
+actor:
+actor_type:
+session:
+source_ip:
+component:
+action:
+object:
+before:
+after:
+reason:
+result:
+trace_id:
+```
+
+La información sensible debe minimizarse.
+
+---
+
+# 37. AUDIT INTEGRITY
+
+Para sistemas de criticidad alta evaluar:
+
+```text
+append-only log
+hash chaining
+signed events
+WORM storage
+external archive
+```
+
+para dificultar alteración retrospectiva.
+
+---
+
+# 38. MATRIZ ADAPTATIVA FINAL
+
+El **Arquitecto Inicial** debe ejecutar algo equivalente a:
+
+```text
+project = classify_system()
+
+ENABLE:
+    governance
+    documentation
+    security_baseline
+    observability
+    AI_INTEGRATION_PORT
+    admin_engineering
+
+IF project.has_users:
+    enable SESSION_MONITOR
+    enable CONNECTION_OBSERVABILITY
+
+IF project.has_files OR project.has_database:
+    enable STORAGE_MANAGER
+
+IF project.expected_growth:
+    enable CAPACITY_FORECAST
+
+IF project.collects_money:
+    enable PAYMENT_PORT
+    enable PAYMENT_LEDGER
+    enable RECONCILIATION
+
+IF country == "PE" AND payments:
+    enable PERU_PAYMENT_PROFILE
+
+IF card_data_scope:
+    enable PCI_PROFILE
+
+IF project == ERP:
+    enable FULL_AUDIT
+    enable STORAGE_GOVERNANCE
+    evaluate PAYMENT_PORT
+
+IF project == CRM:
+    enable SESSION_MONITOR
+    enable ACCESS_AUDIT
+    evaluate BILLING
+
+IF project == ECOMMERCE:
+    enable PAYMENT_PORT
+    enable CONSUMER_PROFILE
+    enable REFUNDS
+    enable CHARGEBACKS
+
+IF project == SIMPLE_WEBSITE:
+    keep advanced capabilities dormant
+
+IF project == PUBLIC_SECTOR_PE:
+    enable PERU_PUBLIC_PROFILE
+
+IF project == DESKTOP:
+    enable SIGNED_UPDATER
+    enable LOCAL_STORAGE_PROFILE
+
+IF project == OFFLINE_FIRST:
+    enable LOCAL_FIRST
+    enable SYNC_ENGINE
+
+ALWAYS:
+    maintain migration path
+    maintain update path
+    maintain auditability
+    maintain AI integration capability
+```
+
+---
+
+Con esto, **sí cambia bastante la madurez del EOS**. Ya no estás diseñando solamente una plantilla que “hace buen software”. Estás acercándote a una especie de **sistema operativo de ingeniería y operación**: sabe quién está usando la aplicación, qué conexiones existen, cómo están creciendo los datos, cuánto almacenamiento queda, cómo se cobra, qué proveedor procesa el pago, cómo se reconcilia, qué regulación aplica, qué versión está desplegada y cuándo debería evolucionar.
+
+Y mantendría una diferencia fundamental: **IA, gobernanza, trazabilidad y capacidad de evolución forman parte permanente del estándar; pagos, monitoreo de usuarios avanzado y demás capacidades especializadas se activan según el tipo real de producto.** Eso te evita sobreingeniería sin sacrificar la posibilidad de escalar después. [BCRP](https://www.bcrp.gob.pe/docs/Publicaciones/reporte-del-sistema-nacional-de-pagos/2026/marzo/rspf-marzo-2026-recuadro-1.pdf?utm_source=chatgpt.com)
+
+Además, como el marco de pagos y regulación cambia, el `Payment Provider Scout` y el `Regulatory Scout` deberían revisarlo periódicamente, no dejar congelada la lista de 2026.

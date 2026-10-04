@@ -1,0 +1,100 @@
+{
+  "apn_wpi_puertos": {
+    "checksum": "db2d0c8adda6979130fd64658c6d0afa58e6c6ea1ca3d3c97fbb14926aea69a1",
+    "coverage_end": "2025-12",
+    "last_downloaded": "2026-10-04T14:45:01-0500",
+    "normalized_path": "data/normalized/puertos.json",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/apn_wpi_puertos/2026-10-04/international.json",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Subconjunto apn.ports de OCE/FEDTID (APN carga/TEU + WPI posición y UN/LOCODE)."
+  },
+  "devida": {
+    "checksum": "878b35ab1eb059ce,5fc2ef7b6c642a21,affe8b5cd36529a8,2de6b7f48df94ae1,9fc94216dc244cdc,7c368911c9fbc64a",
+    "coverage_end": "2023",
+    "coverage_start": "2018",
+    "last_downloaded": "2026-10-04T14:44:52-0500",
+    "normalized_path": "data/parquet/devida.parquet",
+    "origin": "copia local (OCE/FEDTID data/fuentes/devida)",
+    "status": "ok",
+    "transform": "Cifras tal como las publica DEVIDA; los archivos de coca solo listan departamentos con cultivo."
+  },
+  "indice_situacional_v1": {
+    "checksum": "9bacc28140d7f9c735bf266546a2d8c788442b807184578a2838028ff6493d52",
+    "normalized_path": "(calculado al vuelo)",
+    "status": "ok",
+    "transform": "{\"denuncias_tasa\": \"2025\", \"violencia_tasa\": \"2025\", \"victimizacion\": \"2025\", \"homicidios\": \"2024\", \"tendencia\": \"2025 vs 2024\"}"
+  },
+  "inei_poblacion": {
+    "coverage_end": "2026",
+    "coverage_start": "2009",
+    "last_downloaded": "2026-10-04T14:44:38-0500",
+    "normalized_path": "data/parquet/poblacion.parquet",
+    "status": "ok",
+    "transform": "Valor único por UBIGEO y año; departamento 15 (Lima) = Lima Metropolitana + Región Lima."
+  },
+  "limites_inei": {
+    "checksum": "6e919eeb4d32a0752f0e2e18d51302f4bcd617e5ea7cca99fc2833a094c6a11d",
+    "last_downloaded": "2026-10-04T14:41:59-0500",
+    "normalized_path": "data/peru/boundaries/",
+    "raw_path": "raw/limites_inei/2026-10-04/peru_distrital_simple.geojson",
+    "status": "ok",
+    "transform": "Coordenadas redondeadas a 4 decimales (~11 m). Provincias = unión de distritos por IDPROV, simplificada (tolerancia 0.002°)."
+  },
+  "mininter_indicadores": {
+    "checksum": "baf59e2451cf15e2694a81be1b4c9cc23e696d32eb9fae2f5d4f5cf621295396",
+    "coverage_end": "2026",
+    "coverage_start": "2009",
+    "file_used": "DataSet_Ind_Plan_Acc_Segu_Ciud_Jul 2026/DATASET_Ind_ Plan_Acc_Seg_Ciud_2009 a Jul 2026.csv",
+    "last_downloaded": "2026-10-04T14:44:39-0500",
+    "normalized_path": "data/parquet/mininter_indicadores.parquet",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/mininter_indicadores/2026-10-04/indicadores.zip",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Se usa el CSV acumulado más reciente del ZIP. UBIGEO_DASH → UBIGEO de 2/4/6 dígitos según ámbito; Lima Metropolitana (1501) y Región Lima (1599) se conservan por separado."
+  },
+  "mininter_sidpol": {
+    "checksum": "baf9b11a2496d2c675326e7265ad0d9b5464b261dd2b731ae667aab2bf43a217",
+    "coverage_end": "2026-07",
+    "coverage_start": "2018-01",
+    "last_downloaded": "2026-10-04T14:44:37-0500",
+    "normalized_path": "data/parquet/sidpol_denuncias.parquet",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/mininter_sidpol/2026-10-04/denuncias-policiales.csv",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "UBIGEO completado a 6 dígitos; departamento y provincia = prefijos del UBIGEO del hecho. Sin imputación ni reparto entre territorios."
+  },
+  "mininter_tendencias": {
+    "checksum": "6a8c2bf6416afa38dca0061dd90e998ee3e54251b8ac3694f56c8210e834d7a2",
+    "file_used": "DataSet_Ten_Plan_Acc_Segu_Ciud_ Jul 2026/DATASET_Ten_ Plan_Acc_Seg_Ciud_Ene 2026.csv",
+    "last_downloaded": "2026-10-04T14:44:39-0500",
+    "normalized_path": "data/parquet/mininter_tendencias.parquet",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/mininter_tendencias/2026-10-04/tendencias.zip",
+    "schema_changed": false,
+    "status": "ok"
+  },
+  "mpfn_delitos": {
+    "checksum": "a3989f29340fbc13,839d207ac0910a32,a8b91331356984b5,ea1ed66dec578c40,c8977c46c52d2a28,78f48061dcfb7a46,99a135540a39cd52",
+    "coverage_end": "2026",
+    "coverage_start": "2020",
+    "last_downloaded": "2026-10-04T14:44:41-0500",
+    "normalized_path": "data/parquet/mpfn_delitos.parquet",
+    "origin": "copia local (OCE/FEDTID data/fuentes/mpfn)",
+    "raw_path": "raw/mpfn_delitos/2026-10-04",
+    "status": "ok",
+    "transform": "Todos los delitos denunciados (tipo de caso «denuncia», especialidad penal). Departamento = sede del distrito fiscal. Familia TID = arts. 296–303 CP (clasificación OCE/FEDTID)."
+  },
+  "osm_datacenters": {
+    "checksum": "ef255e38ea1a28262ceb99f816c4ed2ca5abf5e416e36ee99ab45a9465481015",
+    "last_downloaded": "2026-10-04T14:45:01-0500",
+    "normalized_path": "data/normalized/datacenters.json",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/osm_datacenters/2026-10-04/datacenters-pe.json",
+    "schema_changed": false,
+    "status": "ok"
+  }
+}

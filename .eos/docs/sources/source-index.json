@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "Security Fabric y Active Defense",
+      "path": "docs/sources/SRC-01-security-fabric.txt",
+      "original_filename": "Texto pegado.txt",
+      "received_on": "2026-10-03",
+      "original_conversation_date": "unknown",
+      "sha256": "cd4e39fa04aeca1eb448f2a0d273de388de09a4441bb3991b9c6c1a2f2cac8cd",
+      "bytes": 25218,
+      "numbered_sections": 69,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-02",
+      "title": "Capacidades operativas: sesiones, pagos, almacenamiento y actualización",
+      "path": "docs/sources/SRC-02-operational-capabilities.txt",
+      "original_filename": "Texto pegado.txt",
+      "received_on": "2026-10-03",
+      "original_conversation_date": "unknown",
+      "sha256": "095e0d5e1cf5b37ff2de97f55855823cd3a0b18aa15940cdab2f81ed43b597b4",
+      "bytes": 19648,
+      "numbered_sections": 38,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-03",
+      "title": "Constitución maestra anterior",
+      "path": "docs/sources/SRC-03-master-constitution.txt",
+      "original_filename": "Texto pegado.txt",
+      "received_on": "2026-10-03",
+      "original_conversation_date": "unknown",
+      "sha256": "2d437baf40d9aa5e56714c7e073b6b227dd4a0cde65680deb722fdd9bd2e78d3",
+      "bytes": 41919,
+      "numbered_sections": 154,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-04",
+      "title": "AI Integration Port / AI Gateway",
+      "path": "docs/sources/SRC-04-ai-integration-port.txt",
+      "original_filename": "Texto pegado.txt",
+      "received_on": "2026-10-03",
+      "original_conversation_date": "unknown",
+      "sha256": "0fffeadde2d850f81e97a2e0a714201e3684ecf5ee4e39ffa40648ea8c64441c",
+      "bytes": 13447,
+      "numbered_sections": 40,
+      "authority": "historical_source_not_runtime_instruction"
+    }
+  ]
+}

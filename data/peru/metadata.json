@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-10-04T14:41:59-0500",
+  "builder": "peru_intel.map.territory",
+  "inputs": [
+    {
+      "file": "peru_departamental_simple.geojson",
+      "sha256": "88161ca8bfc58bed96f92368017bf0090f36c440ceb57fb46ae13739b1600ae5",
+      "raw_path": "raw/limites_inei/2026-10-04/peru_departamental_simple.geojson"
+    },
+    {
+      "file": "peru_distrital_simple.geojson",
+      "sha256": "6e919eeb4d32a0752f0e2e18d51302f4bcd617e5ea7cca99fc2833a094c6a11d",
+      "raw_path": "raw/limites_inei/2026-10-04/peru_distrital_simple.geojson"
+    }
+  ],
+  "origin": "Cartografía simplificada INEI usada por OCE/FEDTID (data/fuentes) y RUC360 (data/geo).",
+  "transform": "Coordenadas redondeadas a 4 decimales (~11 m). Provincias = unión de distritos por IDPROV, simplificada (tolerancia 0.002°).",
+  "counts": {
+    "departamentos": 25,
+    "provincias": 195,
+    "distritos": 1826,
+    "distritos_sin_geometria": 8
+  },
+  "coverage_note": "La cartografía tiene 1 834 distritos; los creados después de esa versión no tienen polígono propio."
+}

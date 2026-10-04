@@ -1,0 +1,18 @@
+{
+  "name": "oprbguitar-eos",
+  "owner": {
+    "name": "Pierre R. Boss (oprbguitar)"
+  },
+  "metadata": {
+    "description": "Marketplace de Pierre R. Boss (oprbguitar) con el sistema de agentes EOS.",
+    "version": "4.1.0"
+  },
+  "plugins": [
+    {
+      "name": "eos-agents",
+      "source": "./",
+      "description": "Trece agentes especializados y seis skills EOS (INIT, ADOPT, AUDIT, MIGRATE, RELEASE, INCIDENT) firmados por Pierre R. Boss (oprbguitar).",
+      "version": "4.1.0"
+    }
+  ]
+}

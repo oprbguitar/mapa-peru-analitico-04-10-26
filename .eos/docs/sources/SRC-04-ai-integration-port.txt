@@ -1,0 +1,869 @@
+Claro, déjame pensarlo bien un momento.
+
+# AI INTEGRATION PORT / AI GATEWAY
+## Conector universal de inteligencia artificial para todos los sistemas EOS
+
+Todo sistema creado o adoptado bajo EOS debe disponer de un **punto estándar de integración de IA**, aunque inicialmente no utilice inteligencia artificial.
+
+Este componente no debe obligar a instalar modelos, consumir APIs ni reservar RAM permanentemente.
+
+Su función es dejar preparada una interfaz desacoplada que permita incorporar, sustituir o retirar proveedores de IA sin modificar la lógica principal de la aplicación.
+
+---
+
+## 1. PRINCIPIO
+
+```text
+APPLICATION
+     │
+     ▼
+AI INTEGRATION PORT
+     │
+     ├── LOCAL MODEL
+     ├── CLOUD API
+     ├── PRIVATE SERVER
+     ├── GPU REMOTE
+     └── AI DISABLED
+```
+
+La aplicación nunca debe llamar directamente a OpenAI, Anthropic, Google, Ollama u otro proveedor desde la lógica de negocio.
+
+Debe comunicarse únicamente con:
+
+```text
+AI Gateway
+```
+
+o:
+
+```text
+AI Provider Interface
+```
+
+---
+
+## 2. OBJETIVO
+
+Permitir:
+
+- cambiar proveedor sin reescribir el software;
+- conectar modelos locales;
+- utilizar APIs externas;
+- ejecutar modelos en otro equipo;
+- mantener operación offline;
+- aplicar límites de tokens;
+- controlar RAM/VRAM;
+- controlar costos;
+- seleccionar automáticamente el modelo adecuado;
+- disponer de fallback;
+- evitar vendor lock-in;
+- apagar completamente IA cuando no sea necesaria.
+
+---
+
+## 3. REGLA GENERAL
+
+```text
+IF AI is not required:
+    AI_GATEWAY = DISABLED
+    consume_RAM = 0 or minimum
+    download_models = false
+
+IF AI is required:
+    evaluate task
+    evaluate hardware
+    evaluate privacy
+    evaluate cost
+    select execution mode
+```
+
+---
+
+## 4. MODOS DE EJECUCIÓN
+
+El gateway debe admitir:
+
+```text
+OFF
+LOCAL
+LOCAL_REMOTE
+CLOUD_API
+PRIVATE_CLOUD
+HYBRID
+AUTO
+```
+
+### OFF
+IA desactivada.
+
+### LOCAL
+Modelo ejecutado en el mismo equipo.
+
+### LOCAL_REMOTE
+Modelo ejecutado en otra PC o servidor de la red.
+
+### CLOUD_API
+Proveedor externo mediante API.
+
+### PRIVATE_CLOUD
+Modelo alojado por la propia organización.
+
+### HYBRID
+Combinación local + nube.
+
+### AUTO
+EOS selecciona automáticamente la alternativa adecuada.
+
+---
+
+## 5. AI RESOURCE EVALUATOR
+
+Antes de descargar o ejecutar un modelo:
+
+```text
+DETECT
+├── RAM
+├── free RAM
+├── VRAM
+├── GPU
+├── CPU
+├── disk
+├── current load
+├── operating system
+└── active services
+```
+
+Después:
+
+```text
+MODEL REQUIREMENTS
+        ↓
+COMPARE
+        ↓
+SAFE?
+├── YES → allow
+└── NO  → smaller model / remote / API
+```
+
+---
+
+## 6. POLÍTICA DE MEMORIA
+
+Ejemplo:
+
+```text
+IF available_RAM < safe_threshold:
+    do_not_load_model
+
+IF model_would_cause_swap:
+    reject_local_execution
+
+IF GPU_available AND model_fits_VRAM:
+    prefer_GPU
+
+IF model_does_not_fit:
+    evaluate_quantized_version
+
+IF still_not_safe:
+    use_remote_or_API
+```
+
+Nunca degradar significativamente la aplicación principal para mantener un modelo cargado.
+
+---
+
+## 7. MODEL DOWNLOAD MANAGER
+
+La descarga de modelos debe estar gobernada.
+
+Antes de descargar verificar:
+
+```text
+source
+model_name
+version
+size
+license
+publisher
+hash
+signature_if_available
+minimum_RAM
+minimum_VRAM
+quantization
+context_window
+intended_use
+known_risks
+```
+
+No descargar automáticamente archivos de fuentes desconocidas.
+
+---
+
+## 8. MODEL REGISTRY
+
+Mantener:
+
+```yaml
+models:
+  - id:
+    provider:
+    model:
+    version:
+    execution:
+    size:
+    quantization:
+    ram_required:
+    vram_required:
+    context:
+    license:
+    source:
+    hash:
+    capabilities:
+    languages:
+    cost:
+    privacy_level:
+    last_verified:
+```
+
+---
+
+## 9. CAPABILITY REGISTRY
+
+No seleccionar modelos únicamente por nombre.
+
+Registrar capacidades:
+
+```text
+TEXT
+CODE
+VISION
+OCR
+EMBEDDINGS
+AUDIO
+SPEECH_TO_TEXT
+TEXT_TO_SPEECH
+CLASSIFICATION
+RERANKING
+IMAGE_GENERATION
+DOCUMENT_ANALYSIS
+AGENT_TOOLS
+```
+
+---
+
+## 10. TASK ROUTER
+
+```text
+REQUEST
+   ↓
+CLASSIFY TASK
+   ↓
+AI REQUIRED?
+├── NO → deterministic engine
+└── YES
+      ↓
+CAPABILITY REQUIRED
+      ↓
+DATA SENSITIVITY
+      ↓
+RESOURCE CHECK
+      ↓
+COST CHECK
+      ↓
+MODEL SELECTION
+```
+
+---
+
+## 11. SELECCIÓN DE MODELO
+
+```text
+IF task == simple_classification:
+    prefer small model
+
+IF task == embeddings:
+    use embedding model
+    do not invoke general LLM
+
+IF task == OCR:
+    use OCR engine first
+
+IF task == deterministic_calculation:
+    use code
+    not LLM
+
+IF task == complex_reasoning:
+    use capable model only when necessary
+```
+
+---
+
+## 12. LOCAL FIRST NO SIGNIFICA LOCAL ALWAYS
+
+```text
+IF privacy_requires_local:
+    LOCAL_REQUIRED
+
+ELIF local_hardware_is_sufficient
+AND cost_advantage_exists:
+    LOCAL_PREFERRED
+
+ELIF cloud_is_faster_or_cheaper:
+    CLOUD_ALLOWED
+```
+
+La decisión debe basarse en evidencia.
+
+---
+
+## 13. PROVIDER ADAPTERS
+
+Implementar adaptadores intercambiables:
+
+```text
+/providers
+    openai
+    anthropic
+    google
+    azure
+    ollama
+    llama_cpp
+    vllm
+    transformers
+    custom_http
+```
+
+La aplicación consume una interfaz común:
+
+```text
+generate()
+embed()
+vision()
+transcribe()
+speak()
+tools()
+health()
+```
+
+---
+
+## 14. NO VENDOR LOCK-IN
+
+Evitar lógica como:
+
+```text
+business_logic → provider_sdk
+```
+
+Usar:
+
+```text
+business_logic
+      ↓
+AI Gateway
+      ↓
+Provider Adapter
+```
+
+---
+
+## 15. FAILOVER
+
+```text
+PRIMARY MODEL
+     ↓ fail
+SECONDARY MODEL
+     ↓ fail
+LOCAL MODEL
+     ↓ fail
+DETERMINISTIC FALLBACK
+```
+
+Cada fallback debe declarar qué capacidades pierde.
+
+---
+
+## 16. CIRCUIT BREAKER
+
+```text
+IF provider_error_rate > threshold:
+    OPEN CIRCUIT
+
+IF API latency > threshold:
+    route_alternative
+
+IF cost_limit_reached:
+    disable_paid_provider
+```
+
+---
+
+## 17. TOKEN GOVERNANCE
+
+Definir:
+
+```text
+max_input_tokens
+max_output_tokens
+max_context
+daily_budget
+monthly_budget
+max_agent_steps
+max_tool_calls
+max_retries
+```
+
+---
+
+## 18. CONTEXT GOVERNANCE
+
+Nunca enviar todo el sistema al modelo.
+
+Aplicar:
+
+```text
+SEARCH
+↓
+FILTER
+↓
+RERANK
+↓
+DEDUPLICATE
+↓
+MINIMUM CONTEXT
+↓
+MODEL
+```
+
+---
+
+## 19. AI COST ROUTER
+
+```text
+IF task_can_be_done_by_small_model:
+    do_not_use_expensive_model
+
+IF cached_answer_exists:
+    reuse
+
+IF repeated_request:
+    cache_or_precompute
+
+IF monthly_budget_exceeded:
+    degrade_to_local_or_small_model
+```
+
+---
+
+## 20. PRIVACY ROUTER
+
+```text
+IF data == PUBLIC:
+    cloud_allowed according to policy
+
+IF data == INTERNAL:
+    approved providers only
+
+IF data == CONFIDENTIAL:
+    anonymize or local
+
+IF data == RESTRICTED:
+    local/private infrastructure only
+```
+
+---
+
+## 21. MODEL SANDBOX
+
+Los modelos locales y herramientas asociadas deben ejecutarse con permisos mínimos.
+
+No permitir acceso automático a:
+
+- filesystem completo;
+- credenciales;
+- correo;
+- bases completas;
+- terminal;
+- navegador;
+- red interna.
+
+Usar permisos explícitos por herramienta.
+
+---
+
+## 22. TOOL PERMISSIONS
+
+```yaml
+agent_permissions:
+  filesystem: read-limited
+  database: read
+  internet: conditional
+  shell: approval
+  email_send: approval
+  production_write: forbidden
+```
+
+---
+
+## 23. MODEL HEALTH CHECK
+
+Registrar continuamente:
+
+```text
+availability
+latency
+RAM
+VRAM
+tokens/sec
+errors
+cost
+quality
+```
+
+---
+
+## 24. AUTO-UNLOAD
+
+Los modelos locales no utilizados deben poder descargarse de RAM/VRAM.
+
+```text
+IF idle_time > threshold:
+    unload_model
+```
+
+---
+
+## 25. MODEL WARMING
+
+Solo precargar cuando exista justificación.
+
+```text
+IF predictable_high_usage_window:
+    preload
+
+ELSE:
+    lazy_load
+```
+
+---
+
+## 26. HARDWARE PROFILES
+
+Ejemplo:
+
+```text
+8 GB RAM
+→ tiny / small quantized model
+→ remote preferred
+
+16 GB RAM
+→ small / medium quantized model
+→ one model at a time
+
+32 GB RAM
+→ larger local models possible
+
+GPU available
+→ evaluate VRAM independently
+```
+
+Los valores reales deben determinarse mediante benchmark.
+
+---
+
+## 27. BENCHMARK PREVIO
+
+Antes de declarar un modelo apto:
+
+```text
+load time
+RAM peak
+VRAM peak
+tokens/sec
+CPU
+temperature if relevant
+latency
+quality test
+```
+
+---
+
+## 28. AI QUALITY TEST
+
+El modelo debe probarse contra casos representativos del sistema.
+
+No seleccionar por benchmarks genéricos únicamente.
+
+---
+
+## 29. AUTO MODEL EVALUATOR
+
+EOS puede evaluar varios modelos:
+
+```text
+MODEL A
+MODEL B
+MODEL C
+```
+
+según:
+
+```text
+accuracy
+latency
+RAM
+cost
+privacy
+context
+stability
+```
+
+y recomendar el mejor para la tarea específica.
+
+---
+
+## 30. MODEL UPDATE WATCH
+
+Technology Scout debe vigilar:
+
+```text
+new model versions
+model deprecation
+license changes
+security issues
+new quantizations
+performance improvements
+```
+
+No actualizar automáticamente modelos críticos sin pruebas.
+
+---
+
+## 31. COMPATIBILITY GATE
+
+```text
+NEW MODEL
+↓
+BENCHMARK
+↓
+REGRESSION TEST
+↓
+RESOURCE TEST
+↓
+SECURITY REVIEW
+↓
+LICENSE REVIEW
+↓
+CANARY
+```
+
+---
+
+## 32. AI EXTENSION PORT OBLIGATORIO
+
+Todo proyecto EOS debe incluir conceptualmente:
+
+```text
+AI_EXTENSION_PORT
+```
+
+pero puede permanecer:
+
+```text
+DISABLED
+```
+
+No significa:
+
+```text
+MODEL_ALWAYS_RUNNING
+```
+
+---
+
+## 33. SOFTWARE EXISTENTE — MODE ADOPT
+
+Al adoptar un proyecto:
+
+```text
+AI DISCOVERY
+↓
+¿YA USA IA?
+├── NO
+│   └── create dormant AI Integration Port
+└── YES
+    ↓
+map providers
+map models
+map cost
+map privacy
+map dependencies
+map resource consumption
+```
+
+---
+
+## 34. MIGRACIÓN DE PROVEEDORES
+
+Ejemplo:
+
+```text
+OpenAI
+→
+Claude
+```
+
+o:
+
+```text
+Cloud API
+→
+Local model
+```
+
+No debe requerir reescribir la lógica del sistema.
+
+Solo cambiar:
+
+```text
+Provider Adapter
+```
+
+y validar equivalencia.
+
+---
+
+## 35. MULTI-PROVIDER
+
+Permitir:
+
+```text
+Task A → local
+Task B → inexpensive API
+Task C → advanced API
+Task D → deterministic algorithm
+```
+
+No usar un único modelo para todo.
+
+---
+
+## 36. AI OBSERVABILITY
+
+Registrar:
+
+```text
+request_id
+model
+provider
+latency
+tokens
+cost
+fallback
+error
+tool_calls
+```
+
+Sin almacenar información sensible innecesariamente.
+
+---
+
+## 37. ADMIN PANEL
+
+Agregar:
+
+```text
+/admin/engineering/ai
+```
+
+Mostrar:
+
+```text
+AI status
+Execution mode
+Current model
+Models installed
+RAM usage
+VRAM usage
+API cost
+Token usage
+Latency
+Fallbacks
+Model health
+Updates available
+```
+
+---
+
+## 38. MODEL CONTROL PANEL
+
+Permitir al administrador:
+
+```text
+Enable
+Disable
+Download
+Unload
+Benchmark
+Switch
+Delete
+Set fallback
+Set budget
+Set privacy policy
+```
+
+---
+
+## 39. REGLA DE RENDIMIENTO
+
+```text
+PRIMARY APPLICATION
+>
+AI MODEL
+```
+
+La IA nunca debe comprometer la función principal del producto salvo que la IA sea precisamente dicha función principal.
+
+---
+
+## 40. PRINCIPIO FINAL
+
+Todo sistema EOS debe poder incorporar inteligencia artificial sin quedar dependiente de una marca, proveedor o modelo concreto.
+
+La arquitectura objetivo es:
+
+```text
+APPLICATION
+    ↓
+AI INTEGRATION PORT
+    ↓
+POLICY ENGINE
+    ↓
+RESOURCE EVALUATOR
+    ↓
+AI ROUTER
+    ↓
+┌──────────┬──────────┬──────────┐
+│ LOCAL    │ PRIVATE  │ CLOUD    │
+│ MODEL    │ SERVER   │ API      │
+└──────────┴──────────┴──────────┘
+```
+
+El sistema debe poder funcionar:
+
+```text
+WITH AI
+WITHOUT AI
+LOCAL AI
+REMOTE AI
+CLOUD AI
+HYBRID AI
+```
+
+sin tener que reconstruirse para cambiar entre ellos.
+
+## Regla suprema
+
+> La inteligencia artificial debe comportarse como una capacidad conectable y gobernada del sistema, no como una dependencia rígida incrustada en toda la aplicación.
+
+Vale. Esto es un poco más complejo. La idea no es un socket de red literal, sino más bien un puerto de integración estandarizado, un AI Integration Port o Gateway. O sea, todos los sistemas se diseñan con ese punto de extensión, pero la IA está apagada por defecto hasta que el evaluador determine que se necesita y es viable. Entonces, el AI Resource Evaluator mira hardware, RAM, CPU, GPU, y decide si enchufa un modelo local liviano, llama a un API externo, o simplemente no activa la IA. Y ese puerto debe estar desacoplado: contratos claros de entrada y salida, timeouts, cuotas, logs, para que no amarres todo a un solo proveedor ni revientes memoria. Además, ese puerto debe respetar la clasificación de datos. Entonces, nada sensible sale a la nube si no corresponde. Te lo dejo como un bloque listo para pegar en la constitución, si quieres. Te preparo un texto Claro. Aquí tienes un bloque listo para agregar. La idea es que todos los sistemas tengan un puerto de integración de IA

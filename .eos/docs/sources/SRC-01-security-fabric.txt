@@ -1,0 +1,1670 @@
+Sí. En el EOS anterior **ya teníamos piezas de seguridad**, como `Security Auditor`, observabilidad, monitoreo de sesiones/IP, SAST/SCA, secretos, supply chain, incidentes y auditoría. Pero faltaba convertir todo eso en **un subsistema defensivo permanente**, capaz de reconocer DDoS, bots, abuso de login, secuestro de sesión, malware/dependencias comprometidas e incluso agentes de IA que intenten operar fuera de sus permisos.
+
+Y haría una corrección arquitectónica importante: **un DDoS volumétrico no debe intentar detenerlo tu aplicación ni tu servidor**. Debe frenarse aguas arriba —edge/CDN/proveedor anti-DDoS— antes de alcanzar el origen. Las prácticas actuales combinan mitigación L3/L4/L7, WAF, rate limiting, bot management, caché y ocultamiento/protección del servidor origen. [Cloudflare Docs](https://developers.cloudflare.com/ddos-protection/best-practices/proactive-defense/?utm_source=chatgpt.com)
+
+Para login tampoco usaría simplemente «tres intentos y bloqueo». OWASP actualmente recomienda controles combinados, incluyendo límites independientes **por cuenta y por IP/origen**, precisamente para defender tanto ataques concentrados contra una cuenta como credential stuffing distribuido. MFA —preferentemente resistente a phishing, como passkeys/WebAuthn cuando sea viable— añade otra capa importante. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+Este es el bloque que incorporaría como parte permanente del EOS:
+
+---
+
+# EOS — SECURITY FABRIC & ACTIVE DEFENSE
+
+## 154. PRINCIPIO
+
+Todo sistema creado o adoptado por EOS debe poseer:
+
+```text
+SECURITY_FABRIC = PRESENT
+```
+
+La profundidad de sus controles será adaptativa.
+
+```text
+Simple website
+→ baseline security
+
+Authenticated application
+→ identity + sessions + abuse protection
+
+CRM / ERP
+→ full account/session/audit protection
+
+E-commerce / SaaS
+→ account + bot + payment + fraud controls
+
+Public / critical system
+→ hardened profile + SIEM + incident response
+
+AI/Agent system
+→ AI Agent Security profile
+```
+
+No debe existir una aplicación EOS expuesta a Internet sin un perfil de seguridad explícito.
+
+---
+
+# 155. ARQUITECTURA DEFENSIVA
+
+Usar defensa en profundidad:
+
+```text
+INTERNET
+   ↓
+DNS SECURITY
+   ↓
+EDGE / CDN / ANTI-DDoS
+   ↓
+BOT MANAGEMENT
+   ↓
+WAF
+   ↓
+RATE LIMITING
+   ↓
+API GATEWAY / REVERSE PROXY
+   ↓
+AUTHENTICATION
+   ↓
+SESSION SECURITY
+   ↓
+APPLICATION SECURITY
+   ↓
+SERVICE AUTHORIZATION
+   ↓
+DATA SECURITY
+   ↓
+RUNTIME SECURITY
+```
+
+Ninguna capa sustituye a las demás.
+
+---
+
+# 156. EDGE SHIELD
+
+Para sistemas públicos evaluar:
+
+```text
+EDGE_SECURITY
+```
+
+Capacidades:
+
+```text
+DDoS L3/L4
+DDoS L7
+WAF
+CDN
+rate limiting
+bot filtering
+TLS termination
+DNS protection
+origin shielding
+cache
+```
+
+El proveedor debe ser sustituible.
+
+Posibles adaptadores:
+
+```text
+Cloudflare
+AWS
+Azure
+Google
+Akamai
+Fastly
+other provider
+```
+
+EOS nunca debe depender conceptualmente de un único proveedor.
+
+---
+
+# 157. ORIGIN PROTECTION
+
+El servidor de origen no debería quedar públicamente expuesto cuando la arquitectura permita evitarlo.
+
+Preferir:
+
+```text
+INTERNET
+  ↓
+EDGE
+  ↓
+PRIVATE/TRUSTED ORIGIN
+```
+
+y restringir el origen a:
+
+```text
+trusted edge
+VPN
+private network
+authenticated service
+```
+
+Cloudflare recomienda precisamente mantener oculto el origen, usar WAF/rate limits y aprovechar caché para reducir la presión que alcanza al servidor. [Cloudflare Docs](https://developers.cloudflare.com/ddos-protection/best-practices/proactive-defense/?utm_source=chatgpt.com)
+
+---
+
+# 158. DDoS DETECTION ENGINE
+
+EOS debe observar:
+
+```text
+requests/sec
+connections/sec
+bandwidth
+packets/sec
+HTTP methods
+paths
+response codes
+origin errors
+latency
+CPU
+RAM
+DB connections
+cache hit ratio
+country/region distribution
+ASN distribution
+user-agent distribution
+```
+
+Crear baseline normal:
+
+```text
+NORMAL TRAFFIC PROFILE
+```
+
+y comparar:
+
+```text
+CURRENT TRAFFIC
+        ↓
+BASELINE
+        ↓
+DEVIATION?
+```
+
+---
+
+# 159. DDoS ADAPTATIVO
+
+```text
+IF traffic_spike
+AND legitimate_campaign_detected:
+    scale
+    observe
+
+ELIF traffic_spike
+AND suspicious_pattern:
+    throttle/challenge
+
+ELIF volumetric_attack:
+    upstream_mitigation
+
+ELIF origin_health_degrading:
+    tighten_edge_controls
+```
+
+No confundir:
+
+```text
+POPULARITY
+```
+
+con:
+
+```text
+ATTACK
+```
+
+El sistema debe aprender el patrón habitual antes de aplicar bloqueos agresivos. Los sistemas adaptativos modernos precisamente utilizan perfiles históricos de tráfico y anomalías para mejorar detección. [Cloudflare Docs](https://developers.cloudflare.com/ddos-protection/managed-rulesets/adaptive-protection/?utm_source=chatgpt.com)
+
+---
+
+# 160. NO USAR AUTOSCALING COMO DEFENSA DDoS
+
+Prohibido asumir:
+
+```text
+attack
+→ add servers forever
+```
+
+porque podría transformar un ataque en:
+
+```text
+massive cloud bill
+```
+
+Primero:
+
+```text
+FILTER
+↓
+RATE LIMIT
+↓
+CACHE
+↓
+CHALLENGE
+↓
+BLOCK
+```
+
+Después:
+
+```text
+SCALE LEGITIMATE LOAD
+```
+
+---
+
+# 161. BOT MANAGEMENT ENGINE
+
+Todo tráfico automatizado debe poder clasificarse.
+
+```text
+HUMAN
+
+VERIFIED_GOOD_BOT
+
+INTERNAL_AUTOMATION
+
+PARTNER_API
+
+MONITORING_BOT
+
+UNKNOWN_BOT
+
+SUSPICIOUS_BOT
+
+MALICIOUS_BOT
+```
+
+---
+
+# 162. BOT BUENO ≠ USER-AGENT BUENO
+
+Nunca confiar únicamente en:
+
+```text
+User-Agent = Googlebot
+```
+
+porque puede falsificarse.
+
+Usar cuando corresponda:
+
+```text
+verified bot provider
+authenticated API key
+signed token
+mTLS
+known integration
+behavioral verification
+```
+
+---
+
+# 163. POLÍTICA PARA BOTS
+
+```text
+IF verified_good_bot:
+    allow according to policy
+
+IF internal_bot:
+    require machine identity
+
+IF partner_bot:
+    authenticate + quota
+
+IF unknown_bot:
+    observe / rate limit
+
+IF suspicious_bot:
+    challenge
+
+IF malicious_bot:
+    block
+```
+
+---
+
+# 164. MACHINE IDENTITY
+
+Procesos automáticos internos deben usar:
+
+```text
+SERVICE ACCOUNT
+API KEY
+OAuth client
+signed token
+mTLS
+```
+
+Nunca:
+
+```text
+shared human username/password
+```
+
+---
+
+# 165. ENDPOINT-SPECIFIC RATE LIMITING
+
+No utilizar un solo límite para toda la aplicación.
+
+Ejemplo:
+
+```text
+/
+→ permissive
+
+/search
+→ moderate
+
+/api/report
+→ stronger
+
+/login
+→ strict
+
+/password-reset
+→ strict
+
+/payment
+→ very strict
+
+/admin
+→ very strict
+```
+
+---
+
+# 166. RATE LIMIT ENGINE
+
+Preferir algoritmos como:
+
+```text
+TOKEN BUCKET
+SLIDING WINDOW
+```
+
+sobre límites de ventana fija cuando se necesite soportar ráfagas legítimas.
+
+OWASP recomienda actualmente este enfoque y controles específicos por endpoint. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+---
+
+# 167. LOGIN DEFENSE ENGINE
+
+El login debe evaluar simultáneamente:
+
+```text
+ACCOUNT
+IP
+NETWORK/ASN
+DEVICE
+SESSION HISTORY
+FAILED ATTEMPTS
+LOCATION CHANGE
+AUTOMATION SIGNALS
+```
+
+---
+
+# 168. DOBLE RATE LIMIT PARA LOGIN
+
+Nunca utilizar solamente:
+
+```text
+IP + username
+```
+
+como único contador.
+
+Mantener al menos:
+
+```text
+BUCKET 1
+per account
+
+BUCKET 2
+per source
+```
+
+Ejemplo:
+
+```text
+login:account:pierre
+login:ip:1.2.3.4
+```
+
+Ambos deben aprobar.
+
+Esta separación es importante para frenar tanto ataques distribuidos contra una cuenta como ataques de una IP contra muchas cuentas. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+---
+
+# 169. PROGRESSIVE THROTTLING
+
+En vez de bloqueo inmediato universal:
+
+```text
+FAIL
+↓
+small delay
+↓
+FAIL
+↓
+larger delay
+↓
+challenge
+↓
+MFA / reauthentication
+↓
+temporary restriction
+```
+
+La política debe adaptarse al riesgo.
+
+---
+
+# 170. EVITAR DoS CONTRA LA PROPIA CUENTA
+
+El atacante no debería poder bloquear permanentemente a una víctima haciendo intentos deliberadamente.
+
+Por ello combinar:
+
+```text
+throttling
+risk scoring
+temporary lock
+challenge
+MFA
+account recovery
+```
+
+en lugar de bloqueos rígidos indefinidos.
+
+---
+
+# 171. CREDENTIAL STUFFING DETECTION
+
+Detectar patrones como:
+
+```text
+many accounts
++
+few passwords
++
+distributed IPs
+```
+
+o:
+
+```text
+many failures
++
+many usernames
++
+same network
+```
+
+Clasificar:
+
+```text
+CREDENTIAL_STUFFING_SUSPECTED
+```
+
+---
+
+# 172. PASSWORD SPRAY DETECTION
+
+Detectar:
+
+```text
+same/similar password attempts
+against many accounts
+```
+
+sin revelar públicamente qué cuentas existen.
+
+---
+
+# 173. USER ENUMERATION PROTECTION
+
+Login y recuperación no deben responder:
+
+```text
+“usuario inexistente”
+```
+
+de forma fácilmente explotable.
+
+Preferir mensajes equivalentes que no revelen existencia de cuentas.
+
+---
+
+# 174. MFA
+
+Para cuentas sensibles evaluar:
+
+```text
+PASSKEY / WebAuthn
+hardware security key
+authenticator application
+other approved MFA
+```
+
+Evitar depender únicamente de SMS para perfiles de alto riesgo cuando existan alternativas mejores.
+
+---
+
+# 175. ADMINISTRADORES
+
+Para administrador:
+
+```text
+MFA REQUIRED
+```
+
+preferentemente resistente a phishing cuando el contexto lo permita.
+
+---
+
+# 176. RISK-BASED AUTHENTICATION
+
+```text
+KNOWN USER
+KNOWN DEVICE
+NORMAL NETWORK
+NORMAL BEHAVIOR
+→ normal login
+```
+
+versus:
+
+```text
+NEW DEVICE
+NEW COUNTRY
+TOR/VPN signal
+abnormal ASN
+impossible travel
+many failures
+→ STEP-UP AUTHENTICATION
+```
+
+No utilizar geolocalización IP como verdad absoluta.
+
+---
+
+# 177. SESSION SECURITY
+
+Las sesiones deben:
+
+```text
+rotate after authentication
+rotate after privilege change
+expire
+support revocation
+support forced logout
+```
+
+Para web:
+
+```text
+Secure
+HttpOnly
+SameSite
+HTTPS
+HSTS
+```
+
+cuando corresponda.
+
+OWASP recomienda además regenerar el identificador de sesión en cambios de privilegio y exigir reautenticación ante eventos de alto riesgo. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+---
+
+# 178. SESSION LIMIT POLICY
+
+Debe ser configurable:
+
+```text
+max concurrent sessions
+idle timeout
+absolute timeout
+remember-me duration
+admin timeout
+```
+
+No todos los sistemas necesitan el mismo límite.
+
+---
+
+# 179. SESSION ANOMALY ENGINE
+
+Detectar:
+
+```text
+same session
++
+radically different device/network
+```
+
+o:
+
+```text
+session reuse after logout
+```
+
+o:
+
+```text
+admin session abnormal behavior
+```
+
+y responder según riesgo.
+
+---
+
+# 180. ATTACK SURFACE MANAGER
+
+Mantener inventario:
+
+```text
+domains
+subdomains
+ports
+APIs
+admin panels
+storage endpoints
+databases
+webhooks
+third-party integrations
+AI endpoints
+```
+
+Cualquier servicio nuevo debe ingresar al inventario.
+
+---
+
+# 181. APPLICATION ATTACK DEFENSE
+
+Auditar continuamente:
+
+```text
+SQL Injection
+XSS
+CSRF
+SSRF
+command injection
+path traversal
+insecure deserialization
+broken authorization
+file upload abuse
+API abuse
+business logic abuse
+```
+
+---
+
+# 182. INPUT TRUST MODEL
+
+Regla:
+
+```text
+ALL EXTERNAL INPUT = UNTRUSTED
+```
+
+Incluyendo:
+
+```text
+browser
+mobile app
+API
+webhook
+uploaded file
+AI model output
+external database
+third-party API
+```
+
+---
+
+# 183. FILE UPLOAD SECURITY
+
+Archivos cargados deben pasar, según riesgo:
+
+```text
+extension validation
+MIME validation
+size limit
+malware scan
+archive-bomb protection
+safe filename
+isolated storage
+content inspection
+```
+
+Nunca ejecutar archivos cargados directamente.
+
+---
+
+# 184. EGRESS CONTROL
+
+Los servicios no deben poder conectarse libremente a cualquier destino de Internet cuando no sea necesario.
+
+Preferir:
+
+```text
+EGRESS POLICY
+```
+
+Esto reduce:
+
+```text
+SSRF impact
+data exfiltration
+malware callbacks
+compromised agent activity
+```
+
+---
+
+# 185. RUNTIME INTRUSION MONITOR
+
+Para sistemas que lo requieran:
+
+```text
+PROCESS MONITORING
+FILE INTEGRITY
+NETWORK ANOMALY
+UNEXPECTED CHILD PROCESS
+PRIVILEGE ESCALATION
+UNEXPECTED BINARY
+```
+
+Posibles herramientas:
+
+```text
+Falco
+Tetragon
+EDR
+host IDS
+cloud runtime security
+```
+
+según entorno.
+
+---
+
+# 186. SOFTWARE SUPPLY-CHAIN DEFENSE
+
+El atacante también puede entrar por:
+
+```text
+npm package
+Python package
+container image
+GitHub Action
+CI plugin
+SDK
+model file
+IDE extension
+```
+
+Por ello:
+
+```text
+PIN DEPENDENCIES
+VERIFY HASH
+SCA
+SBOM
+PROVENANCE
+SIGNED RELEASES
+DEPENDENCY REVIEW
+```
+
+OWASP destaca precisamente riesgos como dependency confusion, typosquatting y compromiso de mantenedores, y recomienda pinning e integridad de paquetes. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+---
+
+# 187. AGENT / AI SECURITY
+
+Como EOS tendrá agentes, agregar obligatoriamente:
+
+```text
+AGENT SECURITY GATEWAY
+```
+
+---
+
+# 188. NINGÚN AGENTE RECIBE ACCESO TOTAL
+
+Cada agente recibe:
+
+```text
+IDENTITY
+ROLE
+TOOLS
+SCOPES
+TIME LIMIT
+COST LIMIT
+DATA LIMIT
+```
+
+---
+
+# 189. TOOL PERMISSIONS
+
+Ejemplo:
+
+```yaml
+Auditor:
+  filesystem: read
+  database: read
+  production_write: false
+
+DocumentationAgent:
+  docs_write: true
+  source_write: false
+
+DeveloperAgent:
+  branch_write: true
+  production_write: false
+
+DeploymentAgent:
+  staging: true
+  production: approval_required
+```
+
+---
+
+# 190. PROMPT-INJECTION DEFENSE
+
+Contenido proveniente de:
+
+```text
+web
+PDF
+email
+database
+GitHub issue
+user document
+API
+```
+
+debe tratarse como:
+
+```text
+DATA
+```
+
+no como nuevas instrucciones del agente.
+
+---
+
+# 191. AGENT EXFILTRATION CONTROL
+
+El agente no debe poder enviar arbitrariamente:
+
+```text
+source code
+secrets
+personal data
+database dumps
+internal documents
+```
+
+a proveedores externos.
+
+Debe pasar:
+
+```text
+DATA POLICY
+↓
+AI POLICY
+↓
+EGRESS POLICY
+```
+
+---
+
+# 192. AGENT BEHAVIOR MONITOR
+
+Registrar:
+
+```text
+agent_id
+model
+task
+tools
+files_read
+files_changed
+API_calls
+tokens
+cost
+network_destinations
+result
+approval
+```
+
+---
+
+# 193. AGENT KILL SWITCH
+
+El administrador debe disponer de:
+
+```text
+STOP AGENT
+REVOKE TOOLS
+REVOKE API KEY
+DISABLE AI
+DISABLE EXTERNAL NETWORK
+```
+
+inmediatamente.
+
+---
+
+# 194. SECURITY EVENT BUS
+
+Todos los componentes envían eventos a:
+
+```text
+SECURITY EVENT BUS
+```
+
+Origen:
+
+```text
+EDGE
+WAF
+LOGIN
+SESSION
+API
+DATABASE
+OS
+CONTAINER
+AI
+PAYMENT
+STORAGE
+CI/CD
+```
+
+---
+
+# 195. DETECTION & CORRELATION
+
+Ejemplo:
+
+```text
+20 failed logins
++
+new ASN
++
+new device
++
+password reset
+```
+
+puede producir:
+
+```text
+ACCOUNT_TAKEOVER_RISK = HIGH
+```
+
+En vez de tratar cada evento aisladamente.
+
+---
+
+# 196. SECURITY LOGGING
+
+Mantener separados cuando sea apropiado:
+
+```text
+application logs
+security events
+audit trail
+transaction logs
+```
+
+pero correlacionarlos mediante:
+
+```text
+trace_id
+request_id
+session_id
+user_id
+```
+
+OWASP recomienda logging de seguridad consistente y centralizado, con controles contra manipulación y acceso restringido. [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html?utm_source=chatgpt.com)
+
+---
+
+# 197. SECURITY OPERATIONS CENTER INTERNO
+
+Agregar:
+
+```text
+/admin/security
+```
+
+---
+
+# 198. SECURITY OVERVIEW
+
+Mostrar:
+
+```text
+SECURITY STATUS
+
+Threat level
+Active users
+Active sessions
+Requests/sec
+Blocked requests
+Challenged requests
+DDoS events
+Bot activity
+Login attacks
+WAF events
+Critical CVEs
+Suspicious agents
+Integrity events
+Security incidents
+```
+
+---
+
+# 199. MAPA DE CONEXIONES
+
+Dentro del administrador:
+
+```text
+Country
+Region
+ASN
+IP
+User
+Session
+Device
+Requests
+Risk
+```
+
+sin representar la ubicación IP como dirección física exacta.
+
+---
+
+# 200. BOT DASHBOARD
+
+Mostrar:
+
+```text
+human
+verified bot
+internal automation
+partner
+unknown
+suspicious
+blocked
+```
+
+---
+
+# 201. LOGIN SECURITY DASHBOARD
+
+Mostrar:
+
+```text
+successful logins
+failed logins
+credential stuffing alerts
+password spraying
+locked/throttled accounts
+MFA challenges
+new devices
+risk events
+```
+
+---
+
+# 202. ENDPOINT SECURITY
+
+Mostrar:
+
+```text
+endpoint
+RPS
+error rate
+blocked
+rate-limited
+latency
+risk
+```
+
+Así puedes descubrir, por ejemplo:
+
+```text
+/login → normal
+
+/api/search → normal
+
+/api/export → attack
+```
+
+---
+
+# 203. EMERGENCY MODE
+
+El administrador puede activar:
+
+```text
+NORMAL
+ELEVATED
+HIGH
+UNDER_ATTACK
+LOCKDOWN
+```
+
+---
+
+# 204. UNDER ATTACK
+
+Puede aumentar temporalmente:
+
+```text
+rate limiting
+challenges
+bot filtering
+cache
+admin restrictions
+```
+
+sin modificar código.
+
+---
+
+# 205. LOCKDOWN
+
+Para incidente crítico:
+
+```text
+disable nonessential endpoints
+revoke suspicious sessions
+disable external agents
+freeze admin changes
+restrict origin access
+```
+
+manteniendo servicios esenciales si es posible.
+
+---
+
+# 206. AUTOMATED RESPONSE LEVELS
+
+```text
+R0 OBSERVE
+R1 LOG
+R2 RATE LIMIT
+R3 CHALLENGE
+R4 TEMPORARY BLOCK
+R5 SESSION REVOKE
+R6 SERVICE ISOLATION
+R7 HUMAN INCIDENT RESPONSE
+```
+
+---
+
+# 207. FALSE-POSITIVE CONTROL
+
+No permitir que IA bloquee libremente usuarios legítimos.
+
+```text
+AI detects anomaly
+↓
+deterministic evidence
+↓
+policy
+↓
+action
+```
+
+Para acciones severas:
+
+```text
+human approval
+```
+
+o evidencia de alta confianza.
+
+---
+
+# 208. SHADOW SECURITY MODE
+
+Al instalar EOS en software existente:
+
+```text
+OBSERVE FIRST
+```
+
+Durante un periodo:
+
+```text
+detect
+score
+simulate action
+do not block
+```
+
+Luego:
+
+```text
+tune thresholds
+↓
+activate enforcement
+```
+
+Esto evita romper aplicaciones heredadas por reglas demasiado estrictas.
+
+---
+
+# 209. SECURITY MODE — ADOPT
+
+Para sistema existente:
+
+```text
+ASSET DISCOVERY
+↓
+ATTACK SURFACE
+↓
+AUTH BASELINE
+↓
+SESSION BASELINE
+↓
+EDGE BASELINE
+↓
+BOT BASELINE
+↓
+DEPENDENCY BASELINE
+↓
+RUNTIME BASELINE
+↓
+AGENT/AI BASELINE
+↓
+SHADOW DEFENSE
+↓
+ENFORCEMENT
+```
+
+---
+
+# 210. SECURITY MODE — INIT
+
+Para sistema nuevo:
+
+```text
+THREAT MODEL
+↓
+SECURITY ARCHITECTURE
+↓
+EDGE STRATEGY
+↓
+AUTH
+↓
+SESSIONS
+↓
+RATE LIMITS
+↓
+BOT POLICY
+↓
+APP SECURITY
+↓
+SUPPLY CHAIN
+↓
+AGENT SECURITY
+↓
+OBSERVABILITY
+↓
+INCIDENT RESPONSE
+```
+
+antes de producción.
+
+---
+
+# 211. SECURITY QUALITY GATES
+
+En CI/CD:
+
+```text
+secret scan
+SAST
+SCA
+dependency review
+SBOM
+container scan
+IaC scan
+tests
+auth tests
+authorization tests
+API tests
+security policy tests
+```
+
+---
+
+# 212. RELEASE SECURITY GATE
+
+No desplegar si:
+
+```text
+critical known vulnerability
+secret detected
+broken authorization
+unsigned critical artifact
+mandatory security test failed
+```
+
+salvo excepción documentada y autorizada.
+
+---
+
+# 213. VULNERABILITY MANAGEMENT
+
+Cada vulnerabilidad:
+
+```yaml
+id:
+CVE:
+component:
+severity:
+exploitability:
+internet_exposed:
+affected_version:
+fix_available:
+owner:
+deadline:
+status:
+```
+
+---
+
+# 214. SECURITY RADAR
+
+Technology Scout + Security Auditor deben vigilar:
+
+```text
+new CVEs
+new attack techniques
+provider incidents
+WAF changes
+bot techniques
+dependency compromise
+framework advisories
+AI security risks
+```
+
+---
+
+# 215. SECURITY UPDATE LOOP
+
+```text
+NEW THREAT
+↓
+VERIFY
+↓
+IMPACT ASSESSMENT
+↓
+AFFECTED SYSTEMS
+↓
+NEW CONTROL
+↓
+TEST
+↓
+SHADOW
+↓
+ENFORCE
+↓
+DOCUMENT
+```
+
+Así el estándar evoluciona.
+
+---
+
+# 216. INCIDENT PLAYBOOK — DDoS
+
+```text
+DETECT
+↓
+CONFIRM
+↓
+EDGE MITIGATION
+↓
+RATE LIMIT
+↓
+CACHE
+↓
+PROTECT ORIGIN
+↓
+SCALE LEGITIMATE LOAD
+↓
+MONITOR
+↓
+POSTMORTEM
+```
+
+---
+
+# 217. INCIDENT PLAYBOOK — ACCOUNT ATTACK
+
+```text
+DETECT
+↓
+THROTTLE
+↓
+CHALLENGE
+↓
+MFA
+↓
+REVOKE COMPROMISED SESSION
+↓
+RESET/RECOVERY IF NECESSARY
+↓
+INVESTIGATE
+```
+
+---
+
+# 218. INCIDENT PLAYBOOK — MALICIOUS CODE
+
+```text
+DETECT
+↓
+ISOLATE
+↓
+STOP EXECUTION
+↓
+PRESERVE EVIDENCE
+↓
+IDENTIFY ENTRY
+↓
+ROTATE CREDENTIALS
+↓
+REBUILD FROM TRUSTED SOURCE
+↓
+VERIFY
+```
+
+---
+
+# 219. INCIDENT PLAYBOOK — COMPROMISED AGENT
+
+```text
+STOP AGENT
+↓
+REVOKE TOOL ACCESS
+↓
+REVOKE KEYS
+↓
+BLOCK EGRESS
+↓
+INSPECT ACTION LOG
+↓
+VERIFY MODIFICATIONS
+↓
+RESTORE
+```
+
+---
+
+# 220. PRINCIPIO FUNDAMENTAL DE SEGURIDAD EOS
+
+```text
+SECURITY
+≠
+ONE FIREWALL
+```
+
+Debe ser:
+
+```text
+IDENTITY
++
+EDGE
++
+NETWORK
++
+APPLICATION
++
+DATA
++
+RUNTIME
++
+SUPPLY CHAIN
++
+AI/AGENTS
++
+OBSERVABILITY
++
+RESPONSE
+```
+
+---
+
+# 221. REGLA DEL ORQUESTADOR
+
+El orquestador debe ejecutar:
+
+```text
+IF INTERNET_EXPOSED:
+    ensure edge protection
+
+IF AUTHENTICATED_USERS:
+    ensure login abuse protection
+    ensure session security
+
+IF PUBLIC_API:
+    ensure quotas
+    rate limits
+    machine identities
+
+IF AI_AGENTS:
+    ensure agent sandbox
+    tool permissions
+    egress policy
+
+IF FILE_UPLOAD:
+    ensure upload security
+
+IF THIRD_PARTY_DEPENDENCIES:
+    ensure supply-chain controls
+
+IF HIGH_TRAFFIC:
+    ensure DDoS profile
+
+IF SYSTEM_ALREADY_EXISTS:
+    deploy shadow mode first
+
+IF ATTACK_CONFIDENCE_HIGH:
+    automate safe containment
+
+IF ACTION_HIGH_IMPACT:
+    require human approval
+```
+
+---
+
+# 222. SECURITY ADMIN PRINCIPLE
+
+El administrador debe poder **ver y controlar**, pero no necesitar ser especialista para interpretar los datos.
+
+Cada hallazgo debe explicarse así:
+
+```text
+QUÉ PASÓ
+↓
+QUÉ DETECTÓ EOS
+↓
+POR QUÉ ES ANORMAL
+↓
+QUÉ SISTEMA LO DETUVO
+↓
+QUÉ USUARIO/SERVICIO FUE AFECTADO
+↓
+QUÉ ACCIÓN SE TOMÓ
+↓
+QUÉ RECOMIENDA HACER
+```
+
+Esto convierte el panel en **auditor + centro de seguridad + material de aprendizaje**, que es consistente con la idea que venimos desarrollando.
+
+---
+
+### Cómo queda ahora tu arquitectura general
+
+Con este complemento, el EOS pasa a tener aproximadamente esta forma:
+
+```text
+                    EOS ORCHESTRATOR
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+   ENGINEERING         GOVERNANCE         OPERATIONS
+        │                  │                  │
+ Architecture          Compliance          SRE
+ Code Quality          Legal/IP            Storage
+ UX                    Privacy             Payments
+ Platform              Consumer            Updates
+ Migration             Regulation          Cost
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                    SECURITY FABRIC
+                           │
+       ┌───────────┬───────┼────────┬───────────┐
+       │           │       │        │           │
+     EDGE        IDENTITY  APP    RUNTIME    SUPPLY CHAIN
+       │           │       │        │           │
+ DDoS/WAF       Login    API      IDS/FIM     SBOM/SCA
+ Bots           MFA      Data     Process     CI/CD
+ Rate limit     Session  Files    Network     Provenance
+       │
+       └──────────────────┬────────────────────────┐
+                          │                        │
+                     AI GATEWAY               AUDIT BUS
+                          │                        │
+                  Agent Security            Security Center
+                          │
+                    Admin Control
+```
+
+Y aquí sí haría una regla **permanente**, igual que hicimos con el `AI Integration Port`: **todo sistema EOS nace con el `Security Fabric` conceptualmente presente**, aunque un sitio web sencillo active solo cinco controles y un ERP de 5,000 usuarios active treinta. La capacidad existe desde el principio; la complejidad se activa según exposición, usuarios, criticidad y riesgo.
+
+Eso evita precisamente el problema que describes: que el proyecto crezca primero y recién cuando aparezcan ataques alguien descubra que nunca se diseñó una capa defensiva.

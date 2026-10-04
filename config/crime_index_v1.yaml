@@ -1,0 +1,53 @@
+# Índice Situacional Perú v1 — metodología explícita y reproducible.
+# NO es un índice oficial del MININTER ni de ninguna institución. Es un cálculo propio sobre datos oficiales.
+# Cambiar cualquier valor exige subir la versión (v2, v3…) para que las puntuaciones antiguas sigan siendo reproducibles.
+version: 1
+id: indice_situacional_v1
+name: Índice Situacional Perú v1
+official: false
+level: departamento
+scale: 0-100 (mayor = situación más desfavorable relativa a las demás regiones)
+created_at: 2026-10-04
+population_source: inei_poblacion
+period:
+  sidpol: ultimo_anio_completo
+  indicadores: ultimo_anio_disponible_por_variable
+normalization: min_max_entre_departamentos
+missing_data_policy:
+  rule: reponderar_variables_disponibles
+  min_coverage: 0.6
+  note: Si las variables disponibles suman menos de 0.6 del peso total, la región queda sin puntuación.
+variables:
+  - id: denuncias_tasa
+    label: Denuncias
+    description: Denuncias policiales SIDPOL (todas las modalidades) por 100 mil habitantes
+    source: mininter_sidpol
+    weight: 0.30
+    direction: higher_is_worse
+  - id: violencia_tasa
+    label: Violencia patrimonial y extorsiva
+    description: Denuncias SIDPOL de robo, extorsión y secuestro por 100 mil habitantes
+    source: mininter_sidpol
+    modalities: Robo|Extorsión|Secuestro
+    weight: 0.20
+    direction: higher_is_worse
+  - id: victimizacion
+    label: Victimización
+    description: Porcentaje de victimización (ENAPRES), indicador MININTER 10
+    source: mininter_indicadores
+    indicator: 10
+    weight: 0.20
+    direction: higher_is_worse
+  - id: homicidios
+    label: Homicidios
+    description: Tasa de homicidios por 100 mil habitantes (CEIC), indicador MININTER 30
+    source: mininter_indicadores
+    indicator: 30
+    weight: 0.15
+    direction: higher_is_worse
+  - id: tendencia
+    label: Tendencia
+    description: Variación porcentual de denuncias SIDPOL frente al año anterior
+    source: mininter_sidpol
+    weight: 0.15
+    direction: higher_is_worse

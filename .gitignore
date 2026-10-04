@@ -1,0 +1,23 @@
+# <!-- EOS:BEGIN -->
+# EOS — Pierre R. Boss (oprbguitar): artefactos locales
+.eos/context*.md
+.eos/runs*.jsonl
+.eos/.update-backup/
+*.eos-new
+# <!-- EOS:END -->
+
+# ── Mapa Perú Analítico ──────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+output/
+# originales descargados (inmutables, reproducibles con `ingest --download`; su SHA-256 queda en data/catalog/manifest.json)
+data/raw/
+# cachés y estado local
+data/live/
+data/ofm/
+data/catalog/*.sqlite*
+data/normalized/_*.csv
+data/config.local.json
+*.tmp
+*.part

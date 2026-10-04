@@ -1,0 +1,3 @@
+# Opcional: proyecciones con Nixtla StatsForecast (AutoETS + intervalos). Sin esto se usa el método de respaldo declarado.
+statsforecast>=2.0
+pandas>=2.0

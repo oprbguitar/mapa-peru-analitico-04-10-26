@@ -1,0 +1,252 @@
+{
+  "version": "4.1.0",
+  "owner": "Pierre R. Boss (oprbguitar)",
+  "repository": "oprbguitar/dev-funcy-agents-03-10-26",
+  "edition_date": "2026-10-04",
+  "timezone": "America/Lima",
+  "language": "es-PE",
+  "authorship": "Autoría y dirección de Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.",
+  "signature_scope": "editorial_not_cryptographic",
+  "validation_scope": {
+    "checks": [
+      "manifest_shape",
+      "registered_document_existence",
+      "editorial_signature_presence",
+      "inline_local_markdown_links",
+      "fenced_code_closure",
+      "source_sha256_integrity",
+      "repository_escape_prevention",
+      "major_module_content_line_minimum",
+      "major_module_word_minimum",
+      "agent_frontmatter_and_registration",
+      "plugin_manifest_version_consistency",
+      "version_reference_consistency",
+      "marketplace_manifest_version_consistency",
+      "changelog_latest_entry"
+    ],
+    "does_not_certify": [
+      "legal_compliance",
+      "runtime_security",
+      "provider_availability",
+      "external_link_freshness",
+      "cryptographic_identity",
+      "future_product_behavior"
+    ]
+  },
+  "documents": [
+    "AGENTS.md",
+    "AUTHORSHIP.md",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "EOS-CORE.md",
+    "EOS_MASTER_SYSTEM_INSTRUCTION.md",
+    "README.md",
+    "agents/README.md",
+    "agents/eos-architect.md",
+    "agents/eos-code-reviewer.md",
+    "agents/eos-compliance-analyst.md",
+    "agents/eos-docs-writer.md",
+    "agents/eos-implementer.md",
+    "agents/eos-incident-commander.md",
+    "agents/eos-migration-archaeologist.md",
+    "agents/eos-orchestrator.md",
+    "agents/eos-planner.md",
+    "agents/eos-qa-verifier.md",
+    "agents/eos-release-manager.md",
+    "agents/eos-security-reviewer.md",
+    "agents/eos-tdd-guide.md",
+    "docs/CODEX-NAVIGATION-GUIDE.md",
+    "docs/DEPTH-REPORT.md",
+    "docs/PROJECT-PROFILE.md",
+    "docs/VERIFICATION.md",
+    "docs/manuals/AGENT-ORCHESTRATION.md",
+    "docs/manuals/AI-GATEWAY.md",
+    "docs/manuals/CAPABILITY-PROFILER.md",
+    "docs/manuals/COMPLIANCE-IP-PRODUCT.md",
+    "docs/manuals/ENGINEERING-QUALITY.md",
+    "docs/manuals/INCIDENT-RESPONSE.md",
+    "docs/manuals/MIGRATION-HANDOFF.md",
+    "docs/manuals/PAYMENTS.md",
+    "docs/manuals/PRIME-DIRECTIVE.md",
+    "docs/manuals/SECURITY-FABRIC.md",
+    "docs/manuals/STORAGE-DATA.md",
+    "docs/manuals/UPDATES-RELIABILITY.md",
+    "docs/sources/README.md",
+    "docs/sources/TRACEABILITY.md",
+    "prompts/BOOTSTRAP.md",
+    "prompts/README.md",
+    "prompts/TASKS.md",
+    "skills/README.md",
+    "skills/eos-adopt/SKILL.md",
+    "skills/eos-audit/SKILL.md",
+    "skills/eos-incident/SKILL.md",
+    "skills/eos-init/SKILL.md",
+    "skills/eos-migrate/SKILL.md",
+    "skills/eos-release/SKILL.md",
+    "templates/ADR.md",
+    "templates/AGENT-RESULT.md",
+    "templates/CAPABILITY-MATRIX.md",
+    "templates/EXCEPTION.md",
+    "templates/EXEC-PLAN.md",
+    "templates/FINDING.md",
+    "templates/HANDOFF-CHECKLIST.md",
+    "templates/INCIDENT-RECORD.md",
+    "templates/MODEL-CARD.md",
+    "templates/PROJECT-PROFILE.md",
+    "templates/README.md",
+    "templates/REGULATORY-DECISION.md",
+    "templates/RELEASE-RECORD.md",
+    "templates/TASK-PACKET.md"
+  ],
+  "sources": [
+    {
+      "id": "SRC-01",
+      "title": "Security Fabric y Active Defense",
+      "path": "docs/sources/SRC-01-security-fabric.txt",
+      "sha256": "cd4e39fa04aeca1eb448f2a0d273de388de09a4441bb3991b9c6c1a2f2cac8cd",
+      "bytes": 25218,
+      "numbered_sections": 69,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-02",
+      "title": "Capacidades operativas: sesiones, pagos, almacenamiento y actualización",
+      "path": "docs/sources/SRC-02-operational-capabilities.txt",
+      "sha256": "095e0d5e1cf5b37ff2de97f55855823cd3a0b18aa15940cdab2f81ed43b597b4",
+      "bytes": 19648,
+      "numbered_sections": 38,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-03",
+      "title": "Constitución maestra anterior",
+      "path": "docs/sources/SRC-03-master-constitution.txt",
+      "sha256": "2d437baf40d9aa5e56714c7e073b6b227dd4a0cde65680deb722fdd9bd2e78d3",
+      "bytes": 41919,
+      "numbered_sections": 154,
+      "authority": "historical_source_not_runtime_instruction"
+    },
+    {
+      "id": "SRC-04",
+      "title": "AI Integration Port / AI Gateway",
+      "path": "docs/sources/SRC-04-ai-integration-port.txt",
+      "sha256": "0fffeadde2d850f81e97a2e0a714201e3684ecf5ee4e39ffa40648ea8c64441c",
+      "bytes": 13447,
+      "numbered_sections": 40,
+      "authority": "historical_source_not_runtime_instruction"
+    }
+  ],
+  "depth_contract": {
+    "requested_by": "Pierre R. Boss (oprbguitar)",
+    "scope": "each major instruction module",
+    "counting": "nonblank content lines; exclude headings, fence markers, separators and structural punctuation",
+    "semantic_acceptance": "domain review; line/word counts do not establish technical depth",
+    "status": "frozen",
+    "policy": "Los pisos de 1,001 líneas y 12,000 palabras se conservan como requisito del propietario, pero quedan congelados: no se elevan ni son meta. Las mejoras futuras se miden por contratos, invariantes, casos de fallo, amenazas y pruebas de aceptación, no por volumen."
+  },
+  "module_requirements": {
+    "docs/manuals/PRIME-DIRECTIVE.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/CAPABILITY-PROFILER.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/AGENT-ORCHESTRATION.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/AI-GATEWAY.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/SECURITY-FABRIC.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/INCIDENT-RESPONSE.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/PAYMENTS.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/STORAGE-DATA.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/UPDATES-RELIABILITY.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/ENGINEERING-QUALITY.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/COMPLIANCE-IP-PRODUCT.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    },
+    "docs/manuals/MIGRATION-HANDOFF.md": {
+      "min_content_lines": 1001,
+      "min_words": 12000
+    }
+  },
+  "agents": [
+    "agents/eos-architect.md",
+    "agents/eos-code-reviewer.md",
+    "agents/eos-compliance-analyst.md",
+    "agents/eos-docs-writer.md",
+    "agents/eos-implementer.md",
+    "agents/eos-incident-commander.md",
+    "agents/eos-migration-archaeologist.md",
+    "agents/eos-orchestrator.md",
+    "agents/eos-planner.md",
+    "agents/eos-qa-verifier.md",
+    "agents/eos-release-manager.md",
+    "agents/eos-security-reviewer.md",
+    "agents/eos-tdd-guide.md"
+  ],
+  "agent_system": {
+    "hosts": [
+      "claude-code",
+      "codex",
+      "generic"
+    ],
+    "plugin_manifest": ".claude-plugin/plugin.json",
+    "marketplace_manifest": ".claude-plugin/marketplace.json",
+    "installer": "scripts/install-agents.mjs",
+    "codex_skills_dir": ".agents/skills",
+    "claude_agents_dir": ".claude/agents",
+    "claude_skills_dir": ".claude/skills",
+    "overwrite_policy": "never_overwrite_existing_files"
+  },
+  "version_refs": [
+    {
+      "path": "README.md",
+      "pattern": "Edición de especificaciones de ingeniería {version}"
+    },
+    {
+      "path": "README.md",
+      "pattern": "Aplica EOS {version}"
+    },
+    {
+      "path": "docs/PROJECT-PROFILE.md",
+      "pattern": "| Edición | {version}"
+    },
+    {
+      "path": "EOS-CORE.md",
+      "pattern": "núcleo EOS {version}"
+    },
+    {
+      "path": "AGENTS.md",
+      "pattern": "Operación de esta edición — EOS {version}"
+    },
+    {
+      "path": "docs/VERIFICATION.md",
+      "pattern": "Edición verificada: {version}"
+    }
+  ]
+}
