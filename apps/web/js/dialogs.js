@@ -39,6 +39,13 @@ const FIELDS = [
     ['firms_key', 'MAP_KEY NASA FIRMS (focos de calor)', 'password', 'Gratuita en firms.modaps.eosdis.nasa.gov'],
     ['senamhi_csv_url', 'CSV de estaciones SENAMHI (URL o ruta local)', 'text', 'Columnas: estación, fecha, temperatura, humedad, precipitación, latitud, longitud'],
   ]],
+  ['Clima combinado (opcionales; Open-Meteo y MET Norway funcionan sin clave)', [
+    ['weatherapi_key', 'Clave WeatherAPI.com', 'password', 'Gratuita: 100 000 llamadas/mes'],
+    ['visualcrossing_key', 'Clave Visual Crossing', 'password', 'Gratuita: 1 000 registros/día'],
+    ['openweather_key', 'Clave OpenWeather', 'password', 'Gratuita: 1 000 llamadas/día (Current Weather 2.5)'],
+    ['tomorrow_key', 'Clave Tomorrow.io', 'password', 'Plan gratuito'],
+    ['weather_order', 'Orden de proveedores', 'text', 'Por defecto: openmeteo,metno,weatherapi,visualcrossing,openweather,tomorrow'],
+  ]],
   ['IA', [
     ['ollama_url', 'URL de Ollama', 'text', 'Por defecto http://127.0.0.1:11434'],
     ['ollama_model', 'Modelo local', 'text', 'Vacío = el primero instalado'],

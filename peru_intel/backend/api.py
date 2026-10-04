@@ -15,7 +15,10 @@ from ..live import adsb, celestrak, firms, seismic, weather
 from ..live import ais as ais_live
 from ..live.traffic import PROVIDER as TRAFFIC
 from ..live.worker import WORKERS, all_status
-from ..map import territory
+from ..map import basemaps, territory
+from ..weather import combine as wx_combine
+from ..weather import overlays as wx_overlays
+from ..weather import providers as wx_providers
 from ..map.ruc360_adapter import ADAPTER
 from ..sources import registry
 from ..storage import sqlite_store
@@ -69,6 +72,9 @@ def route_get(path: str, q: dict):
     if p[:2] == ["map", "resolve"]:
         lat, lon = float(_one(q, "lat")), float(_one(q, "lon"))
         return ADAPTER.resolve_coordinates(lat, lon) or {"found": False}
+    if p == ["map", "basemaps"]:
+        return {"layers": basemaps.catalog(), "provenance": registry.provenance("esri_imagery", "eox_sentinel", "opentopomap",
+                                                                               "terrain_tiles", "ign_carta")}
     if p[:2] == ["map", "search"]:
         return {"results": ADAPTER.resolve_ubigeo(_one(q, "q", ""))}
     if p[:1] != ["intel"]:
@@ -125,6 +131,21 @@ def route_get(path: str, q: dict):
         obs = _live("weather_obs")
         return {"observed": obs, "models": models,
                 "provenance": registry.provenance("senamhi_estaciones", "modelo_gfs", "modelo_ecmwf")}
+    if p == ["weather", "point"]:
+        try:
+            lat, lon = float(_one(q, "lat")), float(_one(q, "lon"))
+        except (TypeError, ValueError):
+            raise ApiError(400, "lat y lon numéricos")
+        prov = [x for x in (_one(q, "providers") or "").split(",") if x] or None
+        try:
+            return wx_combine.point(lat, lon, prov)
+        except ValueError as e:
+            raise ApiError(400, str(e))
+    if p == ["weather", "providers"]:
+        return {"providers": [wx_providers.PROVIDERS[i].describe() for i in wx_providers.PROVIDERS],
+                "order": wx_combine.order(), "quota": wx_combine.quota_status()}
+    if p == ["weather", "layers"]:
+        return wx_overlays.catalog() | {"provenance": registry.provenance("nasa_gibs", "senamhi_idesep")}
     if p == ["traffic"]:
         return {"configured": TRAFFIC.configured(), "provider": TRAFFIC.name, "tiles": "/api/v1/intel/traffic/tiles/{z}/{x}/{y}.png",
                 "legend": [["fluido", ">= 85 % de la velocidad libre"], ["medio", "65–85 %"], ["lento", "40–65 %"], ["congestionado", "< 40 %"]],
@@ -151,7 +172,8 @@ def route_post(path: str, body: dict):
         return agents.ask(ub, str(body.get("question") or "")[:500])
     if p == ["meta", "settings"]:
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
-                   "external_base_url", "external_api_key", "external_model", "ai_allow_external"}
+                   "external_base_url", "external_api_key", "external_model", "ai_allow_external",
+                   "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order"}
         vals = {k: str(v).strip() for k, v in body.items() if k in allowed and v is not None}
         if not vals:
             raise ApiError(400, "sin ajustes válidos")
@@ -173,8 +195,9 @@ KINDS = {
 
 
 def _settings_public() -> dict:
-    keys = ["aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "external_api_key"]
-    plain = ["ollama_url", "ollama_model", "external_base_url", "external_model", "ai_allow_external"]
+    keys = ["aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "external_api_key",
+            "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key"]
+    plain = ["ollama_url", "ollama_model", "external_base_url", "external_model", "ai_allow_external", "weather_order"]
     return {"secrets": {k: bool(config.setting(k)) for k in keys}, "values": {k: config.setting(k) for k in plain},
             "stored_in": "data/config.local.json (ignorado por git; nunca se envía al navegador)"}
 

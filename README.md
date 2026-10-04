@@ -31,6 +31,10 @@ descargar nada. Para actualizar: `python -m peru_intel ingest all --download`.
 - **Tiempo como dimensión**: AHORA · 24 H · 7 D · 30 D · 1 AÑO · 5 AÑOS sobre una espina con la serie nacional.
 - **En vivo**: vuelos, embarcaciones (AIS), satélites, sismos (IGP + USGS), focos de calor (FIRMS), clima
   (SENAMHI observado vs. GFS/ECMWF modelo), tráfico (TomTom), puertos y centros de datos.
+- **Clima combinado en cualquier punto del mundo**: Open-Meteo, MET Norway, WeatherAPI, Visual Crossing,
+  OpenWeather y Tomorrow.io lado a lado, con consenso calculado; capas oficiales SENAMHI (IDESEP) y satelitales NASA GIBS.
+- **Vista realista y 3D**: satélite, Sentinel-2, topográfico, Carta Nacional IGN y relieve 3D con cielo atmosférico.
+- **Interfaz HUD** de estilo táctico (referencia God's Eye View), noche/día.
 - **IA verificada**: DataAgent → GeoAnalyst (Ollama local) → Verifier, que marca NO VERIFICADO toda cifra sin soporte.
 - **Proyección**: StatsForecast AutoETS con intervalos 80/95 % y detección de anomalías.
 - **API v1** de solo lectura para Route 360.
@@ -45,6 +49,7 @@ peru_intel/
   sources/           catálogo, registro de fuentes, SourceHarvester
   ingestion/         MININTER (SIDPOL, indicadores), INEI población, MPFN, DEVIDA, puertos
   live/              workers: ADS-B, AIS, CelesTrak, IGP/USGS, FIRMS, clima, tráfico
+  weather/           clima combinado por punto, consenso, capas SENAMHI WMS y NASA GIBS
   analytics/         criminalidad, índice, proyección
   ai/                proveedores, router, agentes, verificador
   storage/           SQLite WAL + DuckDB/Parquet

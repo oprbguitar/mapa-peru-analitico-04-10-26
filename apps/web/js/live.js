@@ -1,6 +1,6 @@
 // Capas en vivo. El navegador solo habla con el backend; el backend habla con los proveedores.
 /* global maplibregl, satellite */
-import { map, mapReady } from './map.js'
+import { map, mapReady, onStyleReady } from './map.js'
 import { cssVar, dateTime, esc, fmt, getJSON, state, timeAgo, toast } from './util.js'
 import { setLiveMeta } from './rail.js'
 
@@ -32,6 +32,11 @@ function arrowImage(size = 28) {
 
 let markLive
 const liveReady = new Promise((res) => (markLive = res))
+
+onStyleReady(() => {
+  // setStyle descarta las imágenes del sprite propio: se vuelven a registrar
+  if (!map.hasImage('pi-arrow')) map.addImage('pi-arrow', arrowImage(), { sdf: true })
+})
 
 export function initLive() {
   popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 10, maxWidth: '300px' })

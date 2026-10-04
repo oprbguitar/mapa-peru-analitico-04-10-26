@@ -10,7 +10,9 @@ Leyenda: ✅ hecho y verificado · 🟡 parcial / requiere configuración · ⬜
 | 3 · Seguridad ciudadana | SIDPOL, indicadores MININTER, población, MPFN, DEVIDA, choropleth por escalas, histórico, índice v1 | ✅ | Percepción de inseguridad: no está en los datasets abiertos usados |
 | 4 · Capas RUC360/God's Eye | Vuelos ✅ · satélites ✅ · puertos ✅ · centros de datos ✅ · barcos AIS 🟡 | 🟡 | AIS requiere clave aisstream.io |
 | 5 · Tráfico | `TrafficProvider` + `TomTomProvider` | 🟡 | Requiere clave TomTom |
-| 6 · Ambiente | IGP+USGS ✅ · GFS/ECMWF ✅ · FIRMS 🟡 (MAP_KEY) · SENAMHI 🟡 (URL del CSV) · tsunami ⬜ | 🟡 | `TsunamiProvider` pendiente de fuente oficial estable (DHN) |
+| 6 · Ambiente | IGP+USGS ✅ · GFS/ECMWF ✅ · **clima combinado por punto** ✅ (Open-Meteo + MET Norway sin clave; WeatherAPI, Visual Crossing, OpenWeather, Tomorrow.io 🟡 con clave) · **SENAMHI IDESEP WMS** ✅ · **NASA GIBS** ✅ · FIRMS 🟡 · estaciones SENAMHI 🟡 (CSV) · tsunami ⬜ | 🟡 | Proveedores con clave sin probar con claves reales |
+| 6b · Vista realista | Satélite híbrido, Sentinel-2, topográfico, IGN, relieve 3D Terrarium + sombreado + cielo | ✅ | Reutiliza en solo lectura la caché de RUC360 (`data/teselas`) |
+| 6c · Interfaz HUD | Estilo táctico inspirado en God's Eye View, noche/día | ✅ | `DESIGN.md` v0.2 |
 | 7 · IA | Router local/externo, DataAgent, GeoAnalyst, Verifier | ✅ | Probado con Ollama `qwen3.5:9b` (7/7 oraciones verificadas) |
 | 8 · Predicción | StatsForecast AutoETS + anomalías; respaldo naive estacional | ✅ | `requirements-forecast.txt` |
 | 9 · Cámaras | Contrato `plugins/vision-edge/` | ⬜ | Implementación fuera de este repo |

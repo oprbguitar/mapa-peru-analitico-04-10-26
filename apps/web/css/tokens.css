@@ -1,53 +1,58 @@
-/* Mapa Perú Analítico — tokens (dirección design-pick: espina temporal · pizarra + cian · Space Grotesk / Noto Sans / Space Mono · bloque 0px · escalonado) */
+/* Mapa Perú Analítico — tokens HUD táctico (referencia: God's Eye View, adaptada al Pierre Design Harness)
+   Oscuro por defecto · variante «día» con [data-theme="light"] · Space Grotesk / Noto Sans / Space Mono · sin Inter */
 @font-face { font-family: "Space Grotesk"; src: url("../fonts/space-grotesk-latin-wght-normal.woff2") format("woff2"); font-weight: 300 700; font-display: swap; }
 @font-face { font-family: "Noto Sans"; src: url("../fonts/noto-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Space Mono"; src: url("../fonts/space-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Space Mono"; src: url("../fonts/space-mono-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 :root {
-  color-scheme: light;
-  /* color — superficies y tinta */
-  --ink: #12181f;
-  --ink-soft: #3d4a57;
-  --ink-muted: #5b6875;
-  --surface: #f5f8fa;
-  --surface-2: #ffffff;
-  --surface-3: #e9eef2;
-  --line: #cfd8df;
-  --line-strong: #12181f;
-  --scrim: rgba(18, 24, 31, .42);
-  /* acción y apoyo */
-  --accent: #0ca678;
-  --accent-strong: #087f5b;
-  --accent-ink: #ffffff;
-  --support: #1098ad;
-  --support-strong: #0b7285;
-  /* estado (con icono + texto, nunca solo color) */
-  --ok: #2b8a3e;
-  --warn: #b35c00;
-  --danger: #c92a2a;
-  --info: #1971c2;
-  /* secuencial (magnitud) — un tono, claro→oscuro */
-  --seq-1: #d3f1f4; --seq-2: #a9e3ea; --seq-3: #72cdd8; --seq-4: #3bb2c2; --seq-5: #1098ad; --seq-6: #0b7586; --seq-7: #08505d;
-  --seq-none: #dfe4e8;
-  /* divergente (cambio %) — cian ↔ coral, gris neutro al centro */
-  --div-neg-3: #0b7586; --div-neg-2: #3bb2c2; --div-neg-1: #a9e3ea; --div-mid: #eceae6;
-  --div-pos-1: #f6c3ad; --div-pos-2: #e98a62; --div-pos-3: #c4532b;
-  /* naturaleza del dato (categórico, orden fijo, validado) */
-  --kind-oficial: #2a78d6; --kind-vivo: #eb6834; --kind-calculado: #1baf7a;
-  --kind-estimacion: #eda100; --kind-proyeccion: #e87ba4; --kind-ia: #4a3aa7;
+  color-scheme: dark;
+  /* superficies: casi negro azulado; los paneles flotan translúcidos sobre el mapa para no ocultar el territorio */
+  --void: #05080c;
+  --surface: #070b11;
+  --surface-2: #0b121b;
+  --surface-3: #111c28;
+  --glass: rgba(8, 14, 22, .80);
+  --glass-strong: rgba(8, 14, 22, .92);
+  --glass-blur: 10px;
+  --line: rgba(120, 200, 230, .16);
+  --line-strong: rgba(0, 212, 255, .42);
+  --scrim: rgba(0, 0, 0, .6);
+  /* tinta */
+  --ink: #e6f1f7;
+  --ink-soft: #a9bccb;
+  --ink-muted: #7f93a5;
+  /* acción y señal HUD */
+  --accent: #00d4ff;
+  --accent-strong: #5fe4ff;
+  --accent-ink: #001820;
+  --accent-dim: rgba(0, 212, 255, .14);
+  --glow: 0 0 0 1px rgba(0, 212, 255, .55), 0 0 14px rgba(0, 212, 255, .28);
+  --support: #22d3c5;
+  --support-strong: #6ff0e4;
+  /* estado (con icono + texto) */
+  --ok: #3ddc84; --warn: #ffb547; --danger: #ff5c6c; --info: #4dabf7;
+  /* secuencial (magnitud) — un tono, oscuro→claro sobre fondo oscuro */
+  --seq-1: #0d2f38; --seq-2: #0f4a57; --seq-3: #0e6878; --seq-4: #0b8a9c; --seq-5: #12abbf; --seq-6: #4fcbdc; --seq-7: #a3ecf5;
+  --seq-none: #1a2430;
+  /* divergente (cambio %) */
+  --div-neg-3: #4fcbdc; --div-neg-2: #12abbf; --div-neg-1: #0f4a57; --div-mid: #26313b;
+  --div-pos-1: #6b3420; --div-pos-2: #d0582e; --div-pos-3: #ff9466;
+  /* naturaleza del dato (orden fijo, validado en oscuro) */
+  --kind-oficial: #3987e5; --kind-vivo: #d95926; --kind-calculado: #199e70;
+  --kind-estimacion: #c98500; --kind-proyeccion: #d55181; --kind-ia: #9085e9;
   /* capas en vivo */
-  --live-flight: #12181f; --live-vessel: #1971c2; --live-quake: #c4532b; --live-fire: #e8590c;
-  --live-port: #0b7285; --live-dc: #5f3dc4; --live-sat: #4a3aa7; --live-weather: #087f5b;
+  --live-flight: #e6f1f7; --live-vessel: #4dabf7; --live-quake: #ff9466; --live-fire: #ff6b2b;
+  --live-port: #6ff0e4; --live-dc: #b197fc; --live-sat: #ffd43b; --live-weather: #3ddc84;
 
   /* tipografía */
   --font-display: "Space Grotesk", "Noto Sans", sans-serif;
   --font-body: "Noto Sans", "Segoe UI", sans-serif;
   --font-mono: "Space Mono", "Consolas", monospace;
-  --fs-display: 2rem;
-  --fs-h1: 1.125rem;
-  --fs-h2: 1.375rem;
-  --fs-h3: 1rem;
+  --fs-display: 1.875rem;
+  --fs-h1: 1.0625rem;
+  --fs-h2: 1.3125rem;
+  --fs-h3: .9375rem;
   --fs-body: .9375rem;
   --fs-ui: .875rem;
   --fs-label: .75rem;
@@ -55,21 +60,25 @@
   --lh-tight: 1.15;
   --lh-heading: 1.25;
   --lh-body: 1.55;
+  --tracking-hud: .14em;
 
   /* espacio */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
-  /* forma: bloque, sin radios, separadores gruesos */
-  --radius: 0px;
+  /* forma */
+  --radius: 4px;
   --border: 1px;
-  --rule: 3px;
-  --shadow: none;
+  --rule: 2px;
+  --bracket: 10px;
+  --shadow: 0 12px 32px rgba(0, 0, 0, .45);
   --tap: 44px;
 
-  /* layout */
+  /* layout flotante */
+  --gap: 12px;
   --topbar-h: 52px;
   --rail-w: 296px;
-  --panel-w: 392px;
-  --spine-h: 132px;
+  --panel-w: 384px;
+  --spine-h: 118px;
+  --attrib-h: 28px;
 
   /* motion */
   --dur: 160ms;
@@ -78,39 +87,23 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --ink: #e8eef3; --ink-soft: #b9c5cf; --ink-muted: #94a3b0;
-    --surface: #10161c; --surface-2: #161e26; --surface-3: #1e2832; --line: #2c3a46; --line-strong: #e8eef3;
-    --scrim: rgba(0, 0, 0, .55);
-    --accent: #20c997; --accent-strong: #38d9a9; --accent-ink: #0b1a14;
-    --support: #3bc9db; --support-strong: #66d9e8;
-    --ok: #51cf66; --warn: #ffa94d; --danger: #ff6b6b; --info: #4dabf7;
-    --seq-1: #123b42; --seq-2: #145560; --seq-3: #11707e; --seq-4: #0f8c9c; --seq-5: #22a9bb; --seq-6: #5cc6d4; --seq-7: #9be2ea;
-    --seq-none: #26313b;
-    --div-neg-3: #5cc6d4; --div-neg-2: #22a9bb; --div-neg-1: #145560; --div-mid: #2c333a;
-    --div-pos-1: #6b3420; --div-pos-2: #c4532b; --div-pos-3: #f08c5f;
-    --kind-oficial: #3987e5; --kind-vivo: #d95926; --kind-calculado: #199e70;
-    --kind-estimacion: #c98500; --kind-proyeccion: #d55181; --kind-ia: #9085e9;
-    --live-flight: #e8eef3; --live-vessel: #4dabf7; --live-quake: #f08c5f; --live-fire: #ff922b;
-    --live-port: #66d9e8; --live-dc: #b197fc; --live-sat: #9085e9; --live-weather: #38d9a9;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --ink: #e8eef3; --ink-soft: #b9c5cf; --ink-muted: #94a3b0;
-  --surface: #10161c; --surface-2: #161e26; --surface-3: #1e2832; --line: #2c3a46; --line-strong: #e8eef3;
-  --scrim: rgba(0, 0, 0, .55);
-  --accent: #20c997; --accent-strong: #38d9a9; --accent-ink: #0b1a14;
-  --support: #3bc9db; --support-strong: #66d9e8;
-  --ok: #51cf66; --warn: #ffa94d; --danger: #ff6b6b; --info: #4dabf7;
-  --seq-1: #123b42; --seq-2: #145560; --seq-3: #11707e; --seq-4: #0f8c9c; --seq-5: #22a9bb; --seq-6: #5cc6d4; --seq-7: #9be2ea;
-  --seq-none: #26313b;
-  --div-neg-3: #5cc6d4; --div-neg-2: #22a9bb; --div-neg-1: #145560; --div-mid: #2c333a;
-  --div-pos-1: #6b3420; --div-pos-2: #c4532b; --div-pos-3: #f08c5f;
-  --kind-oficial: #3987e5; --kind-vivo: #d95926; --kind-calculado: #199e70;
-  --kind-estimacion: #c98500; --kind-proyeccion: #d55181; --kind-ia: #9085e9;
-  --live-flight: #e8eef3; --live-vessel: #4dabf7; --live-quake: #f08c5f; --live-fire: #ff922b;
-  --live-port: #66d9e8; --live-dc: #b197fc; --live-sat: #9085e9; --live-weather: #38d9a9;
+:root[data-theme="light"] {
+  color-scheme: light;
+  --void: #dfe7ec; --surface: #f5f8fa; --surface-2: #ffffff; --surface-3: #e9eef2;
+  --glass: rgba(255, 255, 255, .86); --glass-strong: rgba(255, 255, 255, .95);
+  --line: rgba(18, 24, 31, .14); --line-strong: rgba(11, 114, 133, .55); --scrim: rgba(18, 24, 31, .42);
+  --ink: #12181f; --ink-soft: #3d4a57; --ink-muted: #5b6875;
+  --accent: #0b7285; --accent-strong: #095c6b; --accent-ink: #ffffff; --accent-dim: rgba(11, 114, 133, .12);
+  --glow: 0 0 0 1px rgba(11, 114, 133, .6);
+  --support: #1098ad; --support-strong: #0b7285;
+  --ok: #2b8a3e; --warn: #b35c00; --danger: #c92a2a; --info: #1971c2;
+  --seq-1: #d3f1f4; --seq-2: #a9e3ea; --seq-3: #72cdd8; --seq-4: #3bb2c2; --seq-5: #1098ad; --seq-6: #0b7586; --seq-7: #08505d;
+  --seq-none: #dfe4e8;
+  --div-neg-3: #0b7586; --div-neg-2: #3bb2c2; --div-neg-1: #a9e3ea; --div-mid: #eceae6;
+  --div-pos-1: #f6c3ad; --div-pos-2: #e98a62; --div-pos-3: #c4532b;
+  --kind-oficial: #2a78d6; --kind-vivo: #eb6834; --kind-calculado: #1baf7a;
+  --kind-estimacion: #eda100; --kind-proyeccion: #e87ba4; --kind-ia: #4a3aa7;
+  --live-flight: #12181f; --live-vessel: #1971c2; --live-quake: #c4532b; --live-fire: #e8590c;
+  --live-port: #0b7285; --live-dc: #5f3dc4; --live-sat: #b08400; --live-weather: #087f5b;
+  --shadow: 0 8px 24px rgba(18, 24, 31, .16);
 }

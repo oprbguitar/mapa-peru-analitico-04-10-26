@@ -16,6 +16,8 @@ Independencia limitada: la misma sesión implementó y auditó; se recomienda un
 | A-05 | Baja | Cartografía | 8 distritos sin geometría y 1 provincia faltante en la cartografía simplificada. | Registrado en `data/peru/metadata.json` |
 | A-06 | Baja | IA | El Verifier valida números y citas, no la semántica del período. | ADR-0004; hechos con período explícito |
 | A-07 | Info | Cobertura | AIS, TomTom, FIRMS y SENAMHI no se probaron con claves reales en esta sesión. | Pendiente de prueba con claves |
+| A-09 | Media | Licencias | Open-Meteo es gratuito **solo para uso no comercial**; Sentinel-2 cloudless (EOX) es CC BY-NC-SA; Esri World Imagery y OpenTopoMap tienen políticas de uso propias. Para uso comercial: plan comercial de Open-Meteo o MET Norway (CC BY 4.0) como principal, y revisar mapas base. | Abierto (2026-10-04) |
+| A-10 | Info | Cobertura | WeatherAPI, Visual Crossing, OpenWeather y Tomorrow.io: normalizadores probados con respuestas de ejemplo según su documentación, no con claves reales. Cuotas diarias aplicadas en el backend. | Pendiente de prueba con claves |
 | A-08 | Info | Rendimiento | Primera proyección StatsForecast compila con numba (~13 s); siguientes < 1 s. | Aceptado |
 
 ## Controles verificados

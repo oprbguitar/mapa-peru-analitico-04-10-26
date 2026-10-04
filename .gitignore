@@ -21,3 +21,4 @@ data/normalized/_*.csv
 data/config.local.json
 *.tmp
 *.part
+data/tiles/

@@ -4,16 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mapa Perú Analítico</title>
-  <meta name="description" content="Inteligencia territorial del Perú: seguridad ciudadana, movilidad, ambiente e infraestructura con procedencia verificable.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2312181f'/%3E%3Cpath d='M4 3h5l3 4-2 6H5L3 8z' fill='%231098ad'/%3E%3C/svg%3E">
+  <meta name="description" content="Inteligencia territorial del Perú: seguridad ciudadana, clima combinado, movilidad, ambiente e infraestructura con procedencia verificable.">
+  <meta name="theme-color" content="#05080c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2305080c'/%3E%3Crect x='4' y='4' width='8' height='8' fill='none' stroke='%2300d4ff' stroke-width='2' transform='rotate(45 8 8)'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <a class="skip" href="#panel">Saltar a la ficha del territorio</a>
-  <header class="topbar">
-    <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">Mapa Perú Analítico</span></h1>
+
+  <main class="map-wrap" id="main">
+    <div id="map" role="region" aria-label="Mapa"></div>
+  </main>
+
+  <header class="topbar hud hud-frame">
+    <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">Mapa Perú Analítico<small>INTEL · PE</small></span></h1>
     <form class="search" role="search" id="search-form" autocomplete="off">
       <label class="sr-only" for="search">Buscar departamento, provincia o distrito</label>
       <input id="search" type="search" placeholder="Buscar territorio…" aria-describedby="search-hint" aria-controls="search-results">
@@ -24,12 +30,12 @@
     <div class="top-actions">
       <button class="btn btn-ghost" type="button" id="open-sources" aria-haspopup="dialog">Fuentes</button>
       <button class="btn btn-ghost" type="button" id="open-settings" aria-haspopup="dialog">Claves</button>
-      <button class="btn btn-ghost btn-icon" type="button" id="toggle-theme" aria-label="Cambiar tema claro u oscuro" title="Tema">◐</button>
+      <button class="btn btn-ghost btn-icon" type="button" id="toggle-theme" aria-label="Cambiar entre modo noche y día" title="Noche / día">◐</button>
     </div>
   </header>
 
   <div class="stage">
-    <nav class="rail" id="rail" aria-label="Familias de capas">
+    <nav class="rail hud hud-frame" id="rail" aria-label="Familias de capas">
       <div class="rail-head">
         <h2 class="rail-title">Capas</h2>
         <div class="kind-key" aria-label="Naturaleza del dato" id="kind-key"></div>
@@ -37,28 +43,30 @@
       <div id="families"></div>
     </nav>
 
-    <main class="map-wrap" id="main">
-      <div id="map" role="region" aria-label="Mapa del Perú"></div>
-      <div class="map-hud" aria-live="polite">
-        <div class="layer-title" id="layer-title"></div>
-        <div class="level-switch" role="radiogroup" aria-label="Nivel territorial" id="level-switch"></div>
+    <div class="map-hud" aria-live="polite">
+      <div class="layer-title hud" id="layer-title"></div>
+      <div class="level-switch hud" role="radiogroup" aria-label="Nivel territorial" id="level-switch"></div>
+      <div class="view-tools hud" role="group" aria-label="Vista">
+        <button class="btn btn-ghost" type="button" id="btn-3d" aria-pressed="false" title="Relieve 3D e inclinación">3D</button>
+        <button class="btn btn-ghost" type="button" id="btn-relief" aria-pressed="false" title="Sombreado de relieve">Relieve</button>
+        <button class="btn btn-ghost" type="button" id="btn-north" title="Restablecer norte y vista vertical">N</button>
       </div>
-      <section class="legend" id="legend" aria-label="Leyenda"></section>
-      <div class="map-toast" id="toast" role="status" hidden></div>
-    </main>
+    </div>
+    <section class="legend hud" id="legend" aria-label="Leyenda"></section>
+    <div class="map-toast" id="toast" role="status" hidden></div>
 
-    <aside class="panel" id="panel" aria-label="Ficha del territorio" tabindex="-1">
+    <aside class="panel hud hud-frame" id="panel" aria-label="Ficha del territorio" tabindex="-1">
       <div class="panel-body" id="panel-body"></div>
     </aside>
   </div>
 
-  <footer class="spine" id="spine" aria-label="Línea de tiempo">
+  <footer class="spine hud hud-frame" id="spine" aria-label="Línea de tiempo">
     <div class="spine-presets" role="radiogroup" aria-label="Ventana temporal" id="presets"></div>
     <div class="spine-chart" id="spine-chart"></div>
     <div class="spine-note" id="spine-note"></div>
   </footer>
 
-  <nav class="tabbar" aria-label="Vistas en móvil">
+  <nav class="tabbar hud" aria-label="Vistas en móvil">
     <button type="button" class="tab" data-sheet="rail" aria-pressed="false">Capas</button>
     <button type="button" class="tab" data-sheet="map" aria-pressed="true">Mapa</button>
     <button type="button" class="tab" data-sheet="panel" aria-pressed="false">Ficha</button>

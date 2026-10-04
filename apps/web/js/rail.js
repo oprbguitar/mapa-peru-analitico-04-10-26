@@ -1,5 +1,7 @@
 // Riel de capas agrupado por familias (no una lista de 40 interruptores).
 import { esc, kindBadge, KIND_LABEL, setState, state } from './util.js'
+import { BASES, view } from './map.js'
+import { currentOverlay, overlayOptions } from './weather.js'
 
 const THEMATIC = [
   { id: 'sidpol', label: 'Denuncias policiales', hint: 'SIDPOL · distrito', kind: 'oficial', patch: { dataset: 'sidpol' } },
@@ -13,6 +15,7 @@ const THEMATIC = [
 ]
 
 const FAMILIES = [
+  { id: 'vista', label: 'Vista y relieve', view: true },
   { id: 'seguridad', label: 'Seguridad', open: true, thematic: true },
   { id: 'movilidad', label: 'Movilidad', live: [
     { id: 'traffic', label: 'Tráfico', hint: 'TomTom · clave propia', kind: 'vivo_tercero' },
@@ -20,7 +23,9 @@ const FAMILIES = [
     { id: 'vessels', label: 'Embarcaciones', hint: 'AIS · aisstream.io · clave propia', kind: 'vivo_tercero' },
   ] },
   { id: 'ambiente', label: 'Ambiente', live: [
-    { id: 'weather', label: 'Clima', hint: 'SENAMHI observado · GFS / ECMWF modelo', kind: 'proyeccion' },
+    { id: 'wxpoint', label: 'Clima en un punto', hint: 'Clic en el mapa · Open-Meteo, MET Norway y más, combinados', kind: 'proyeccion' },
+    { id: 'wxlayer', label: 'Capas meteorológicas', hint: 'SENAMHI (oficial) · NASA GIBS (satélite)', kind: 'oficial' },
+    { id: 'weather', label: 'Clima en capitales', hint: 'SENAMHI observado · GFS / ECMWF modelo', kind: 'proyeccion' },
     { id: 'fires', label: 'Focos de calor', hint: 'NASA FIRMS · clave propia', kind: 'vivo_tercero' },
     { id: 'seismic', label: 'Sismos', hint: 'IGP (primaria) · USGS', kind: 'oficial' },
   ] },
@@ -84,6 +89,7 @@ export function renderRail(meta = {}) {
   const firstRender = !document.querySelector('#families details')
   const html = FAMILIES.map((f) => {
     let body = ''
+    if (f.view) body = viewBlock()
     if (f.thematic) body = THEMATIC.map((t) => radio(t, key === t.id)).join('')
     if (f.extra) body += f.extra.map((t) => radio(t, key === t.id)).join('')
     if (f.live) {
@@ -94,6 +100,11 @@ export function renderRail(meta = {}) {
         if (l.id === 'satellites' && state.live.has('satellites')) {
           sub = `<div class="sub-control"><label class="sr-only" for="sel-sat">Grupo de satélites</label><select id="sel-sat">${Object.entries(SAT_GROUPS)
             .map(([k, v]) => `<option value="${k}" ${state.satGroup === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`
+        }
+        if (l.id === 'wxlayer' && state.live.has('wxlayer')) {
+          sub = `<div class="sub-control"><label class="sr-only" for="sel-wxo">Capa meteorológica</label><select id="sel-wxo">${overlayOptions()}</select>
+            <label class="range"><span>Opacidad</span><span class="num">${Math.round(currentOverlay().opacity * 100)} %</span>
+            <input type="range" id="rng-wxo" min="0.2" max="1" step="0.05" value="${currentOverlay().opacity}"></label></div>`
         }
         if (l.id === 'weather' && state.live.has('weather')) {
           sub = `<div class="sub-control"><label class="sr-only" for="sel-wx">Fuente de clima</label><select id="sel-wx">
@@ -111,7 +122,20 @@ export function renderRail(meta = {}) {
   document.getElementById('families').innerHTML = html
 }
 
-export function bindRail({ onThematic, onLive }) {
+function viewBlock() {
+  return `<div class="sub-control sub-control--flush"><label class="sr-only" for="sel-base">Mapa base</label>
+    <select id="sel-base">${Object.entries(BASES).map(([k, b]) => `<option value="${k}" ${view.base === k ? 'selected' : ''}>${esc(b.label)}</option>`).join('')}</select>
+    <div class="seg" role="group" aria-label="Relieve">
+      <button type="button" data-view="terrain" aria-pressed="${view.terrain}">Relieve 3D</button>
+      <button type="button" data-view="relief" aria-pressed="${view.relief}">Sombreado</button>
+      <button type="button" data-view="choro" aria-pressed="${!state.hideChoropleth}">Capa temática</button></div>
+    <label class="range"><span>Exageración vertical</span><span class="num">${view.exaggeration.toFixed(1)}×</span>
+      <input type="range" id="rng-exag" min="1" max="3" step="0.1" value="${view.exaggeration}"></label>
+    <label class="range"><span>Opacidad de la capa temática</span><span class="num">${Math.round((state.choroplethOpacity ?? 0.78) * 100)} %</span>
+      <input type="range" id="rng-choro" min="0.15" max="1" step="0.05" value="${state.choroplethOpacity ?? 0.78}"></label></div>`
+}
+
+export function bindRail({ onThematic, onLive, onView }) {
   const root = document.getElementById('families')
   root.addEventListener('change', (e) => {
     const t = e.target
@@ -139,10 +163,36 @@ export function bindRail({ onThematic, onLive }) {
     } else if (t.id === 'sel-sat') {
       setState({ satGroup: t.value })
       onLive('satellites', true)
+    } else if (t.id === 'sel-base') {
+      onView('base', t.value)
+    } else if (t.id === 'sel-wxo') {
+      onView('wxo', t.value)
     } else if (t.id === 'sel-wx') {
       setState({ weatherModel: t.value })
       onLive('weather', true)
     }
+  })
+}
+
+export function bindRailView(onView) {
+  const root = document.getElementById('families')
+  root.addEventListener('input', (e) => {
+    const t = e.target
+    const out = t.closest('.range')?.querySelector('.num')
+    if (t.id === 'rng-exag') {
+      onView('exag', Number(t.value))
+      if (out) out.textContent = `${Number(t.value).toFixed(1)}×`
+    } else if (t.id === 'rng-choro') {
+      onView('choroOpacity', Number(t.value))
+      if (out) out.textContent = `${Math.round(t.value * 100)} %`
+    } else if (t.id === 'rng-wxo') {
+      onView('wxoOpacity', Number(t.value))
+      if (out) out.textContent = `${Math.round(t.value * 100)} %`
+    }
+  })
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-view]')
+    if (b) onView(b.dataset.view)
   })
 }
 

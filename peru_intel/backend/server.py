@@ -21,7 +21,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from .. import config
 from ..live import bus
-from ..map import ofm_proxy
+from ..map import basemaps, ofm_proxy
+from ..weather import overlays as wx_overlays
 from ..sources import registry
 from . import api
 
@@ -30,6 +31,8 @@ CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe
        "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 MAX_BODY = 64 * 1024
 TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
+WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
+BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -77,6 +80,16 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 data = api.TRAFFIC.tile(*map(int, m.groups()))
                 return self._send(200, data, "image/png", "max-age=60") if data else self._send(204, b"", "image/png")
+            m = WX_TILE_RX.match(path)
+            if m:
+                r = wx_overlays.tile(m[1], m[2], int(m[3]), int(m[4]), int(m[5]))
+                if r is None:
+                    return self._send(404, b"", "text/plain")
+                return self._send(200 if r[0] else 204, r[0], r[1], "max-age=900")
+            m = BASE_TILE_RX.match(path)
+            if m:
+                r = basemaps.tile(m[1], int(m[2]), int(m[3]), int(m[4]))
+                return self._send(200, r[0], r[1], "max-age=2592000") if r else self._send(404, b"", "text/plain")
             if path.startswith("/api/"):
                 return self._json(200, api.route_get(path, parse_qs(url.query)))
             if path.startswith("/geo/") and path.endswith(".geojson"):

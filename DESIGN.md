@@ -7,17 +7,29 @@
 - **Decisiones que el usuario toma aquí:** dónde poner atención (territorios y períodos), qué fuente creer, qué pedir a la IA.
 - **Densidad objetivo:** media-alta.
 
-## 2. Dirección visual (salida de design-pick)
-- Arquetipo de layout: **línea de tiempo como espina dorsal** — la espina temporal inferior (serie nacional SIDPOL 2018–2026) gobierna el período de todas las capas; el mapa y la ficha cuelgan de ella.
-- Tipografía: display **Space Grotesk** / cuerpo **Noto Sans** / mono **Space Mono** (cifras tabulares).
-- Familia de paleta: **pizarra + cian** (tinta `#12181F`, superficie `#F5F8FA`, acento `#0CA678` solo para acción/selección, apoyo `#1098AD` para magnitud).
-- Geometría: **bloque**, radio 0, reglas de 3 px como separadores estructurales, sin sombras.
-- Motion: **escalonado** 40 ms en filas y barras de la ficha; `prefers-reduced-motion` lo anula.
+## 2. Dirección visual
+
+**v0.2 (vigente) — HUD táctico, a pedido del usuario, con referencia visual en God's Eye View (`GOdEyes`).**
+Desviación declarada del selector: la referencia la fijó el usuario; se conservó del selector la espina temporal, la
+tipografía y la rampa cian, y se adaptó lo que el harness prohíbe (sin Inter; vidrio solo con función).
+
+- Arquetipo de layout: **mapa a pantalla completa con paneles HUD flotantes** + **espina temporal** inferior que gobierna el período.
+- Tipografía: display **Space Grotesk** / cuerpo **Noto Sans** / mono **Space Mono** en mayúsculas espaciadas para rótulos HUD
+  (God's Eye usa Inter + JetBrains Mono; Inter está prohibido por el harness).
+- Paleta: **noche casi negra** `#05080C`, paneles `rgba(8,14,22,.80)`, acento **cian HUD `#00D4FF`** solo para selección,
+  estado activo y marcos; resplandor únicamente en lo activo/en vivo. Variante «día» con `[data-theme="light"]`.
+- Geometría: radio 4 px, **escuadras de esquina** cian (2 px) como marco HUD, sombras profundas solo para separar del mapa.
+- Vidrio: translúcido + desenfoque **con función** — leer el panel sin perder el territorio de fondo. `prefers-reduced-transparency` lo vuelve opaco.
+- Motion: pulso en indicadores en vivo, escalonado 40 ms en la ficha, cámara 3D con `easeTo`; `prefers-reduced-motion` lo anula.
+- Mapa: base nocturna OpenFreeMap «dark» por defecto; satélite híbrido, Sentinel-2, topográfico e IGN; relieve 3D + cielo atmosférico.
+
+**v0.1 (histórico) — salida de design-pick:** espina temporal · pizarra + cian · Space Grotesk/Noto Sans/Space Mono · bloque 0 px · escalonado.
 - **Por qué encaja:** el dato de seguridad es temporal y territorial; la espina hace explícito el período (parcial o completo) y evita comparar meses distintos. El cian secuencial es neutro: no presenta una paleta decorativa como semáforo de riesgo regulado.
 - **Cambios a propósito vs. proyecto anterior (RUC360 Territorio v18: plex · arena-índigo · rail-workspace):** otra familia tipográfica, paleta fría pizarra-cian, geometría de bloque sin radios y la espina temporal como estructura principal en lugar del rail.
 
 ## 3. Tokens
-Ver `apps/web/css/tokens.css` (color, rampas secuencial/divergente, naturaleza del dato, tipografía, espacio 4–64, forma, motion). Modo oscuro definido con pasos propios (no inversión), bajo `prefers-color-scheme` y `[data-theme="dark"]`.
+Ver `apps/web/css/tokens.css` (color, rampas secuencial/divergente, naturaleza del dato, tipografía, espacio 4–64, forma, motion). Noche por defecto; «día» con pasos propios bajo `[data-theme="light"]` (no inversión). Paleta categórica de naturaleza del
+dato validada en ambos modos con `validate_palette.js` (PASS).
 
 ## 4. Componentes y variantes
 | Componente | Variantes | Estados cubiertos |
@@ -27,7 +39,10 @@ Ver `apps/web/css/tokens.css` (color, rampas secuencial/divergente, naturaleza d
 | Presets de tiempo | AHORA, 24 H, 7 D, 30 D, 1 AÑO, 5 AÑOS | checked, hover, flechas de teclado |
 | Leyenda | secuencial (cuantiles 7 clases) · divergente (cortes fijos ±5/15/30 %) | medida seleccionada |
 | Distintivo de naturaleza (`.kind`) | oficial ■ · en vivo ◆ · calculado ▲ · estimación ◇ · proyección ▷ · IA ✱ | siempre glifo + texto |
-| Ficha | nacional / territorio | carga (spinner), vacío, error |
+| Ficha | nacional / territorio / clima en un punto | carga (spinner), vacío, error |
+| Herramientas de vista | 3D · Relieve · Norte | pressed (resplandor), hover, focus |
+| Panel HUD (`.hud.hud-frame`) | barra, riel, ficha, espina | escuadras de esquina; opaco con transparencia reducida |
+| Tabla de proveedores de clima | ok · sin clave · cuota agotada · error · consenso | estado en texto, no solo color |
 | Caja IA | — | busy (`aria-busy`), oraciones VERIFICADO / NO VERIFICADO |
 
 ## 5. Datos y gráficos
@@ -41,10 +56,10 @@ Ver `apps/web/css/tokens.css` (color, rampas secuencial/divergente, naturaleza d
 ## 6. Responsive
 | Breakpoint | Cambio estructural |
 |---|---|
-| 360 | Una columna; riel y ficha como hojas completas con barra de pestañas (Capas · Mapa · Ficha); presets en una fila de 6 |
-| 768 | Riel + mapa; ficha como panel deslizante |
-| 1280 | Riel · mapa · ficha (296/1fr/392) |
-| 1600 | Riel 320, ficha 440 |
+| 360 | Mapa completo; riel y ficha como hojas flotantes con barra de pestañas (Capas · Mapa · Ficha); presets en una fila de 6 |
+| 768 | Riel flotante + mapa; ficha deslizante |
+| 1280 | Riel 264–296 · mapa · ficha 340–384 flotantes |
+| 1600 | Riel 320, ficha 420 |
 
 ## 7. Accesibilidad
 - Contraste de texto con tinta sobre superficie ≥ 12:1; textos secundarios `--ink-soft` ≥ 7:1.
@@ -59,4 +74,5 @@ Ver `apps/web/css/tokens.css` (color, rampas secuencial/divergente, naturaleza d
 
 ## 9. Auditoría
 - `design-lint`: **0 / 20 — APROBADO**.
-- E2E Playwright (`tests/e2e/smoke.mjs`): 15/15 a 1280, 1600 (oscuro), 768 y 360 px, sin desbordamiento ni errores de JS.
+- E2E Playwright (`tests/e2e/smoke.mjs`): 19/19 a 1280, 1600, 768 y 360 px — incluye clima por punto, capas SENAMHI/GIBS,
+  satélite + relieve 3D y cambio noche/día conservando capas.

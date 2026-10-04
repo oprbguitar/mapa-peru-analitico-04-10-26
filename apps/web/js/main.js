@@ -2,9 +2,11 @@
 import { initDialogs } from './dialogs.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
-import { fitBBox, initMap, paint, refreshThemeColors, setSelected } from './map.js'
+import { fitBBox, initMap, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
+  setRelief, setSelected, setTerrain, showLevel, view } from './map.js'
+import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { renderOverview, renderRegion } from './panel.js'
-import { bindRail, renderKindKey, renderRail } from './rail.js'
+import { bindRail, bindRailView, renderKindKey, renderRail } from './rail.js'
 import { draw, initTimeline, setNote, syncPresets } from './timeline.js'
 import { esc, getJSON, setState, state, toast } from './util.js'
 
@@ -160,15 +162,34 @@ function bindTheme() {
     const saved = localStorage.getItem('pi-theme')
     if (saved) document.documentElement.dataset.theme = saved
   } catch { /* almacenamiento no disponible */ }
-  btn.addEventListener('click', () => {
-    const dark = document.documentElement.dataset.theme
-      ? document.documentElement.dataset.theme === 'dark'
-      : matchMedia('(prefers-color-scheme: dark)').matches
+  btn.addEventListener('click', async () => {
+    const dark = document.documentElement.dataset.theme !== 'light'
     document.documentElement.dataset.theme = dark ? 'light' : 'dark'
     try { localStorage.setItem('pi-theme', document.documentElement.dataset.theme) } catch { /* sin almacenamiento */ }
+    if (view.base === 'oscuro' && dark) await setBase('calles')
+    else if (view.base === 'calles' && !dark) await setBase('oscuro')
     refreshThemeColors()
+    renderRail(meta)
     if (state.choropleth) loadChoropleth()
   })
+}
+
+async function onView(kind, value) {
+  if (kind === 'base') await setBase(value)
+  else if (kind === 'terrain') {
+    setTerrain(!view.terrain)
+    if (view.terrain && !view.relief) setRelief(true)
+  } else if (kind === 'relief') setRelief(!view.relief)
+  else if (kind === 'choro') {
+    state.hideChoropleth = !state.hideChoropleth
+    showLevel(state.level)
+  } else if (kind === 'exag') setExaggeration(value)
+  else if (kind === 'choroOpacity') setChoroplethOpacity(value)
+  else if (kind === 'wxo') setOverlay(value)
+  else if (kind === 'wxoOpacity') setOverlayOpacity(value)
+  document.getElementById('btn-3d').setAttribute('aria-pressed', String(view.terrain))
+  document.getElementById('btn-relief').setAttribute('aria-pressed', String(view.relief))
+  if (['base', 'terrain', 'relief', 'choro'].includes(kind)) renderRail(meta)
 }
 
 async function liveMeta() {
@@ -194,12 +215,42 @@ async function boot() {
       loadChoropleth()
     },
     onLive: (id, on) => {
+      if (id === 'wxpoint') {
+        setPointMode(on)
+        if (on) openSheet('map')
+      } else if (id === 'wxlayer') {
+        setOverlay(on ? 'senamhi:aviso24h' : null)
+      } else toggle(id, on) // espera internamente a que el mapa y las capas estén listos
       renderRail(meta)
-      toggle(id, on) // espera internamente a que el mapa y las capas estén listos
+    },
+    onView,
+  })
+  bindRailView(onView)
+  await initMap({
+    onSelect: (ub) => selectRegion(ub, { keepView: true }),
+    onClick: (e) => {
+      if (!state.wxPoint) return
+      openSheet('panel')
+      weatherAt(e.lngLat, { render: (html) => (document.getElementById('panel-body').innerHTML = html) })
     },
   })
-  await initMap({ onSelect: (ub) => selectRegion(ub, { keepView: true }) })
   initLive()
+  bindSuggested(document.getElementById('panel-body'), (key) => {
+    const live = new Set(state.live)
+    live.add('wxlayer')
+    setState({ live })
+    setOverlay(key)
+    renderRail(meta)
+  })
+  onStyleReady(() => {
+    if (state.choropleth) loadChoropleth()
+    if (state.selected) setSelected(state.selected)
+  })
+  for (const [id, fn] of [['btn-3d', () => onView('terrain')], ['btn-relief', () => onView('relief')], ['btn-north', () => resetNorth()]]) {
+    document.getElementById(id).addEventListener('click', fn)
+  }
+  loadCatalog().then(() => renderRail(meta))
+  renderRail(meta)
   document.getElementById('level-switch').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-lv]')
     if (!b || b.disabled) return

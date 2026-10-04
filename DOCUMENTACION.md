@@ -20,6 +20,10 @@ la vista. Versión 0.1.0 · 4 de octubre de 2026.
 | Proyección | StatsForecast AutoETS (intervalos 80/95 %) + detección de anomalías; respaldo naive estacional declarado. |
 | IA | DataAgent → GeoAnalyst → Verifier. Ollama local por defecto; API externa solo autorizada y con datos agregados. |
 | En vivo | Vuelos (adsb.lol), embarcaciones (AIS, BYOK), satélites (CelesTrak + satellite.js), sismos (IGP + USGS), focos de calor (NASA FIRMS, BYOK), clima (SENAMHI observado + GFS/ECMWF modelo), tráfico (TomTom, BYOK), puertos, centros de datos. |
+| Clima combinado | Clic en cualquier punto del mundo: Open-Meteo (principal) y MET Norway sin clave; WeatherAPI, Visual Crossing, OpenWeather y Tomorrow.io con clave opcional. Cada proveedor se muestra por separado, más un «consenso» calculado (mediana y dispersión). En Perú se suma la estación SENAMHI más cercana (si se configuró) y se sugieren capas oficiales. |
+| Capas meteorológicas | SENAMHI · IDESEP (WMS oficiales: aviso de lluvias 24 h, activación de quebradas, UV 48 h, probabilidad de lluvia/Tmáx, anomalías, índice de humedad, FWI de incendios, climatología del mes) y NASA GIBS (color real VIIRS, nubes, IMERG, aerosoles, temperatura de superficie y del mar). |
+| Vista realista y 3D | Mapa base nocturno, calles, satélite híbrido (Esri), Sentinel-2 2024, topográfico, Carta Nacional IGN; relieve 3D con Terrain Tiles (Terrarium), sombreado, exageración vertical y cielo atmosférico. Patrón y caché tomados de RUC360. |
+| Interfaz HUD | Estilo táctico inspirado en God's Eye View: mapa a pantalla completa, paneles flotantes translúcidos con escuadras cian, modo noche/día. |
 | API | `/api/v1/*` estable y de solo lectura para Route 360 (ver `docs/API.md`). |
 | Autoarranque | `INICIAR-MAPA.bat` (doble clic). |
 
@@ -61,6 +65,13 @@ python -m peru_intel serve --open
   5 años antes. Clic en un año de la serie para verlo.
 - **Ficha (derecha):** clic en un territorio o búsqueda por nombre. Muestra tríada, modalidades, índice con
   «¿Por qué tiene este valor?», serie y proyección, indicadores MININTER, Fiscalía, DEVIDA y **Fuentes de esta ficha**.
+- **Vista y relieve (familia del riel) y botones 3D · Relieve · N sobre el mapa:** cambia el mapa base, activa el
+  relieve 3D (arrastra con clic derecho o Ctrl para inclinar y girar), el sombreado, la exageración vertical y la
+  opacidad de la capa temática. «N» devuelve el norte arriba.
+- **Clima en un punto (Ambiente):** activa la casilla y haz clic en cualquier lugar del mundo. La ficha muestra el
+  proveedor principal, la tabla de todos los proveedores, el consenso calculado y las próximas 24 h. «sin clave» o
+  «cuota agotada» indican por qué un proveedor no respondió.
+- **Capas meteorológicas (Ambiente):** elige una capa SENAMHI (oficial) o NASA GIBS (satélite) y su opacidad.
 - **Analizar con IA:** redacta un análisis citando hechos numerados; cada oración se marca VERIFICADO o NO VERIFICADO.
 - **Fuentes:** registro maestro con naturaleza del dato, cobertura, fecha de descarga y checksum.
 - **Claves:** BYOK de aisstream.io, TomTom, NASA FIRMS, CSV de SENAMHI y modelos de IA. Se guardan solo en
@@ -96,6 +107,13 @@ archivo INEI directo, colócalo en `data/raw/inei/poblacion.csv` con columnas `n
 No hay una URL pública estable verificada del dataset horario de estaciones automáticas. En **Claves → CSV de
 estaciones SENAMHI** indica una URL o ruta local; el adaptador reconoce columnas estación, fecha, temperatura,
 humedad, precipitación, latitud, longitud, altitud, departamento, provincia, distrito y UBIGEO.
+
+### Clima: orden de proveedores y cuotas
+
+`weather_order` (en «Claves») define el orden; el primero que responde es el «principal». Cuotas diarias aplicadas en
+el backend (`data/live/weather_quota.json`): Open-Meteo 9 000, MET Norway 5 000, WeatherAPI 3 000, Visual Crossing 900,
+OpenWeather 900, Tomorrow.io 450. Caché de 10 min por punto (rejilla de ~5 km). Open-Meteo es gratuito solo para uso no
+comercial: para uso comercial cambia el orden a `metno,...` o contrata su plan comercial.
 
 ### Índice Situacional Perú v1
 

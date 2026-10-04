@@ -24,6 +24,8 @@ Regla de integración: **Route 360 → (GET) → esta API**. Esta plataforma nun
 | `/geo/{departamentos\|provincias\|distritos}.geojson` | Límites (`u` = UBIGEO, `n` nombre, `d` departamento, `p` provincia, `c` [lat, lon]) |
 | `/ofm/...` | Mapa base OpenFreeMap con caché local |
 | `/api/v1/map/base` | Estilo y estado de la caché |
+| `/api/v1/map/basemaps` | Mapas base realistas y relieve |
+| `/tiles/base/{satelite\|etiquetas\|sentinel\|topo\|dem\|ign100}/{z}/{x}/{y}` | Teselas con caché propia y de RUC360 (solo lectura) |
 | `/api/v1/map/search?q=` | UBIGEO por nombre |
 | `/api/v1/map/resolve?lat=&lon=` | Distrito, provincia y departamento de un punto |
 
@@ -54,7 +56,11 @@ Regla de integración: **Route 360 → (GET) → esta API**. Esta plataforma nun
 | `/api/v1/intel/satellites?group=` | CelesTrak (posiciones se calculan en el cliente) |
 | `/api/v1/intel/seismic` | IGP (primaria) + USGS |
 | `/api/v1/intel/fires` | NASA FIRMS VIIRS (BYOK) |
-| `/api/v1/intel/weather` | `observed` SENAMHI · `models` GFS y ECMWF (Open-Meteo) — nunca mezclados |
+| `/api/v1/intel/weather` | `observed` SENAMHI · `models` GFS y ECMWF (Open-Meteo) en capitales — nunca mezclados |
+| `/api/v1/intel/weather/point?lat=&lon=&providers=` | Clima combinado en cualquier punto del mundo: `primary`, `results` por proveedor, `consensus` (calculado) |
+| `/api/v1/intel/weather/providers` | Proveedores, si están configurados, cuota diaria y consumo de hoy |
+| `/api/v1/intel/weather/layers` | Catálogo de capas NASA GIBS (con fecha) y SENAMHI · IDESEP |
+| `/api/v1/intel/weather/tiles/{gibs\|senamhi}/{capa}/{z}/{x}/{y}.{png\|jpg}` | Teselas meteorológicas con caché |
 | `/api/v1/intel/traffic` · `/traffic/tiles/{z}/{x}/{y}.png` · `/traffic/point?lat=&lon=` | TrafficProvider (TomTom BYOK) |
 | `/api/v1/intel/events` | Estado de workers y alertas |
 
