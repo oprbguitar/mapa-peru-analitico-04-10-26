@@ -226,3 +226,7 @@ inundaciones, lluvias intensas, deslizamientos y marejadas registrados entre el 
 - **DesInventar · OSSO/LA RED** (1970–2015): fichas tomadas de prensa (columna `fuente`, p. ej. «ElC 18.03.98» = El Comercio),
   ubicadas en el centroide del territorio publicado (distrito, provincia o departamento). Ingesta: `python -m peru_intel ingest desinventar --download`.
 - La caja de la historia es lateral, translúcida y plegable (▾); los tipos se filtran con los botones de color y cada punto abre su detalle.
+- En el modo El Niño el mapa no cambia de modo al hacer clic. Los botones Departamento/Provincia/Distrito colorean el
+  **conteo de registros visibles** (nunca denuncias), solo con registros publicados a ese nivel o más fino.
+- Panel lateral: lugares con más registros de los tipos visibles y `GET /api/v1/intel/enso/compare/{tipo}` (conteo por Niño
+  y lugares más activos). SINPAD no nombra la quebrada: el lugar es el distrito publicado.

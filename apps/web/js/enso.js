@@ -56,6 +56,7 @@ export async function renderEnso() {
   body().innerHTML = `<div class="stagger">
     <div class="panel-head"><div class="eyebrow">El Niño · Perú</div><h2>Observatorio de El Niño</h2>
       <p class="sub">Estado oficial, histórico desde 1950 y corrientes del mar.</p></div>
+    <div id="enso-side" aria-live="polite"></div>
     <section class="alert-band" aria-label="Estado oficial ENFEN"><div class="eyebrow">${esc(c.status)} · ${kindBadge('oficial', 'ENFEN')}</div>
       <h3>${esc(c.headline)}</h3><ul>${c.points.slice(0, 4).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
       <p class="src-meta"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.comunicado)}</a> · ${esc(c.date)} · próximo: ${esc(c.next)}</p></section>
@@ -87,6 +88,16 @@ export async function renderEnso() {
 
 function bindEnso() {
   const root = body()
+  root.addEventListener('click', (e) => {
+    const f = e.target.closest('[data-fly]')
+    if (f) flyTo(...f.dataset.fly.split(',').map(Number), 10)
+  })
+  root.addEventListener('change', (e) => {
+    if (e.target.id === 'enso-cmp' && story) {
+      story.cmp = e.target.value
+      sideUpdate()
+    }
+  })
   root.querySelectorAll('[data-story]').forEach((el) => {
     el.addEventListener('click', () => playStory(el.dataset.story))
     el.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), playStory(el.dataset.story)))
@@ -126,6 +137,55 @@ let evs = null          // registros del período (SINPAD + DesInventar)
 const evOff = new Set() // tipos ocultos por el usuario
 const EV_COLORS = { huaico: '--kind-estimacion', rio: '--pal-esp-2', inundacion: '--info', lluvia: '--fx-rain', deslizamiento: '--live-quake', marejada: '--enso-cold' }
 let evPopup = null
+let onEvChange = null
+const cmpCache = {}
+export const setEnsoRepaint = (fn) => (onEvChange = fn)
+const shortPlace = (s) => (s || '').split(',').map((x) => x.replace(/^(DIST|PROV|DEPA)\. /, '').trim()).filter(Boolean).slice(0, 3).join(', ')
+
+/** Conteo de registros visibles por territorio (solo con el UBIGEO publicado a ese nivel o más fino: nunca se reparte). */
+export function ensoChoropleth(level) {
+  if (!evs) return null
+  const len = { departamento: 2, provincia: 4, distrito: 6 }[level]
+  const n = {}
+  for (const e of evs.events) if (!evOff.has(e[2]) && e[12]?.length >= len) n[e[12].slice(0, len)] = (n[e[12].slice(0, len)] || 0) + 1
+  return { available: true, dataset: 'enso', level, title: `${story.s.title} · registros por ${level}`, rows: Object.entries(n).map(([ubigeo, count]) => ({ ubigeo, count })),
+    measures: { count: { label: 'Registros', unit: 'registros del período (tipos visibles)', kind: 'calculado' } }, default_measure: 'count' }
+}
+
+async function sideUpdate() {
+  const el = document.getElementById('enso-side')
+  if (!el) return
+  if (!evs || !story) return (el.innerHTML = '')
+  const on = Object.keys(evs.types).filter((k) => !evOff.has(k) && evs.counts[k])
+  const places = {}
+  for (const e of evs.events) {
+    if (evOff.has(e[2])) continue
+    const k = shortPlace(e[5])
+    const p = (places[k] ??= { n: 0, lon: e[0], lat: e[1], t: e[2] })
+    p.n++
+  }
+  const top = Object.entries(places).sort((a, b) => b[1].n - a[1].n).slice(0, 10)
+  const tipo = story.cmp && on.includes(story.cmp) ? story.cmp : on[0]
+  el.innerHTML = `<section class="section"><h3><span>${esc(story.s.title)} · dónde hubo más registros</span>${kindBadge('calculado')}</h3>
+    <p class="src-meta">${on.map((k) => esc(evs.types[k])).join(' · ') || 'Ningún tipo visible'}</p>
+    <ol class="ev-rank">${top.map(([k, p]) => `<li><button type="button" data-fly="${p.lon},${p.lat}" data-type="${p.t}"><span>${esc(k)}</span><b>${p.n}</b></button></li>`).join('')}</ol></section>
+    ${tipo ? `<section class="section"><h3><span>Comparar Niños</span>${kindBadge('calculado')}</h3>
+      <label class="sr-only" for="enso-cmp">Tipo a comparar</label><select id="enso-cmp">${on.map((k) => `<option value="${k}" ${k === tipo ? 'selected' : ''}>${esc(evs.types[k])}</option>`).join('')}</select>
+      <div id="enso-cmp-out"><p class="loading">Comparando períodos</p></div></section>` : ''}`
+  if (!tipo) return
+  try {
+    const c = (cmpCache[tipo] ??= await getJSON(`/api/v1/intel/enso/compare/${tipo}`))
+    const out = document.getElementById('enso-cmp-out')
+    if (!out) return
+    const max = Math.max(1, ...c.events.map((x) => x.total))
+    out.innerHTML = `<div class="ev-cmp">${c.events.map((x) => `<div class="ev-cmp-row${x.id === story?.s.id ? ' cur' : ''}"><div class="bar-row"><span>${esc(x.title)}</span><span class="val">${fmt(x.total)}</span>
+      <div class="track"><div class="fill calc" style="width:${(x.total / max) * 100}%"></div></div></div>
+      <ol class="ev-rank">${x.top.slice(0, 3).map((p) => `<li><button type="button" data-fly="${p.lon},${p.lat}" data-type="${tipo}"><span>${esc(p.lugar)}</span><b>${p.n}</b></button></li>`).join('')}</ol></div>`).join('')}</div>
+      <p class="src-meta">${esc(c.method)} SINPAD no nombra la quebrada: el lugar es el distrito publicado; DesInventar a veces trae el paraje.</p>`
+  } catch (err) {
+    toast(err.message)
+  }
+}
 const icenTxt = (ch) => (ch.icen != null ? (ch.icen > 0 ? '+' : '') + fmt(ch.icen, 2) + ' °C' : '—')
 const sstTxt = (ch) => (ch.sst ? fmt(ch.sst.sst, 1) + ' °C (' + (ch.sst.anom > 0 ? '+' : '') + fmt(ch.sst.anom, 1) + ')' : '—')
 
@@ -144,6 +204,8 @@ function clearMarkers() {
 
 function evFilter() {
   if (!evs) return
+  onEvChange?.()
+  sideUpdate()
   setPoints('enso-ev', evs.events.flatMap((e, i) => (evOff.has(e[2]) ? [] : [ptFeature(e[0], e[1], { t: e[2], i })])), true)
 }
 
@@ -261,6 +323,8 @@ function close() {
   showLayer('enso-ev', false)
   evPopup?.remove()
   evs = null
+  sideUpdate()
+  onEvChange?.()
 }
 
 export async function playStory(id) {

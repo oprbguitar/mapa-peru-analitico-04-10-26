@@ -164,6 +164,11 @@ def route_get(path: str, q: dict):
         return _institutions(_one(q, "cat"), _one(q, "ubigeo"))
     if p == ["enso"]:
         return enso.overview()
+    if p[:2] == ["enso", "compare"] and len(p) == 3:
+        try:
+            return enso_events.compare(p[2])
+        except ValueError as e:
+            raise ApiError(404, str(e))
     if p[:2] == ["enso", "events"] and len(p) == 3:
         try:
             return enso_events.period_events(p[2])

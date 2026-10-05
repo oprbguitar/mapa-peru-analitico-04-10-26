@@ -4,7 +4,7 @@ import { initAssistant } from './assistant.js'
 import { initChrome, setPanel } from './chrome.js'
 import { lastContext, renderContext, renderObservatory } from './context360.js'
 import { initDialogs } from './dialogs.js'
-import { closeStory, initStory, playStory, renderEnso } from './enso.js'
+import { closeStory, ensoChoropleth, initStory, playStory, renderEnso, setEnsoRepaint } from './enso.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
 import { fitBBox, flyTo, initMap, map, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
@@ -30,7 +30,20 @@ let mode = 'mapa'
 let panelView = 'overview'   // overview · region · context · observatory · patterns · routes · enso · weather
 let playTimer = null
 
+let ensoChoro = false   // en El Niño los niveles cuentan registros históricos, nunca denuncias
+
+function paintEnso() {
+  const c = ensoChoro && mode === 'ninio' ? ensoChoropleth(state.level) : null
+  state.hideChoropleth = !c
+  showLevel(state.level)
+  if (!c) return renderLegend(null)
+  state.choropleth = c
+  state.measure = 'count'
+  renderLegend(c, 'count', paint(c, 'count'), () => {})
+}
+
 function levelsFor() {
+  if (mode === 'ninio') return ['departamento', 'provincia', 'distrito']
   if (state.dataset === 'sidpol') return ['departamento', 'provincia', 'distrito']
   if (state.dataset === 'indicador') return meta.indicators?.find((i) => i.codigo === state.code)?.levels || ['departamento']
   return ['departamento']
@@ -215,6 +228,11 @@ async function setMode(m) {
   mode = m
   document.body.dataset.mode = m
   if (m !== 'ninio') closeStory()
+  ensoChoro = false
+  if (m === 'ninio') {
+    renderLegend(null)
+    renderLevels()
+  }
   for (const b of document.querySelectorAll('#modes [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === m))
   showPanel()
   if (m === 'mapa') {
@@ -539,8 +557,8 @@ async function boot() {
         return
       }
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return
-      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(pl-|cam-|ports|flights|vessels|seismic|fires|satellites|datacenters|rt-)/.test(f.layer.id))
-      if (hit) return
+      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|fires|satellites|datacenters|rt-)/.test(f.layer.id))
+      if (hit || mode === 'ninio') return   // en El Niño el mapa se queda: los clics son para los registros
       if (mode !== 'mapa') setMode('mapa')
       showContext(e.lngLat.lat, e.lngLat.lng)
     },
@@ -548,6 +566,7 @@ async function boot() {
   initLive()
   initPlaces()
   initStory()
+  setEnsoRepaint(paintEnso)
   initVision()
   bindPlayYears()
   bindSuggested(document.getElementById('panel-body'), (key) => {
@@ -570,6 +589,11 @@ async function boot() {
     const b = e.target.closest('button[data-lv]')
     if (!b || b.disabled) return
     state.level = b.dataset.lv
+    if (mode === 'ninio') {
+      ensoChoro = true
+      renderLevels()
+      return paintEnso()
+    }
     state.selected = null
     setSelected(null)
     if (panelView !== 'context') panelView = 'overview'
