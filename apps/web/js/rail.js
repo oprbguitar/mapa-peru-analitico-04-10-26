@@ -41,6 +41,7 @@ const FAMILIES = [
   ] },
   { id: 'ambiente', label: 'Ambiente', live: [
     { id: 'wxfx', label: 'Clima animado', hint: 'Sol, lluvia, tormenta, viento · elige qué ver', kind: 'proyeccion' },
+    { id: 'sun', label: 'Análisis solar', hint: 'Acerca a nivel de casa y haz clic · sol, sombras y ventanas · sin API', kind: 'calculado' },
     { id: 'wxpoint', label: 'Clima en un punto', hint: 'Clic en el mapa · Open-Meteo, MET Norway y más, combinados', kind: 'proyeccion' },
     { id: 'wxlayer', label: 'Capas meteorológicas', hint: 'SENAMHI (oficial) · NASA GIBS (satélite)', kind: 'oficial' },
     { id: 'weather', label: 'Clima en capitales', hint: 'SENAMHI observado · GFS / ECMWF modelo', kind: 'proyeccion' },

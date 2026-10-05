@@ -303,3 +303,14 @@ body[data-mode="rutas"] #layer-title, body[data-mode="rutas"] #legend { display:
 .ev-cmp { display: grid; gap: var(--sp-2); }
 .ev-cmp-row { padding-left: var(--sp-1); border-left: var(--border) solid transparent; }
 .ev-cmp-row.cur { border-left-color: var(--enso-warm); }
+
+/* Análisis solar */
+.sun-ctl { display: grid; gap: var(--sp-2); }
+.sun-ctl label { display: grid; gap: 2px; font-size: var(--fs-caption); color: var(--ink-soft); }
+.sun-key { display: inline-block; width: 14px; height: 3px; background: var(--c); vertical-align: middle; margin: 0 4px 0 var(--sp-1); }
+.sun-tab { width: 100%; border-collapse: collapse; font-size: var(--fs-caption); }
+.sun-tab th, .sun-tab td { padding: 3px var(--sp-1); border-bottom: var(--border) solid var(--line); text-align: right; }
+.sun-tab th:first-child, .sun-tab td:first-child { text-align: left; }
+.sun-tab td { font-family: var(--font-mono); }
+.sun-tab tr.hi td { color: var(--fx-sun); font-weight: 700; }
+.sun-tips { margin: var(--sp-2) 0 0; padding-left: var(--sp-4); font-size: var(--fs-ui); display: grid; gap: var(--sp-1); }

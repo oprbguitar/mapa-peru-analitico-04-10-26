@@ -4,6 +4,7 @@ import { initAssistant } from './assistant.js'
 import { initChrome, setPanel } from './chrome.js'
 import { lastContext, renderContext, renderObservatory } from './context360.js'
 import { initDialogs } from './dialogs.js'
+import { initSun, setSunMode, sunAt } from './sun.js'
 import { closeStory, ensoChoropleth, initStory, playStory, renderEnso, setEnsoRepaint } from './enso.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
@@ -347,7 +348,10 @@ async function onLive(id, on) {
   }
   const [kind, cat] = id.split(':')
   try {
-    if (id === 'wxpoint') {
+    if (id === 'sun') {
+      setSunMode(on)
+      if (on && map.getZoom() < 16) toast('Acerca el mapa a nivel de casa (zoom 16 o más) y haz clic en el punto')
+    } else if (id === 'wxpoint') {
       setPointMode(on)
       if (on) openSheet('map')
     } else if (id === 'wxlayer') setOverlay(on ? 'senamhi:aviso24h' : null)
@@ -550,6 +554,12 @@ async function boot() {
     },
     onClick: (e) => {
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
+      if (state.live.has('sun')) {
+        if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
+        showPanel()
+        panelView = 'sun'
+        return sunAt(e.lngLat)
+      }
       if (state.wxPoint) {
         openSheet('panel')
         panelView = 'weather'
@@ -566,6 +576,7 @@ async function boot() {
   initLive()
   initPlaces()
   initStory()
+  initSun()
   setEnsoRepaint(paintEnso)
   initVision()
   bindPlayYears()

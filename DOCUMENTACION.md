@@ -230,3 +230,12 @@ inundaciones, lluvias intensas, deslizamientos y marejadas registrados entre el 
   **conteo de registros visibles** (nunca denuncias), solo con registros publicados a ese nivel o más fino.
 - Panel lateral: lugares con más registros de los tipos visibles y `GET /api/v1/intel/enso/compare/{tipo}` (conteo por Niño
   y lugares más activos). SINPAD no nombra la quebrada: el lugar es el distrito publicado.
+
+## Análisis solar (v0.3.3)
+
+Riel → Ambiente → **Análisis solar**. Con el mapa a nivel de casa (zoom ≥ 16) un clic fija el punto y `apps/web/js/sun.js`
+calcula en el navegador (fórmulas de SunCalc, ~0,1°, sin API ni red): salida, puesta y sus azimuts, mediodía solar y altura
+máxima, posición y sombra a la hora elegida (slider + altura del objeto), trayectoria del día, de los solsticios (21 dic verano,
+21 jun invierno) y del equinoccio dibujadas alrededor del punto (más lejos = Sol más bajo), y horas de sol directo por fachada
+(8 orientaciones; verano dic–feb, invierno jun–ago, año) con recomendación de ventanas. Hora del Perú (UTC−5).
+No considera edificios vecinos, relieve ni nubosidad (naturaleza: calculado).
