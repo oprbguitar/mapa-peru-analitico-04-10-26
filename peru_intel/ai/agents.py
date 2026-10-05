@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 
 from ..analytics import crime, forecast, index
-from . import router, verifier
+from . import gateway, verifier
 
 
 def _fmt(v, nd=1) -> str:
@@ -89,26 +89,22 @@ Reglas estrictas:
 
 class GeoAnalyst:
     def analyze(self, ubigeo: str, question: str, packet: dict) -> dict:
-        prov, reason = router.choose("aggregate", "analisis")
-        router.log("analisis", prov.id if prov else None, reason, ubigeo)
         facts_txt = "\n".join(f"[{f['id']}] {f['label']}: {f['value']} {f['unit']} · período {f['period']} · "
                               f"fuente {f['source']} · {f['kind']}" for f in packet["facts"])
         prof = packet["profile"]
-        if prov is None:
-            return {"text": self._deterministic(prof, packet["facts"]), "engine": "resumen determinista (sin IA)",
-                    "route_reason": reason, "kind": "calculado"}
         msgs = [{"role": "system", "content": SYSTEM},
                 {"role": "user", "content": f"Territorio: {prof['nombre']} ({prof['level']}, UBIGEO {prof['ubigeo']}).\n"
                                             f"Pregunta: {question or '¿Cómo está la situación de seguridad y qué se espera?'}\n\n"
                                             f"HECHOS:\n{facts_txt}"}]
         try:
-            text = prov.chat(msgs)
-            if not text.strip():
-                raise ValueError("respuesta vacía del modelo")
-        except Exception as e:  # noqa: BLE001
-            return {"text": self._deterministic(prof, packet["facts"]), "engine": "resumen determinista (fallo del modelo)",
-                    "route_reason": f"{reason} · error: {e}", "kind": "calculado"}
-        return {"text": text.strip(), "engine": f"{prov.id}:{prov.model()}", "route_reason": reason, "kind": "ia"}
+            out = gateway.run_chat("analisis_territorial", msgs)
+            if not out["text"].strip():
+                raise gateway.GatewayError("OUTPUT_INVALID", "respuesta vacía del modelo")
+        except gateway.GatewayError as e:
+            return {"text": self._deterministic(prof, packet["facts"]), "engine": "resumen determinista (sin IA)",
+                    "route_reason": f"{e.code}: {e}", "kind": "calculado"}
+        return {"text": out["text"].strip(), "engine": f"{out['provider']}:{out['model']}", "kind": "ia",
+                "route_reason": f"{out['route']['effective_mode']} · {out['provider_name']}" + (f" · US$ {out['cost_usd']}" if out["cost_usd"] else "")}
 
     @staticmethod
     def _deterministic(prof: dict, facts: list[dict]) -> str:
@@ -153,21 +149,21 @@ def ask_enso(question: str = "") -> dict:
     from ..climate import enso
     facts = enso.facts()
     cur = enso.curated()["current"]
-    prov, reason = router.choose("aggregate", "analisis")
-    router.log("analisis-enso", prov.id if prov else None, reason, None)
+    reason = ""
     facts_txt = "\n".join(f"[{f['id']}] {f['label']}: {f['value']} {f['unit']} · período {f['period']} · fuente {f['source']} · {f['kind']}"
                           for f in facts)
     outlook = " ".join(cur["points"])
     text, engine, kind = None, "resumen determinista (sin IA)", "calculado"
-    if prov is not None and facts:
+    if facts:
+        user = (f"Pregunta: {question or '¿Qué tan fuerte es El Niño actual frente a los anteriores?'}\n\n"
+                f"PRONÓSTICO OFICIAL ENFEN ({cur['comunicado']}, {cur['date']}), solo texto: {outlook}\n\nHECHOS:\n{facts_txt}")
         try:
-            text = prov.chat([{"role": "system", "content": SYSTEM_ENSO},
-                              {"role": "user", "content": f"Pregunta: {question or '¿Qué tan fuerte es El Niño actual frente a los anteriores?'}\n\n"
-                                                          f"PRONÓSTICO OFICIAL ENFEN ({cur['comunicado']}, {cur['date']}), solo texto: {outlook}\n\n"
-                                                          f"HECHOS:\n{facts_txt}"}]).strip() or None
-            engine, kind = (f"{prov.id}:{prov.model()}", "ia") if text else (engine, kind)
-        except Exception as e:  # noqa: BLE001
-            reason = f"{reason} · error: {e}"
+            out = gateway.run_chat("explicar_ninio", [{"role": "system", "content": SYSTEM_ENSO}, {"role": "user", "content": user}])
+            text = out["text"].strip() or None
+            engine, kind = (f"{out['provider']}:{out['model']}", "ia") if text else (engine, kind)
+            reason = f"{out['route']['effective_mode']} · {out['provider_name']}"
+        except gateway.GatewayError as e:
+            reason = f"{e.code}: {e}"
     if not text:
         f = {x["label"]: x for x in facts}
         lines = []

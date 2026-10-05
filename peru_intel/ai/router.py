@@ -35,6 +35,10 @@ def log(profile: str, provider: str | None, reason: str, ubigeo: str | None) -> 
 
 
 def status() -> dict:
-    return {"providers": [p.describe() for p in PROVIDERS.values()],
-            "allow_external": config.setting("ai_allow_external", "false").lower() == "true",
-            "profiles": PROFILES}
+    """Resumen para la barra de estado; la configuración completa vive en el AI Gateway (/admin/engineering/ai)."""
+    from . import gateway
+    doc = gateway.load()
+    return {"kill_switch": doc["kill_switch"], "allow_paid": doc.get("allow_paid", False),
+            "providers": [{"id": p["id"], "local": p["mode"] == "LOCAL", "enabled": p["enabled"], "status": p["status"]}
+                          for p in doc["providers"] if p["enabled"]],
+            "profiles": PROFILES, "admin": "/api/v1/admin/engineering/ai"}

@@ -18,6 +18,8 @@ data/live/
 data/ofm/
 data/catalog/*.sqlite*
 data/normalized/_*.csv
+data/normalized/_*.jsonl
+data/ai_gateway.json
 data/config.local.json
 data/cameras.local.json
 data/vision/

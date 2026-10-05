@@ -20,6 +20,11 @@
     "status": "ok",
     "transform": "Cifras tal como las publica DEVIDA; los archivos de coca solo listan departamentos con cultivo."
   },
+  "eventos_unificados": {
+    "normalized_path": "parquet/eventos.parquet",
+    "status": "ok",
+    "transform": "Unión SIDPOL + INDECI + MTC con esquema común y celda H3 r7 (h3 4.5.0)."
+  },
   "igp_eventos": {
     "checksum": "a049e49727604720a6c63ddf3d9bafe2cd9b4acb744d550f5b506b85b21749bd",
     "last_downloaded": "2026-10-04T18:07:54-0500",
@@ -37,6 +42,18 @@
     "raw_path": "raw/igp_icen/2026-10-04/ICEN.txt",
     "schema_changed": false,
     "status": "ok"
+  },
+  "indeci_sinpad": {
+    "checksum": "9d57d3507d76beca3ce6bdaaf95382fe5c81d1dcc8b23bc5c204f4211dbf8cb6",
+    "coverage_end": "2026-05",
+    "coverage_start": "2015-01",
+    "last_downloaded": "2026-10-04T19:46:18-0500",
+    "normalized_path": "C:\\Users\\oprbg\\Documents\\Claude\\Mapa analizador\\data\\parquet\\indeci_emergencias.parquet",
+    "origin": "https://geosinpad.indeci.gob.pe/indeci/rest/services/Emergencias/EMERGENCIAS_SINPAD/MapServer/0/query",
+    "raw_path": "raw/indeci_sinpad/2026-10-04/emergencias_sinpad.json",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "ArcGIS REST paginado (ANHO ≥ 2015) → fecha local, UBIGEO, peligro, daños humanos, viviendas y vías."
   },
   "indice_situacional_v1": {
     "checksum": "9bacc28140d7f9c735bf266546a2d8c788442b807184578a2838028ff6493d52",
@@ -106,6 +123,18 @@
     "status": "ok",
     "transform": "Todos los delitos denunciados (tipo de caso «denuncia», especialidad penal). Departamento = sede del distrito fiscal. Familia TID = arts. 296–303 CP (clasificación OCE/FEDTID)."
   },
+  "mtc_emergencias_viales": {
+    "checksum": "ac5af965cdb10bc74ec3633c76a22c3128db6b1ea15933c673815a5f385bd84e",
+    "coverage_end": "2026-08",
+    "coverage_start": "2026-01",
+    "last_downloaded": "2026-10-04T19:46:19-0500",
+    "normalized_path": "C:\\Users\\oprbg\\Documents\\Claude\\Mapa analizador\\data\\parquet\\mtc_vias.parquet",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/mtc_emergencias_viales/2026-10-04/emergencias_rvn_mtc.csv",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "CSV latin-1 ; → fechas ISO, estado de transitabilidad y coordenadas."
+  },
   "noaa_cpc_mensual": {
     "checksum": "6d85461bbcde83bcdccfd69a67f54381d0a4688f8a7021d6d6a22a0803cdb2cd",
     "last_downloaded": "2026-10-04T18:07:55-0500",
@@ -142,5 +171,25 @@
     "schema_changed": false,
     "status": "ok",
     "transform": "Overpass (police, courthouse y nombres institucionales) → clasificación por etiquetas → punto-en-polígono distrital INEI; se descartan puntos fuera del Perú y duplicados."
+  },
+  "osm_servicios": {
+    "checksum": "fc94174de78e0f5fb083f6cad66ca619d9f048c043392d8a9a855b69c0cdc48d",
+    "last_downloaded": "2026-10-04T19:37:50-0500",
+    "normalized_path": "data/parquet/servicios.parquet",
+    "origin": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A240%5D%3B%0A%28%0A%20nwr%5B%22amenity%22%3D%22school%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%3D%22university%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%3D%22college%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%3D%22fire_station%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%29%3B%0Aout%20center%20tags%3B",
+    "raw_path": "raw/osm_servicios/2026-10-04/servicios-osm.json",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Overpass (school, university, college, fire_station) → punto-en-polígono distrital."
+  },
+  "renipress": {
+    "checksum": "89040c55e9c53398465975171fb348109fd11b787d238970161a243115070823",
+    "last_downloaded": "2026-10-04T19:36:59-0500",
+    "normalized_path": "data/parquet/servicios.parquet",
+    "origin": "copia local (archivo ya descargado del portal oficial por OCE/FEDTID u otro proyecto propio)",
+    "raw_path": "raw/renipress/2026-10-04/renipress.csv",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Solo IPRESS ACTIVAS con coordenadas válidas; categoría II/III o «hospital» → hospital."
   }
 }

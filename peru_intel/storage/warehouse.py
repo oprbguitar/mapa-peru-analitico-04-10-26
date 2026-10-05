@@ -60,3 +60,23 @@ def write_parquet(table: str, relation_sql: str, con: duckdb.DuckDBPyConnection)
     os.replace(tmp, out)
     _SEEN.pop(table, None)
     return out
+
+
+def write_rows(table: str, rows: list[dict]) -> Path:
+    """Escribe una lista de dicts (mismas claves) como Parquet, vía un JSON temporal leído por DuckDB."""
+    import json
+    if not rows:
+        raise ValueError(f"{table}: sin filas para escribir")
+    tmp_json = config.NORMALIZED / f"_{table}.jsonl"
+    tmp_json.parent.mkdir(parents=True, exist_ok=True)
+    with open(tmp_json, "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False, default=str) + "\n")
+    con = duckdb.connect(":memory:")
+    src = str(tmp_json).replace("\\", "/").replace("'", "''")
+    try:
+        out = write_parquet(table, f"SELECT * FROM read_json_auto('{src}', format='newline_delimited', sample_size=-1)", con)
+    finally:
+        con.close()
+        tmp_json.unlink(missing_ok=True)
+    return out

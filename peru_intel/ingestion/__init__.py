@@ -8,7 +8,8 @@ from typing import Iterator
 
 def run_ingest(source: str, download: bool = False, folder: Path | None = None) -> Iterator[str]:
     from ..climate import enso
-    from . import devida, institutions, mininter_indicators, mininter_sidpol, mpfn, ports
+    from ..events import store as events
+    from . import devida, emergencies, institutions, mininter_indicators, mininter_sidpol, mpfn, ports, services
 
     steps = {
         "sidpol": mininter_sidpol.ingest,
@@ -18,6 +19,9 @@ def run_ingest(source: str, download: bool = False, folder: Path | None = None) 
         "ports": ports.ingest,
         "instituciones": institutions.ingest,
         "enso": enso.ingest,
+        "emergencias": emergencies.ingest,
+        "servicios": services.ingest,
+        "eventos": events.build,
     }
     names = list(steps) if source == "all" else [source]
     for name in names:

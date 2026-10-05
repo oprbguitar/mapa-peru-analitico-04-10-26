@@ -10,7 +10,10 @@ import time
 
 from .. import config
 from ..ai import agents, router
-from ..analytics import crime, forecast, index, observatory
+from ..analytics import context, crime, forecast, index, observatory, patterns, routes
+from ..ai import gateway, voice
+from ..map import geocode
+from ..storage import warehouse
 from ..climate import enso
 from ..vision import cameras as vcams
 from ..vision import device as vdev
@@ -82,6 +85,18 @@ def route_get(path: str, q: dict):
                                                                                "terrain_tiles", "ign_carta")}
     if p[:2] == ["map", "search"]:
         return {"results": ADAPTER.resolve_ubigeo(_one(q, "q", ""))}
+    if p[:2] == ["map", "geocode"]:
+        return {"results": geocode.geocode(_one(q, "q", "")), "provenance": registry.provenance("limites_inei", "nominatim")}
+    if p == ["admin", "engineering", "ai"]:
+        return gateway.public_view()
+    if p == ["admin", "engineering", "ai", "ollama"]:
+        prov = gateway.provider(_one(q, "id", "ollama-local"))
+        return gateway.ollama_state(prov) if prov else {"running": False}
+    if p == ["ai", "voice", "tools"]:
+        return {"tools": voice.tools_openai(), "examples": ["Ubica El Agustino y infórmame", "Enciende las comisarías",
+                                                            "Muéstrame denuncias de hurto del año 2024", "Abre el módulo de El Niño",
+                                                            "Traza una ruta de Miraflores a Chosica", "Reproduce la historia del Niño de 1998",
+                                                            "Vista amplia"]}
     if p[:1] != ["intel"]:
         raise ApiError(404, "ruta no encontrada")
     p = p[1:]
@@ -111,6 +126,31 @@ def route_get(path: str, q: dict):
     if p == ["history"]:
         return {"series": crime.monthly_series(_one(q, "ubigeo"), _one(q, "modalidad")),
                 "provenance": registry.provenance("mininter_sidpol")}
+    if p == ["context"]:
+        try:
+            return context.point(float(_one(q, "lat")), float(_one(q, "lon")), _one(q, "online", "1") == "1")
+        except (TypeError, ValueError) as e:
+            raise ApiError(400, f"lat y lon numéricos: {e}")
+    if p == ["context", "media"]:
+        return context.media(str(_one(q, "q", ""))[:80])
+    if p[:1] == ["patterns"]:
+        return _patterns(p[1:], q)
+    if p == ["routes"]:
+        try:
+            return routes.plan(_one(q, "from"), _one(q, "to")) if not _one(q, "alat") else \
+                routes.plan({"lat": float(_one(q, "alat")), "lon": float(_one(q, "alon")), "name": _one(q, "aname")},
+                            {"lat": float(_one(q, "blat")), "lon": float(_one(q, "blon")), "name": _one(q, "bname")})
+        except ValueError as e:
+            raise ApiError(400, str(e))
+    if p == ["layers", "services"]:
+        return _bbox_layer("servicios", q, "cat, nombre, lat, lon, detalle, fuente, kind", "renipress", "osm_servicios", limit=4000)
+    if p == ["layers", "emergencies"]:
+        return _emergency_layer(q)
+    if p == ["layers", "roads"]:
+        if not warehouse.has("mtc_vias"):
+            return {"available": False, "reason": "python -m peru_intel ingest emergencias --dir <carpeta>"}
+        rows = warehouse.query("SELECT id, fecha, evento, fenomeno, ruta, tramo, sector, estado, hechos, lat, lon FROM mtc_vias ORDER BY fecha DESC")
+        return {"available": True, "items": [r | {"fecha": str(r["fecha"])} for r in rows], "provenance": registry.provenance("mtc_emergencias_viales")}
     if len(p) == 2 and p[0] == "observatory":
         try:
             return observatory.observatory(p[1], _one(q, "modalidad"))
@@ -190,6 +230,37 @@ def route_post(path: str, body: dict):
         if len(ub) not in (2, 4, 6) or not ub.isdigit():
             raise ApiError(400, "ubigeo inválido")
         return agents.ask(ub, str(body.get("question") or "")[:500])
+    if p[:3] == ["admin", "engineering", "ai"] and len(p) == 4:
+        try:
+            return gateway.admin(p[3], body)
+        except gateway.GatewayError as e:
+            raise ApiError(403 if e.code == "TOOL_DENIED" else 409 if e.code in ("RESOURCE_DENIED", "BUDGET_DENIED") else 400,
+                           f"{e.code}: {e}")
+    if p == ["ai", "voice", "command"]:
+        try:
+            return voice.command(str(body.get("text") or ""), body.get("context") if isinstance(body.get("context"), dict) else None)
+        except gateway.GatewayError as e:
+            raise ApiError(400, f"{e.code}: {e}")
+    if p == ["ai", "voice", "realtime"]:
+        try:
+            return voice.realtime_session()
+        except gateway.GatewayError as e:
+            raise ApiError(409, f"{e.code}: {e}")
+    if p == ["ai", "voice", "realtime", "settle"]:
+        return voice.realtime_settle(str(body.get("reservation") or ""), body.get("usage") or {})
+    if p == ["ai", "voice", "route"]:
+        out = {}
+        for f in ("voz_stt", "voz_tts", "voz_realtime", "voz_comandos"):
+            try:
+                r = gateway.route(f, estimate_usd=0)
+                gateway.settle(r["reservation"], r["provider"], state="CANCELLED", note="consulta de ruta")
+                out[f] = {"provider": r["provider"]["id"], "name": r["provider"]["name"], "adapter": r["provider"]["adapter"],
+                          "mode": r["effective_mode"], "voice": r["provider"].get("voice")}
+            except gateway.GatewayError as e:
+                out[f] = {"error": e.as_dict()}
+        return out
+    if p == ["intel", "ai", "explain"]:
+        return _explain(body)
     if p == ["intel", "ai", "enso"]:
         return agents.ask_enso(str(body.get("question") or "")[:500])
     if p[:2] == ["intel", "vision"]:
@@ -373,6 +444,81 @@ def vision_snapshot(cam_id: str, ch: int) -> tuple[bytes, str]:
         return vdev.snapshot(cam, ch)
     except (RuntimeError, OSError) as e:
         raise ApiError(502, str(e))
+
+
+def _patterns(p: list[str], q: dict) -> dict:
+    scope = _one(q, "scope") or None
+    if scope and (not scope.isdigit() or len(scope) not in (2, 4, 6)):
+        raise ApiError(400, "scope = UBIGEO de 2, 4 o 6 dígitos")
+    mod = _one(q, "modalidad") or None
+    if p == ["hotspots"]:
+        return patterns.hotspots(mod, _int(q, "year"), scope)
+    if p == ["changes"]:
+        return patterns.change_points(scope, mod)
+    if p == ["leadlag"]:
+        return patterns.lead_lag(scope, _one(q, "a", "emergencia"), _one(q, "b", "denuncia"), _one(q, "sub_a"), _one(q, "sub_b") or mod)
+    if p == ["sequences"]:
+        return patterns.sequences(scope, _int(q, "window", 14))
+    if p == ["anomalies"]:
+        return patterns.anomalies(_one(q, "level", "distrito"), mod, 15, scope)
+    if p == ["forecast"]:
+        return patterns.compete(scope, mod)
+    raise ApiError(404, "patrón desconocido")
+
+
+def _bbox_layer(table: str, q: dict, cols: str, *sources: str, limit: int = 3000) -> dict:
+    if not warehouse.has(table):
+        return {"available": False, "reason": f"Falta {table} (python -m peru_intel ingest servicios)"}
+    try:
+        w, s, e, n = (float(x) for x in (_one(q, "bbox") or "").split(","))
+    except ValueError:
+        raise ApiError(400, "bbox = oeste,sur,este,norte")
+    cats = [c for c in (_one(q, "cat") or "").split(",") if c]
+    cat_sql = f" AND cat IN ({','.join('?' for _ in cats)})" if cats else ""
+    rows = warehouse.query(f"SELECT {cols} FROM {table} WHERE lon BETWEEN ? AND ? AND lat BETWEEN ? AND ?{cat_sql} LIMIT {int(limit) + 1}",
+                           [w, e, s, n, *cats])
+    return {"available": True, "items": rows[:limit], "truncated": len(rows) > limit, "provenance": registry.provenance(*sources)}
+
+
+def _emergency_layer(q: dict) -> dict:
+    if not warehouse.has("indeci_emergencias"):
+        return {"available": False, "reason": "python -m peru_intel ingest emergencias"}
+    days = max(7, min(_int(q, "days", 90), 3650))
+    last = warehouse.query("SELECT max(fecha) f FROM indeci_emergencias")[0]["f"]
+    rows = warehouse.query("""SELECT id, fecha, fenomeno, grupo, distrito, afectados, damnificados, fallecidos, viv_destruidas, lat, lon
+                              FROM indeci_emergencias WHERE lat IS NOT NULL AND fecha >= CAST(? AS DATE) - CAST(? AS INTEGER) * INTERVAL 1 DAY
+                              ORDER BY fecha DESC LIMIT 6000""", [last, days])
+    return {"available": True, "window_end": str(last), "days": days, "items": [r | {"fecha": str(r["fecha"])} for r in rows],
+            "provenance": registry.provenance("indeci_sinpad")}
+
+
+EXPLAIN_SYSTEM = """Eres GeoAnalyst. Explicas resultados de análisis territorial en español de Perú, para decidir.
+Reglas: usa SOLO los hechos numerados y cita [Fn] tras cada cifra; no inventes; no afirmes causalidad («coincide con»);
+solo territorios y agregados, nunca personas. Máximo 160 palabras: 3 viñetas y una recomendación prudente."""
+
+
+def _explain(body: dict) -> dict:
+    """La IA redacta sobre hechos ya calculados (patrones o rutas) y el Verifier revisa cada cifra."""
+    facts = []
+    for i, f in enumerate((body.get("facts") or [])[:40]):
+        try:
+            facts.append({"id": f"F{i + 1}", "label": str(f["label"])[:160], "value": float(f["value"]), "unit": str(f.get("unit") or "")[:40],
+                          "period": str(f.get("period") or "")[:40], "source": str(f.get("source") or "cálculo")[:60], "kind": "calculado"})
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not facts:
+        raise ApiError(400, "sin hechos numéricos para explicar")
+    txt = "\n".join(f"[{f['id']}] {f['label']}: {f['value']} {f['unit']} · {f['period']} · {f['source']}" for f in facts)
+    try:
+        out = gateway.run_chat("explicar_patrones", [{"role": "system", "content": EXPLAIN_SYSTEM},
+                                                     {"role": "user", "content": f"Tema: {str(body.get('topic') or '')[:200]}\nHECHOS:\n{txt}"}],
+                               max_tokens=500)
+        text, engine, kind = out["text"].strip(), f"{out['provider_name']} · {out['model']}", "ia"
+    except gateway.GatewayError as e:
+        text = "\n".join(f"- {f['label']}: {f['value']:g} {f['unit']} [{f['id']}]." for f in facts[:6])
+        engine, kind = f"resumen determinista ({e.code})", "calculado"
+    from ..ai import verifier
+    return {"answer": {"text": text, "engine": engine, "kind": kind}, "verification": verifier.verify(text, facts), "facts": facts}
 
 
 def boundaries(level: str) -> bytes | None:

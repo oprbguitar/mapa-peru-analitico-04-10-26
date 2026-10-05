@@ -26,10 +26,21 @@ from ..weather import overlays as wx_overlays
 from ..sources import registry
 from . import api
 
-CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; "
+CSP = ("default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; "
        "script-src 'self'; worker-src 'self' blob:; connect-src 'self'; font-src 'self'; "
        "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 MAX_BODY = 64 * 1024
+MAX_AUDIO = 8 * 1024 * 1024
+_CSP_CACHE = {"t": 0.0, "v": CSP}
+
+
+def csp() -> str:
+    """CSP 'self'; si el usuario habilitó la voz Realtime, se añade SOLO ese origen a connect-src (WebRTC/SDP)."""
+    if time.time() - _CSP_CACHE["t"] > 5:
+        from ..ai import voice
+        extra = " ".join(voice.connect_origins())
+        _CSP_CACHE.update(t=time.time(), v=CSP.replace("connect-src 'self'", f"connect-src 'self' {extra}".rstrip()))
+    return _CSP_CACHE["v"]
 TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
 WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
 SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jpg$")
@@ -56,7 +67,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
-        self.send_header("Content-Security-Policy", CSP)
+        self.send_header("Content-Security-Policy", csp())
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
@@ -124,6 +135,32 @@ class Handler(BaseHTTPRequestHandler):
             host = self.headers.get("Host")
             if origin and urlparse(origin).netloc != host:
                 return self._json(403, {"error": "origen no permitido"})
+            path = urlparse(self.path).path
+            if path == "/api/v1/ai/voice/stt":  # audio binario del micrófono
+                ctype = (self.headers.get("Content-Type") or "").split(";")[0]
+                if not ctype.startswith("audio/"):
+                    return self._json(415, {"error": "se requiere audio/*"})
+                n = int(self.headers.get("Content-Length") or 0)
+                if n <= 0 or n > MAX_AUDIO:
+                    return self._json(413, {"error": "audio vacío o mayor a 8 MB"})
+                from ..ai import gateway, voice
+                try:
+                    return self._json(200, voice.stt(self.rfile.read(n), ctype))
+                except gateway.GatewayError as e:
+                    return self._json(409, {"error": f"{e.code}: {e}"})
+            if path == "/api/v1/ai/voice/tts":
+                n = int(self.headers.get("Content-Length") or 0)
+                if n > MAX_BODY or "application/json" not in (self.headers.get("Content-Type") or ""):
+                    return self._json(400, {"error": "JSON {text}"})
+                from ..ai import gateway, voice
+                body = json.loads(self.rfile.read(n) or b"{}")
+                try:
+                    audio, meta = voice.tts(str(body.get("text") or ""))
+                except gateway.GatewayError as e:
+                    return self._json(409, {"error": f"{e.code}: {e}"})
+                if audio is None:
+                    return self._json(200, meta)
+                return self._send(200, audio, "audio/mpeg", "no-store", compress=False)
             if "application/json" not in (self.headers.get("Content-Type") or ""):
                 return self._json(415, {"error": "se requiere JSON"})
             n = int(self.headers.get("Content-Length") or 0)
@@ -186,6 +223,13 @@ def run(host: str = "127.0.0.1", port: int = 8360, live: bool = True, open_brows
     if live:
         from ..live import load_all
         load_all()
+    def _warm():
+        try:
+            from ..analytics import patterns
+            patterns.warmup()
+        except Exception:  # noqa: BLE001 — opcional
+            pass
+    threading.Thread(target=_warm, name="warmup", daemon=True).start()
     srv = ThreadingHTTPServer((host, port), Handler)
     srv.daemon_threads = True
     url = f"http://{host}:{port}/"
