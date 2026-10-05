@@ -47,6 +47,20 @@ SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jp
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
 
 
+_GZ: dict[int, bytes] = {}  # cuerpos ya comprimidos (límites, catálogos): no se recomprimen en cada pedido
+
+
+def _gzip(body: bytes) -> bytes:
+    k = hash(body)
+    z = _GZ.get(k)
+    if z is None:
+        z = gzip.compress(body, 5)
+        if len(_GZ) > 96:
+            _GZ.pop(next(iter(_GZ)))
+        _GZ[k] = z
+    return z
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "MapaPeruAnalitico/0.1"
     protocol_version = "HTTP/1.1"
@@ -59,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, ctype: str, cache: str = "no-store", compress: bool = True):
         if compress and len(body) > 1400 and "gzip" in (self.headers.get("Accept-Encoding") or "") and \
                 not ctype.startswith(("image/", "application/x-protobuf", "font/")):
-            body = gzip.compress(body, 5)
+            body = _gzip(body)
             self.send_response(status)
             self.send_header("Content-Encoding", "gzip")
         else:
@@ -67,6 +81,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
+        if getattr(self, "_etag", None):
+            self.send_header("ETag", self._etag)
+            self._etag = None
         self.send_header("Content-Security-Policy", csp())
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
@@ -188,6 +205,16 @@ class Handler(BaseHTTPRequestHandler):
         if ctype.startswith("text/") or ctype in ("application/javascript",):
             ctype += "; charset=utf-8"
         cache = "no-cache" if target.suffix in (".html", ".js", ".css") else "max-age=604800"
+        st = target.stat()
+        etag = f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
+        if self.headers.get("If-None-Match") == etag:  # recarga local: 304 sin volver a enviar el archivo
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", cache)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self._etag = etag
         self._send(200, target.read_bytes(), ctype, cache)
 
     def _sse(self):

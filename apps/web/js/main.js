@@ -4,7 +4,7 @@ import { initAssistant } from './assistant.js'
 import { initChrome, setPanel } from './chrome.js'
 import { lastContext, renderContext, renderObservatory } from './context360.js'
 import { initDialogs } from './dialogs.js'
-import { initStory, playStory, renderEnso } from './enso.js'
+import { closeStory, initStory, playStory, renderEnso } from './enso.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
 import { fitBBox, flyTo, initMap, map, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
@@ -13,7 +13,7 @@ import { setOcean, setOceanColor } from './ocean.js'
 import { renderOverview, renderRegion } from './panel.js'
 import { renderPatterns, setPatternScope } from './patterns.js'
 import { initPlaces, toggleEmergencias, toggleSede, toggleServicio, toggleVias } from './places.js'
-import { bindRail, bindRailView, renderKindKey, renderRail, setLiveMeta } from './rail.js'
+import { bindRail, bindRailView, renderKindKey, renderRail, setLiveMeta, showThematic, thematicChips } from './rail.js'
 import { pickHandler as routePick, plan as planRoute, renderRoutes, setEndpoint } from './routes.js'
 import { draw, initTimeline, setNote, syncPresets } from './timeline.js'
 import { esc, getJSON, setState, state, toast } from './util.js'
@@ -99,7 +99,7 @@ async function loadChoropleth() {
   const cls = paint(c, state.measure)
   renderLegend(c, state.measure, cls, measureHandler(c), legendTools(c))
   const cmp = c.comparison ? ` · cambio vs ${c.comparison.label}` : ''
-  document.getElementById('layer-title').innerHTML = `<h2>${esc(c.title)}</h2><p>${esc(c.period?.label || '')}${esc(cmp)}${c.period?.partial ? ' · período parcial' : ''}</p>`
+  document.getElementById('layer-title').innerHTML = `<h2>${esc(c.title)}</h2><p>${esc(c.period?.label || '')}${esc(cmp)}${c.period?.partial ? ' · período parcial' : ''}</p>${thematicChips()}`
   setNote(c.dataset === 'sidpol' ? `Estadística: ${c.period.label}` : `Estadística anual: ${c.period?.label || ''}`, LIVE_WINDOW[state.preset] || '')
   if (panelView === 'region' && state.selected) selectRegion(state.selected, { keepView: true })
   else if (panelView === 'observatory' && state.selected) showObservatory(state.selected)
@@ -213,6 +213,8 @@ async function setMode(m) {
     showLevel(state.level)
   }
   mode = m
+  document.body.dataset.mode = m
+  if (m !== 'ninio') closeStory()
   for (const b of document.querySelectorAll('#modes [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === m))
   showPanel()
   if (m === 'mapa') {
@@ -501,14 +503,28 @@ async function boot() {
   await liveMeta()
   renderRail(meta)
   bindRail({
-    onThematic: () => {
+    onThematic: (off) => {
       renderRail(meta)
-      loadChoropleth()
+      showLevel(state.level)
+      if (!off) return loadChoropleth()
+      renderLegend(null)
+      document.getElementById('layer-title').innerHTML = ''
     },
     onLive,
     onView,
   })
   bindRailView(onView)
+  const thShow = (id) => {
+    showThematic(id)
+    renderRail(meta)
+    showLevel(state.level)
+    loadChoropleth()
+  }
+  document.getElementById('families').addEventListener('th-show', (e) => thShow(e.detail))
+  document.getElementById('layer-title').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-th-show]')
+    if (b) thShow(b.dataset.thShow)
+  })
   await initMap({
     onSelect: (ub) => {   // el clic sobre un territorio solo lo resalta; la ficha la arma el Informador 360
       setState({ selected: ub })

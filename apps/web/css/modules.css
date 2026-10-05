@@ -244,3 +244,34 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
   .modes button { flex: 1; }
   .spine { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
 }
+
+/* El Niño · todos los registros del período a la vez */
+[data-type="mar"] { --ev: var(--enso-warm); } [data-type="lluvia"] { --ev: var(--fx-rain); } [data-type="inundacion"] { --ev: var(--info); }
+[data-type="huaico"] { --ev: var(--kind-estimacion); } [data-type="rio"] { --ev: var(--pal-esp-2); } [data-type="emergencia"] { --ev: var(--danger); }
+[data-type="fin"] { --ev: var(--enso-neutral); } [data-type="pronostico"] { --ev: var(--kind-proyeccion); }
+.ev-mark { display: flex; align-items: flex-start; gap: var(--sp-1); padding: 0; border: 0; background: none; cursor: pointer; font: 400 var(--fs-caption) var(--font-mono); color: var(--ink); }
+.ev-mark .n, .ev-list .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ev); color: var(--void); font: 700 var(--fs-caption) var(--font-mono); border: var(--border) solid var(--inst-ring); flex: none; }
+.ev-mark .t { background: var(--surface); border: var(--border) solid var(--ev); border-left: var(--rule) solid var(--ev); padding: 2px var(--sp-1); white-space: nowrap; line-height: 1.35; }
+.ev-mark:hover .t, .ev-mark:focus-visible .t { background: var(--accent-dim); }
+.ev-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ev-mark[aria-current="true"] { z-index: 2; }
+.ev-mark[aria-current="true"] .n { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ev) 40%, transparent); }
+.ev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 168px; overflow-y: auto; }
+.ev-list button { display: flex; gap: var(--sp-2); align-items: center; width: 100%; text-align: left; border: var(--border) solid transparent; border-left: var(--rule) solid var(--ev); background: transparent; color: var(--ink); padding: 2px var(--sp-2); cursor: pointer; }
+.ev-list button:hover { background: var(--accent-dim); }
+.ev-list button[aria-current="true"] { border-color: var(--ev); background: var(--accent-dim); }
+.ev-list small { display: block; color: var(--ink-soft); font: 400 var(--fs-caption) var(--font-mono); }
+.ev-detail { display: grid; gap: var(--sp-1); }
+@media (max-width: 767px) { .ev-mark .t { display: none; } .ev-list { max-height: 120px; } }
+
+/* En El Niño y Rutas la caja de capa temática y la leyenda estorban: se ocultan */
+body[data-mode="ninio"] #layer-title, body[data-mode="ninio"] #legend,
+body[data-mode="rutas"] #layer-title, body[data-mode="rutas"] #legend { display: none; }
+
+/* Seguridad: alternar entre varias capas marcadas */
+.th-chips { display: flex; flex-wrap: wrap; gap: 2px; margin-top: var(--sp-1); }
+.th-chips button { border: var(--border) solid var(--line); background: transparent; color: var(--ink); min-height: 28px; padding: 0 var(--sp-2); cursor: pointer; font: 400 var(--fs-caption) var(--font-mono); }
+.th-chips button:hover { background: var(--accent-dim); }
+.th-chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.th-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+@media (max-height: 760px) { .ev-list { max-height: 92px; } .ev-detail p { display: none; } }

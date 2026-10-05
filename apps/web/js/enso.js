@@ -1,4 +1,5 @@
 // Observatorio de El Niño: estado oficial ENFEN, ICEN 1950–hoy, comparación con eventos y la historia animada.
+/* global maplibregl */
 import { ensureLineLayer, ensurePointLayer, flyTo, map, ptFeature, setLines, setPoints, showLayer } from './map.js'
 import { esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js'
 import { oceanKey, setOcean, setOceanColor } from './ocean.js'
@@ -118,7 +119,12 @@ function bindEnso() {
   })
 }
 
-// ── historia animada ────────────────────────────────────────────────────────
+// ── historia: todo el período en paralelo + recorrido opcional ─────────────
+const TYPE = { mar: 'Mar cálido', lluvia: 'Lluvias', inundacion: 'Inundación', huaico: 'Huaico', rio: 'Desborde de río', emergencia: 'Emergencia', fin: 'Fin del evento', pronostico: 'Pronóstico oficial' }
+let markers = []
+const icenTxt = (ch) => (ch.icen != null ? (ch.icen > 0 ? '+' : '') + fmt(ch.icen, 2) + ' °C' : '—')
+const sstTxt = (ch) => (ch.sst ? fmt(ch.sst.sst, 1) + ' °C (' + (ch.sst.anom > 0 ? '+' : '') + fmt(ch.sst.anom, 1) + ')' : '—')
+
 function marchDash(id) {
   clearInterval(dashTimer)
   if (reduce()) return
@@ -127,42 +133,55 @@ function marchDash(id) {
   dashTimer = setInterval(() => map.getLayer(id) && map.setPaintProperty(id, 'line-dasharray', steps[k++ % steps.length]), 90)
 }
 
-function showChapter() {
+function clearMarkers() {
+  markers.forEach((m) => m.remove())
+  markers = []
+}
+
+/** Dibuja TODOS los registros del período a la vez: marcadores fijos con fecha, tipo y temperatura del mar del momento. */
+function drawAll() {
+  const { s } = story
+  clearMarkers()
+  ensureLineLayer('st-path', { dashed: true, color: '--enso-warm', width: 4 })
+  setLines('st-path', s.chapters.filter((c) => c.path?.length).map((c) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates: c.path }, properties: {} })))
+  marchDash('st-path')
+  const pts = data.current.rivers && s.chapters.some((c) => c.rivers) ? data.current.rivers.map((r) => ptFeature(r.lon, r.lat, { k: 'river', name: r.name })) : []
+  ensurePointLayer('st-pts', { colorBy: 'k', colors: { river: '--fx-rain' }, radius: 7 })
+  setPoints('st-pts', pts, pts.length > 0)
+  s.chapters.forEach((ch, k) => {
+    const el = document.createElement('button')
+    el.type = 'button'
+    el.className = 'ev-mark'
+    el.dataset.type = ch.type || 'mar'
+    el.dataset.k = k
+    el.setAttribute('aria-current', String(k === story.i))
+    el.innerHTML = `<span class="n">${k + 1}</span><span class="t"><b>${k === 0 ? 'Inicio · ' : ''}${esc(TYPE[ch.type] || ch.title)}</b> ${esc(ch.date)}<br>ICEN ${icenTxt(ch)}</span>`
+    el.addEventListener('click', (e) => (e.stopPropagation(), go(k)))
+    markers.push(new maplibregl.Marker({ element: el, anchor: 'left' }).setLngLat([ch.lon, ch.lat]).addTo(map))
+  })
+  const b = new maplibregl.LngLatBounds()
+  s.chapters.forEach((c) => { b.extend([c.lon, c.lat]); (c.path || []).forEach((p) => b.extend(p)) })
+  map.fitBounds(b, { padding: { top: 80, bottom: 260, left: 60, right: 380 }, maxZoom: 9, duration: reduce() ? 0 : 900 })
+}
+
+function render() {
   const { s, i } = story
   const ch = s.chapters[i]
-  ensureLineLayer('st-path', { dashed: true, color: '--enso-warm', width: 4 })
-  ensurePointLayer('st-pts', { colorBy: 'k', colors: { warm: '--enso-warm', river: '--fx-rain', place: '--accent' }, radius: 9 })
-  // trazo ilustrativo (si el capítulo lo tiene) que se «dibuja» poco a poco
-  if (ch.path?.length) {
-    const full = ch.path
-    let n = reduce() ? full.length : 2
-    const grow = () => {
-      setLines('st-path', [{ type: 'Feature', geometry: { type: 'LineString', coordinates: full.slice(0, n) }, properties: {} }])
-      if (n++ < full.length) story.grow = setTimeout(grow, 450)
-    }
-    clearTimeout(story.grow)
-    grow()
-    marchDash('st-path')
-  } else setLines('st-path', [])
-  const pts = [ptFeature(ch.lon, ch.lat, { k: ch.flow === 'nino' ? 'warm' : 'place' })]
-  if (ch.rivers && data.current.rivers) pts.push(...data.current.rivers.map((r) => ptFeature(r.lon, r.lat, { k: 'river', name: r.name })))
-  setPoints('st-pts', pts, true)
-  flyTo(ch.lon, ch.lat, ch.zoom || 6)
+  markers.forEach((m, k) => m.getElement().setAttribute('aria-current', String(k === i)))
   const el = document.getElementById('story')
   el.hidden = false
-  el.innerHTML = `<div class="story-head"><span class="when">${esc(s.title)} · ${esc(ch.date)}</span>
+  el.innerHTML = `<div class="story-head"><span class="when">${esc(s.title)} · ${s.chapters.length} registros${s.duration_months ? ` · ${s.duration_months} meses` : ''}</span>
       <button class="btn btn-ghost btn-icon" type="button" data-st="close" aria-label="Cerrar la historia">✕</button></div>
-    <h3>${esc(ch.title)}</h3><p>${esc(ch.text)}</p>
-    <div class="story-metrics"><span>ICEN del mes <b>${ch.icen != null ? (ch.icen > 0 ? '+' : '') + fmt(ch.icen, 2) + ' °C' : '—'}</b></span>
-      <span>Mar Niño 1+2 <b>${ch.sst ? fmt(ch.sst.sst, 1) + ' °C (' + (ch.sst.anom > 0 ? '+' : '') + fmt(ch.sst.anom, 1) + ')' : '—'}</b></span>
-      <span>Duración del evento <b>${s.duration_months ? s.duration_months + ' meses' : 'en curso'}</b></span></div>
-    ${ch.path_label ? `<p class="src-meta">${kindBadge('estimacion', 'trazo ilustrativo')} ${esc(ch.path_label)}</p>` : ''}
-    <div class="story-src">${(ch.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join('')}</div>
+    <ol class="ev-list">${s.chapters.map((c, k) => `<li><button type="button" data-st="go" data-k="${k}" data-type="${esc(c.type || 'mar')}" aria-current="${k === i}">
+      <span class="n">${k + 1}</span><span><b>${esc(c.title)}</b><small>${esc(TYPE[c.type] || '')} · ${esc(c.date)} · ICEN ${icenTxt(c)} · mar ${sstTxt(c)}</small></span></button></li>`).join('')}</ol>
+    <div class="ev-detail"><h3>${i + 1}. ${esc(ch.title)}</h3><p>${esc(ch.text)}</p>
+      ${ch.path_label ? `<p class="src-meta">${kindBadge('estimacion', 'trazo ilustrativo')} ${esc(ch.path_label)}</p>` : ''}
+      <div class="story-src">${(ch.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join('')}</div></div>
     <div class="story-progress"><span id="st-bar"></span></div>
-    <div class="story-nav"><button class="btn" type="button" data-st="prev" ${i ? '' : 'disabled'}>◀</button>
-      <button class="btn btn-primary" type="button" data-st="play" aria-pressed="${story.playing}">${story.playing ? '❚❚ Pausa' : '▶ Seguir'}</button>
-      <button class="btn" type="button" data-st="next" ${i < s.chapters.length - 1 ? '' : 'disabled'}>▶</button>
-      <div class="story-dots">${s.chapters.map((_, k) => `<button type="button" data-st="go" data-k="${k}" aria-label="Capítulo ${k + 1}" aria-current="${k === i}"></button>`).join('')}</div></div>`
+    <div class="story-nav"><button class="btn" type="button" data-st="all">Ver todo</button>
+      <button class="btn btn-primary" type="button" data-st="play" aria-pressed="${story.playing}">${story.playing ? '❚❚ Pausa' : '▶ Recorrido'}</button>
+      <button class="btn" type="button" data-st="prev" ${i ? '' : 'disabled'} aria-label="Anterior">◀</button>
+      <button class="btn" type="button" data-st="next" ${i < s.chapters.length - 1 ? '' : 'disabled'} aria-label="Siguiente">▶</button></div>`
   const bar = document.getElementById('st-bar')
   if (story.playing && !reduce()) {
     bar.style.transition = 'none'
@@ -175,20 +194,22 @@ function showChapter() {
 
 function go(i) {
   story.i = i
-  showChapter()
+  const ch = story.s.chapters[i]
+  flyTo(ch.lon, ch.lat, ch.zoom || 6)
+  render()
 }
 
 function pause() {
   story.playing = false
   clearTimeout(story.timer)
-  showChapter()
+  render()
 }
 
 function close() {
   clearTimeout(story?.timer)
-  clearTimeout(story?.grow)
   clearInterval(dashTimer)
   story = null
+  clearMarkers()
   document.getElementById('story').hidden = true
   setLines('st-path', [])
   showLayer('st-pts', false)
@@ -198,9 +219,13 @@ export async function playStory(id) {
   const d = await load()
   const s = d.storylines.find((x) => x.id === id)
   if (!s) return toast('Historia no disponible')
-  story = { s, i: 0, playing: !reduce(), timer: null }
-  showChapter()
+  if (story) close()
+  story = { s, i: 0, playing: false, timer: null }
+  drawAll()
+  render()
 }
+
+export const closeStory = () => story && close()
 
 export function initStory() {
   document.getElementById('story').addEventListener('click', (e) => {
@@ -211,9 +236,13 @@ export function initStory() {
     else if (a === 'prev') go(Math.max(0, story.i - 1))
     else if (a === 'next') go(Math.min(story.s.chapters.length - 1, story.i + 1))
     else if (a === 'go') go(+b.dataset.k)
-    else if (a === 'play') {
+    else if (a === 'all') {
+      story.playing = false
+      drawAll()
+      render()
+    } else if (a === 'play') {
       story.playing = !story.playing
-      showChapter()
+      story.playing ? go(story.i) : render()
     }
   })
   document.addEventListener('keydown', (e) => e.key === 'Escape' && story && close())

@@ -70,6 +70,8 @@ export async function initMap({ onSelect, onClick }) {
   map = new maplibregl.Map({
     container: 'map', style, center: [-75.2, -9.3], zoom: window.innerWidth < 768 ? 3.9 : 4.6,
     minZoom: 1.5, maxZoom: 18, maxPitch: 78, attributionControl: false,
+    // servidor local: sin fundidos de teselas, caché amplia y resolución de pantalla acotada para que el arrastre sea fluido
+    fadeDuration: 0, maxTileCacheSize: 600, refreshExpiredTiles: false, pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
     transformRequest: (url) => ({ url: abs(url) }),
   })
   window.__piMap = map // depuración desde la consola y pruebas E2E
@@ -79,8 +81,12 @@ export async function initMap({ onSelect, onClick }) {
   if (!map.isStyleLoaded()) await new Promise((res) => map.once('style.load', res))
   addOwnLayers()
   for (const src of Object.values(LEVEL_SRC)) {
-    map.on('mousemove', `${src}-fill`, (e) => hover(src, e))
-    map.on('mouseleave', `${src}-fill`, () => unhover())
+    let raf = 0
+    map.on('mousemove', `${src}-fill`, (e) => {   // un solo cálculo de ficha por cuadro, no por evento del ratón
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => hover(src, e))
+    })
+    map.on('mouseleave', `${src}-fill`, () => (cancelAnimationFrame(raf), unhover()))
     map.on('click', `${src}-fill`, (e) => {
       const f = e.features?.[0]
       if (f && !state.wxPoint) onSelect(f.properties.u, f.properties)
@@ -383,4 +389,4 @@ export function setLines(id, features) {
 }
 
 export const flyTo = (lon, lat, zoom = 12) =>
-  map.flyTo({ center: [lon, lat], zoom, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1600, essential: true })
+  map.flyTo({ center: [lon, lat], zoom, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900, essential: true })

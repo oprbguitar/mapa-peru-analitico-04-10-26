@@ -67,6 +67,22 @@ let indicatorNames = {}
 const liveText = {}
 let modalities = []
 let devidaInds = []
+let sel = null   // capas temáticas marcadas (varias a la vez); la activa es la que colorea el mapa
+
+const thDef = (id) => [...THEMATIC, ...FAMILIES.flatMap((f) => f.extra || [])].find((x) => x.id === id)
+
+/** Activa una de las capas marcadas para colorear el mapa (contraste rápido entre las elegidas). */
+export function showThematic(id) {
+  if (!sel.includes(id)) sel.push(id)
+  setState({ ...thDef(id).patch, measure: null, hideChoropleth: false })
+}
+
+/** Botones para alternar entre las capas temáticas marcadas (se muestran sobre el mapa). */
+export function thematicChips() {
+  if (!sel || sel.length < 2) return ''
+  const key = thematicKey()
+  return `<div class="th-chips" role="group" aria-label="Alternar capas marcadas">${sel.map((id) => `<button type="button" data-th-show="${id}" aria-pressed="${id === key}">${esc(thDef(id).label)}</button>`).join('')}</div>`
+}
 
 export function renderKindKey() {
   document.getElementById('kind-key').innerHTML = Object.keys(KIND_LABEL).map((k) => kindBadge(k)).join('')
@@ -80,7 +96,7 @@ function thematicKey() {
   return { sidpol: 'sidpol', mpfn: 'mpfn', devida: 'devida', indice: 'indice' }[state.dataset]
 }
 
-function radio(t, checked) {
+function radio(t, marked, checked) {
   const sub = []
   if (checked && t.id === 'sidpol') {
     sub.push(`<label class="sr-only" for="sel-mod">Modalidad</label><select id="sel-mod">
@@ -97,8 +113,9 @@ function radio(t, checked) {
     sub.push(`<label class="sr-only" for="sel-devida">Indicador DEVIDA</label><select id="sel-devida">${devidaInds
       .map((d) => `<option value="${d.indicador}" ${state.devidaInd === d.indicador ? 'selected' : ''}>${esc(d.etiqueta)} (${esc(d.unidad)})</option>`).join('')}</select>`)
   }
-  return `<label class="opt"><input type="radio" name="thematic" value="${t.id}" ${checked ? 'checked' : ''}>
-    <span class="opt-label">${esc(t.label)}<small>${esc(t.hint)}</small></span>${kindBadge(t.kind, '')}</label>
+  const tag = checked ? '<span class="opt-meta">en mapa</span>' : marked ? `<button type="button" class="btn btn-ghost" data-th-show="${t.id}">Ver</button>` : ''
+  return `<label class="opt"><input type="checkbox" name="thematic" value="${t.id}" ${marked ? 'checked' : ''}>
+    <span class="opt-label">${esc(t.label)}<small>${esc(t.hint)}</small></span>${tag || kindBadge(t.kind, '')}</label>
     ${sub.length ? `<div class="sub-control">${sub.join('')}</div>` : ''}`
 }
 
@@ -106,14 +123,15 @@ export function renderRail(meta = {}) {
   if (meta.indicators) indicatorNames = Object.fromEntries(meta.indicators.map((i) => [i.codigo, i.nombre]))
   if (meta.modalities) modalities = meta.modalities
   if (meta.devida) devidaInds = meta.devida
-  const key = thematicKey()
+  const key = state.hideChoropleth ? null : thematicKey()
+  sel ??= [thematicKey()]
   const wasOpen = new Set([...document.querySelectorAll('#families details.family[open]')].map((d) => d.dataset.f))
   const firstRender = !document.querySelector('#families details')
   const html = FAMILIES.map((f) => {
     let body = ''
     if (f.view) body = viewBlock()
-    if (f.thematic) body = THEMATIC.map((t) => radio(t, key === t.id)).join('') + '<div class="opt-sub">Sedes · ubicación aproximada</div>'
-    if (f.extra) body += f.extra.map((t) => radio(t, key === t.id)).join('')
+    if (f.thematic) body = THEMATIC.map((t) => radio(t, sel.includes(t.id), key === t.id)).join('') + '<div class="opt-sub">Sedes · ubicación aproximada</div>'
+    if (f.extra) body += f.extra.map((t) => radio(t, sel.includes(t.id), key === t.id)).join('')
     if (f.live) {
       body += f.live.map((l) => {
         const st = meta.live?.[l.id]
@@ -171,8 +189,17 @@ export function bindRail({ onThematic, onLive, onView }) {
   root.addEventListener('change', (e) => {
     const t = e.target
     if (t.name === 'thematic') {
-      const def = [...THEMATIC, ...FAMILIES.flatMap((f) => f.extra || [])].find((x) => x.id === t.value)
-      setState({ ...def.patch, measure: null })
+      if (t.checked) showThematic(t.value)
+      else {
+        const wasActive = !state.hideChoropleth && thematicKey() === t.value
+        sel = sel.filter((x) => x !== t.value)
+        if (!wasActive) return renderRail()
+        if (!sel.length) {   // nada marcado: el mapa queda sin capa temática
+          setState({ hideChoropleth: true })
+          return onThematic(true)
+        }
+        showThematic(sel.at(-1))
+      }
       onThematic()
     } else if (t.id === 'sel-mod') {
       setState({ modalidad: t.value })
@@ -224,6 +251,11 @@ export function bindRailView(onView) {
     }
   })
   root.addEventListener('click', (e) => {
+    const th = e.target.closest('[data-th-show]')
+    if (th) {
+      e.preventDefault()
+      root.dispatchEvent(new CustomEvent('th-show', { detail: th.dataset.thShow }))
+    }
     const b = e.target.closest('[data-view]')
     if (b) onView(b.dataset.view)
     const oc = e.target.closest('[data-ocean-color]')
