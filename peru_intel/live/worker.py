@@ -60,7 +60,7 @@ class Worker:
     def _count(self) -> int | None:
         d = self.data
         if isinstance(d, dict):
-            for k in ("items", "features", "satellites", "stations"):
+            for k in ("items", "features", "satellites", "stations", "cells"):
                 if isinstance(d.get(k), list):
                     return len(d[k])
         return len(d) if isinstance(d, list) else None

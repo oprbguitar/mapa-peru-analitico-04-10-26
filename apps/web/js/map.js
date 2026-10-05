@@ -4,8 +4,15 @@
 import { cssVar, esc, fmt, fmtPct, state } from './util.js'
 
 const LEVEL_SRC = { departamento: 'departamentos', provincia: 'provincias', distrito: 'distritos' }
-const SEQ = ['--seq-1', '--seq-2', '--seq-3', '--seq-4', '--seq-5', '--seq-6', '--seq-7']
-const DIV = ['--div-neg-3', '--div-neg-2', '--div-neg-1', '--div-mid', '--div-pos-1', '--div-pos-2', '--div-pos-3']
+// Paletas elegibles (tokens.css). «espectral» por defecto: azul → verde → amarillo → rojo.
+export const PALETTES = {
+  espectral: { label: 'Espectral (azul → rojo)', prefix: '--pal-esp-' },
+  calor: { label: 'Calor (amarillo → rojo)', prefix: '--pal-cal-' },
+  viridis: { label: 'Viridis (apta daltonismo)', prefix: '--pal-vir-' },
+  cian: { label: 'Cian HUD (un tono)', prefix: '--seq-' },
+}
+const seqVars = () => Array.from({ length: 7 }, (_, i) => `${(PALETTES[state.palette] || PALETTES.espectral).prefix}${i + 1}`)
+const DIV = ['--pal-esp-1', '--pal-esp-2', '--div-neg-1', '--div-mid', '--pal-esp-5', '--pal-esp-6', '--pal-esp-7']
 const DIV_BREAKS = [-30, -15, -5, 5, 15, 30]
 
 // Mapas base. `vector`: estilo OpenFreeMap. `raster`: capa de /tiles/base/<id> + qué conservar del vectorial.
@@ -101,6 +108,9 @@ function addOwnLayers() {
       paint: { 'fill-color': cssVar('--seq-none'), 'fill-opacity': 0.78 } }, firstSymbol)
     map.addLayer({ id: `${src}-line`, type: 'line', source: src, layout: { visibility: 'none' },
       paint: { 'line-color': cssVar('--void'), 'line-width': level === 'departamento' ? 1.2 : 0.5 } }, firstSymbol)
+    map.addLayer({ id: `${src}-hot`, type: 'line', source: src, layout: { visibility: 'none', 'line-join': 'round' },
+      paint: { 'line-color': cssVar('--hot'), 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 10, 3],
+        'line-dasharray': [3, 4], 'line-opacity': ['case', ['boolean', ['feature-state', 'hot'], false], 1, 0] } })
     map.addLayer({ id: `${src}-focus`, type: 'line', source: src, layout: { visibility: 'none' },
       paint: { 'line-color': cssVar('--accent'),
         'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, ['boolean', ['feature-state', 'hover'], false], 1.5, 0] } })
@@ -230,12 +240,14 @@ export function showLevel(level) {
   for (const [lv, src] of Object.entries(LEVEL_SRC)) {
     const vis = lv === level && !state.hideChoropleth ? 'visible' : 'none'
     for (const suffix of ['fill', 'line', 'focus']) map.setLayoutProperty(`${src}-${suffix}`, 'visibility', vis)
+    map.setLayoutProperty(`${src}-hot`, 'visibility', vis === 'visible' && state.hotspots ? 'visible' : 'none')
   }
 }
 
 function classify(values, measure) {
   if (measure === 'change_pct') return { breaks: DIV_BREAKS, colors: DIV.map(cssVar), diverging: true }
   const v = values.filter((x) => x !== null && x !== undefined && Number.isFinite(x)).sort((a, b) => a - b)
+  const SEQ = seqVars()
   if (!v.length) return { breaks: [], colors: SEQ.map(cssVar) }
   const breaks = []
   for (let i = 1; i < SEQ.length; i++) breaks.push(v[Math.min(v.length - 1, Math.floor((v.length * i) / SEQ.length))])
@@ -247,7 +259,10 @@ export function paint(choropleth, measure) {
   const level = choropleth.level
   const src = LEVEL_SRC[level]
   showLevel(level)
-  if (painted.level) for (const id of painted.ids) map.removeFeatureState({ source: LEVEL_SRC[painted.level], id }, 'cls')
+  if (painted.level) for (const id of painted.ids) {
+    map.removeFeatureState({ source: LEVEL_SRC[painted.level], id }, 'cls')
+    map.removeFeatureState({ source: LEVEL_SRC[painted.level], id }, 'hot')
+  }
   rowIndex = new Map(choropleth.rows.map((r) => [r.ubigeo, r]))
   const cls = classify(choropleth.rows.map((r) => r[measure]), measure)
   const ids = []
@@ -260,12 +275,38 @@ export function paint(choropleth, measure) {
     ids.push(r.ubigeo)
   }
   painted = { level, ids }
+  markHotspots(choropleth, measure, src)
   const expr = ['case', ['==', ['coalesce', ['feature-state', 'cls'], -1], -1], cssVar('--seq-none'),
     ['match', ['feature-state', 'cls'], ...cls.colors.flatMap((c, i) => [i, c]), cssVar('--seq-none')]]
   map.setPaintProperty(`${src}-fill`, 'fill-color', expr)
   map.setPaintProperty(`${src}-fill`, 'fill-opacity', state.choroplethOpacity ?? 0.78)
   map.setPaintProperty(`${src}-line`, 'line-color', cssVar('--void'))
   return cls
+}
+
+// Focos: el 10 % de territorios con el valor más alto de la medida (mínimo 3) recibe un contorno discontinuo coral.
+let hotTimer = null
+export let hotList = []
+function markHotspots(choropleth, measure, src) {
+  const rows = choropleth.rows.filter((r) => Number.isFinite(r[measure]))
+  const n = Math.max(3, Math.ceil(rows.length * 0.1))
+  hotList = measure === 'change_pct' || rows.length < 6 ? [] : [...rows].sort((a, b) => b[measure] - a[measure]).slice(0, n)
+  for (const r of hotList) map.setFeatureState({ source: src, id: r.ubigeo }, { hot: true })
+  clearInterval(hotTimer)
+  if (!state.hotspots || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  // secuencia de trazos del ejemplo «animate a line» de MapLibre: las líneas discontinuas «marchan» sin parpadear
+  const steps = [[0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+    [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5]]
+  let k = 0
+  hotTimer = setInterval(() => {
+    if (!map.getLayer(`${src}-hot`) || !state.hotspots) return clearInterval(hotTimer)
+    map.setPaintProperty(`${src}-hot`, 'line-dasharray', steps[k++ % steps.length])
+  }, 90)
+}
+
+export function setHotspots(on) {
+  state.hotspots = on
+  if (state.choropleth) paint(state.choropleth, state.measure)
 }
 
 export function setChoroplethOpacity(v) {

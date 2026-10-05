@@ -1,9 +1,10 @@
 // Orquestación: estado → choropleth, capas en vivo, ficha y espina temporal.
+import { initChrome, setPanel } from './chrome.js'
 import { initDialogs } from './dialogs.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
 import { fitBBox, initMap, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
-  setRelief, setSelected, setTerrain, showLevel, view } from './map.js'
+  setHotspots, setRelief, setSelected, setTerrain, showLevel, view } from './map.js'
 import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { renderOverview, renderRegion } from './panel.js'
 import { bindRail, bindRailView, renderKindKey, renderRail } from './rail.js'
@@ -82,7 +83,7 @@ async function loadChoropleth() {
   state.compareYear = c.comparison?.year
   draw()
   const cls = paint(c, state.measure)
-  renderLegend(c, state.measure, cls, measureHandler(c))
+  renderLegend(c, state.measure, cls, measureHandler(c), legendTools(c))
   const cmp = c.comparison ? ` · cambio vs ${c.comparison.label}` : ''
   document.getElementById('layer-title').innerHTML = `<h2>${esc(c.title)}</h2><p>${esc(c.period?.label || '')}${esc(cmp)}${c.period?.partial ? ' · período parcial' : ''}</p>`
   setNote(c.dataset === 'sidpol' ? `Estadística: ${c.period.label}` : `Estadística anual: ${c.period?.label || ''}`, LIVE_WINDOW[state.preset] || '')
@@ -90,10 +91,25 @@ async function loadChoropleth() {
   else renderOverview(c)
 }
 
+function legendTools(c) {
+  const redraw = () => renderLegend(c, state.measure, paint(c, state.measure), measureHandler(c), legendTools(c))
+  return {
+    onPalette: (k) => {
+      state.palette = k
+      try { localStorage.setItem('pi-palette', k) } catch { /* sin almacenamiento */ }
+      redraw()
+    },
+    onHot: (on) => {
+      setHotspots(on)
+      redraw()
+    },
+  }
+}
+
 function measureHandler(c) {
   return function onMeasure(m) {
     state.measure = m
-    renderLegend(c, m, paint(c, m), onMeasure)
+    renderLegend(c, m, paint(c, m), onMeasure, legendTools(c))
     if (!state.selected) renderOverview(c)
   }
 }
@@ -102,6 +118,7 @@ async function selectRegion(ub, { keepView = false } = {}) {
   const level = { 2: 'departamento', 4: 'provincia', 6: 'distrito' }[ub.length]
   setState({ selected: ub })
   setSelected(ub)
+  setPanel('panel', true)
   openSheet('panel')
   try {
     const sp = statPeriod()
@@ -200,6 +217,7 @@ async function liveMeta() {
 
 async function boot() {
   renderKindKey()
+  initChrome()
   initDialogs()
   bindTheme()
   bindSearch()

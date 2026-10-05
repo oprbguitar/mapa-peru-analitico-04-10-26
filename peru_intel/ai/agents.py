@@ -140,6 +140,53 @@ class GeoAnalyst:
         return "\n".join(lines)
 
 
+SYSTEM_ENSO = """Eres GeoAnalyst y explicas El Niño Costero en el Perú, en español de Perú, claro y sobrio.
+Reglas estrictas:
+1. Usa SOLO los hechos numerados. Cada cifra va seguida de su cita, por ejemplo: ICEN de 3,38 [F1].
+2. No inventes cifras, fechas, daños ni pronósticos. El pronóstico oficial es el del ENFEN: cítalo como texto, sin cifras propias.
+3. No afirmes causalidad; usa «coincide con» o «se asocia históricamente con».
+4. Máximo 200 palabras, 3 a 5 viñetas y una línea final que remita al comunicado oficial del ENFEN."""
+
+
+def ask_enso(question: str = "") -> dict:
+    """Lectura guiada del Niño: hechos oficiales y calculados → modelo (si hay) → Verifier."""
+    from ..climate import enso
+    facts = enso.facts()
+    cur = enso.curated()["current"]
+    prov, reason = router.choose("aggregate", "analisis")
+    router.log("analisis-enso", prov.id if prov else None, reason, None)
+    facts_txt = "\n".join(f"[{f['id']}] {f['label']}: {f['value']} {f['unit']} · período {f['period']} · fuente {f['source']} · {f['kind']}"
+                          for f in facts)
+    outlook = " ".join(cur["points"])
+    text, engine, kind = None, "resumen determinista (sin IA)", "calculado"
+    if prov is not None and facts:
+        try:
+            text = prov.chat([{"role": "system", "content": SYSTEM_ENSO},
+                              {"role": "user", "content": f"Pregunta: {question or '¿Qué tan fuerte es El Niño actual frente a los anteriores?'}\n\n"
+                                                          f"PRONÓSTICO OFICIAL ENFEN ({cur['comunicado']}, {cur['date']}), solo texto: {outlook}\n\n"
+                                                          f"HECHOS:\n{facts_txt}"}]).strip() or None
+            engine, kind = (f"{prov.id}:{prov.model()}", "ia") if text else (engine, kind)
+        except Exception as e:  # noqa: BLE001
+            reason = f"{reason} · error: {e}"
+    if not text:
+        f = {x["label"]: x for x in facts}
+        lines = []
+        a = f.get("Índice Costero El Niño (ICEN)")
+        if a:
+            lines.append(f"- El ICEN más reciente es {_fmt(a['value'], 2)} °C [{a['id']}] ({a['period']}).")
+        w = f.get("Anomalía semanal de la temperatura del mar en Niño 1+2")
+        if w:
+            lines.append(f"- En la semana del {w['period']} la anomalía del mar frente a la costa fue {_fmt(w['value'])} °C [{w['id']}].")
+        for x in facts:
+            if x["label"].startswith("ICEN actual respecto del máximo"):
+                lines.append(f"- {x['label']}: {_fmt(x['value'], 2)} veces [{x['id']}] (cálculo, no pronóstico).")
+        lines.append(f"Pronóstico oficial: {cur['headline']} ({cur['comunicado']}).")
+        text = "\n".join(lines)
+    check = verifier.verify(text, facts)
+    return {"question": question, "answer": {"text": text, "engine": engine, "route_reason": reason, "kind": kind},
+            "verification": check, "facts": facts, "official": {"comunicado": cur["comunicado"], "url": cur["url"], "headline": cur["headline"]}}
+
+
 def ask(ubigeo: str, question: str = "") -> dict:
     if re.search(r"\b(qui[eé]n|persona|individuo|nombre de|sospechoso)\b", question or "", re.I):
         return {"refused": True, "text": "Este sistema analiza territorios y series agregadas. No evalúa ni predice "

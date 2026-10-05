@@ -32,6 +32,7 @@ CSP = ("default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe
 MAX_BODY = 64 * 1024
 TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
 WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
+SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jpg$")
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
 
 
@@ -86,6 +87,10 @@ class Handler(BaseHTTPRequestHandler):
                 if r is None:
                     return self._send(404, b"", "text/plain")
                 return self._send(200 if r[0] else 204, r[0], r[1], "max-age=900")
+            m = SNAP_RX.match(path)
+            if m:
+                data, ctype = api.vision_snapshot(m[1], int(m[2]))
+                return self._send(200, data, ctype, "no-store")
             m = BASE_TILE_RX.match(path)
             if m:
                 r = basemaps.tile(m[1], int(m[2]), int(m[3]), int(m[4]))

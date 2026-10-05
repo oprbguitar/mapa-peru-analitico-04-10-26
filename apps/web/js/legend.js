@@ -1,9 +1,10 @@
 // Leyenda del choropleth con selector de medida (absoluto · tasa · cambio).
-import { esc, fmt, kindBadge } from './util.js'
+import { esc, fmt, kindBadge, state } from './util.js'
+import { PALETTES, hotList } from './map.js'
 
-const ORDER = ['count', 'rate', 'value', 'score', 'change_pct']
+const ORDER = ['count', 'rate', 'share_pct', 'value', 'score', 'change_pct']
 
-export function renderLegend(c, measure, cls, onMeasure) {
+export function renderLegend(c, measure, cls, onMeasure, { onPalette, onHot } = {}) {
   const el = document.getElementById('legend')
   if (!c?.available) {
     el.innerHTML = ''
@@ -24,6 +25,15 @@ export function renderLegend(c, measure, cls, onMeasure) {
     <div class="legend-scale" aria-hidden="true">${swatches}</div>
     <div class="legend-ticks" aria-hidden="true">${ticks}</div>
     <div class="legend-foot"><span>${esc(meta.unit)}</span>${kindBadge(meta.kind)}</div>
-    <div class="legend-foot"><span><span class="swatch-none"></span> sin dato publicado</span><span>${cls.diverging ? 'cortes fijos' : 'cuantiles · 7 clases'}</span></div>`
+    <div class="legend-foot"><span><span class="swatch-none"></span> sin dato publicado</span><span>${cls.diverging ? 'cortes fijos · ▼ azul baja · ▲ rojo sube' : 'cuantiles · 7 clases · posición relativa'}</span></div>
+    <div class="legend-tools">
+      <label class="sr-only" for="sel-palette">Colores del mapa</label>
+      <select id="sel-palette" ${cls.diverging ? 'disabled title="El cambio % usa siempre azul (baja) → rojo (sube)"' : ''}>${Object.entries(PALETTES)
+        .map(([k, p]) => `<option value="${k}" ${state.palette === k ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}</select>
+      <button class="btn" type="button" id="btn-hot" aria-pressed="${state.hotspots}" title="Contorno discontinuo en el 10 % de territorios con el valor más alto">
+        <span class="hot-key" aria-hidden="true"></span>Focos${state.hotspots && hotList.length ? ` · ${hotList.length}` : ''}</button>
+    </div>`
   el.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', () => onMeasure(b.dataset.m)))
+  el.querySelector('#sel-palette')?.addEventListener('change', (e) => onPalette?.(e.target.value))
+  el.querySelector('#btn-hot')?.addEventListener('click', () => onHot?.(!state.hotspots))
 }

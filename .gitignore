@@ -19,6 +19,8 @@ data/ofm/
 data/catalog/*.sqlite*
 data/normalized/_*.csv
 data/config.local.json
+data/cameras.local.json
+data/vision/
 *.tmp
 *.part
 data/tiles/

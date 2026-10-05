@@ -20,6 +20,24 @@
     "status": "ok",
     "transform": "Cifras tal como las publica DEVIDA; los archivos de coca solo listan departamentos con cultivo."
   },
+  "igp_eventos": {
+    "checksum": "a049e49727604720a6c63ddf3d9bafe2cd9b4acb744d550f5b506b85b21749bd",
+    "last_downloaded": "2026-10-04T18:07:54-0500",
+    "normalized_path": "data/normalized/enso.json",
+    "origin": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html",
+    "raw_path": "raw/igp_eventos/2026-10-04/lista_eventos_ICEN.html",
+    "schema_changed": false,
+    "status": "ok"
+  },
+  "igp_icen": {
+    "checksum": "af2514affa3a462fd5d509f054cd535ab105cf8397e9341e19761712121f5684",
+    "last_downloaded": "2026-10-04T18:07:53-0500",
+    "normalized_path": "data/normalized/enso.json",
+    "origin": "http://met.igp.gob.pe/datos/ICEN.txt",
+    "raw_path": "raw/igp_icen/2026-10-04/ICEN.txt",
+    "schema_changed": false,
+    "status": "ok"
+  },
   "indice_situacional_v1": {
     "checksum": "9bacc28140d7f9c735bf266546a2d8c788442b807184578a2838028ff6493d52",
     "normalized_path": "(calculado al vuelo)",
@@ -88,6 +106,24 @@
     "status": "ok",
     "transform": "Todos los delitos denunciados (tipo de caso «denuncia», especialidad penal). Departamento = sede del distrito fiscal. Familia TID = arts. 296–303 CP (clasificación OCE/FEDTID)."
   },
+  "noaa_cpc_mensual": {
+    "checksum": "6d85461bbcde83bcdccfd69a67f54381d0a4688f8a7021d6d6a22a0803cdb2cd",
+    "last_downloaded": "2026-10-04T18:07:55-0500",
+    "normalized_path": "data/normalized/enso.json",
+    "origin": "https://www.cpc.ncep.noaa.gov/data/indices/sstoi.indices",
+    "raw_path": "raw/noaa_cpc_mensual/2026-10-04/sstoi.indices",
+    "schema_changed": false,
+    "status": "ok"
+  },
+  "noaa_cpc_semanal": {
+    "checksum": "f257c99dfaa111e2503d208c93e93e380d0ffcc386bf5742fb2c48f980ecaa40",
+    "last_downloaded": "2026-10-04T18:07:56-0500",
+    "normalized_path": "data/normalized/enso.json",
+    "origin": "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for",
+    "raw_path": "raw/noaa_cpc_semanal/2026-10-04/wksst9120.for",
+    "schema_changed": false,
+    "status": "ok"
+  },
   "osm_datacenters": {
     "checksum": "ef255e38ea1a28262ceb99f816c4ed2ca5abf5e416e36ee99ab45a9465481015",
     "last_downloaded": "2026-10-04T14:45:01-0500",
@@ -96,5 +132,15 @@
     "raw_path": "raw/osm_datacenters/2026-10-04/datacenters-pe.json",
     "schema_changed": false,
     "status": "ok"
+  },
+  "osm_instituciones": {
+    "checksum": "f7e9f2a6fb7e752f236fe76a5c84671ad9f4d7089438b88f3bbcf564a6dcf010",
+    "last_downloaded": "2026-10-04T18:09:41-0500",
+    "normalized_path": "data/normalized/instituciones.json",
+    "origin": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A180%5D%3B%0A%28%0A%20nwr%5B%22amenity%22%3D%22police%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%3D%22courthouse%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22office%22%5D%5B%22name%22~%22Serenazgo%7CSERENAZGO%7CFiscal%7CFISCAL%7CMinisterio%20P%7CMINISTERIO%20P%7CMedicina%20Legal%7CJuzgado%7CJUZGADO%7CPoder%20Judicial%7CCorte%20Superior%7CJusticia%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%5D%5B%22name%22~%22Serenazgo%7CSERENAZGO%7CFiscal%7CFISCAL%7CMinisterio%20P%7CMedicina%20Legal%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22building%22%5D%5B%22name%22~%22Serenazgo%7CSERENAZGO%7CFiscal%7CJuzgado%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%29%3B%0Aout%20center%20tags%3B",
+    "raw_path": "raw/osm_instituciones/2026-10-04/instituciones-osm.json",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Overpass (police, courthouse y nombres institucionales) → clasificación por etiquetas → punto-en-polígono distrital INEI; se descartan puntos fuera del Perú y duplicados."
   }
 }

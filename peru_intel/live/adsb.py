@@ -40,33 +40,73 @@ def _persist(items: list[dict]) -> None:
             con.execute("DELETE FROM aircraft_tracks WHERE t < ?", (int(now - RETENTION_S),))
 
 
-def fetch() -> dict:
-    seen: dict[str, dict] = {}
-    errors = 0
+# Tres redes comunitarias con el mismo formato (readsb v2). Se consultan en paralelo y se unen por ICAO (hex):
+# cada red tiene receptores distintos, así que juntas cubren más del espacio aéreo peruano.
+PROVIDERS = {
+    "adsb.lol": ("https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/250", "adsb_lol"),
+    "airplanes.live": ("https://api.airplanes.live/v2/point/{lat}/{lon}/250", "airplanes_live"),
+    "adsb.fi": ("https://opendata.adsb.fi/api/v2/lat/{lat}/lon/{lon}/dist/250", "adsb_fi"),
+}
+
+
+def _one_provider(name: str, tpl: str) -> tuple[str, list[dict], int]:
+    rows, errors = [], 0
     for lat, lon in CIRCLES:
         try:
-            d = json.loads(http_get(f"https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/250", timeout=12, retries=1,
-                                    min_interval=1.2))
+            d = json.loads(http_get(tpl.format(lat=lat, lon=lon), timeout=12, retries=1, min_interval=1.2))
         except Exception:  # noqa: BLE001 — un círculo caído no anula los demás
             errors += 1
             continue
-        for a in d.get("ac") or []:
+        now = d.get("now")
+        for a in d.get("ac") or d.get("aircraft") or []:
             if a.get("lat") is None or not _in_bbox(a["lat"], a["lon"]):
                 continue
+            a["_seen"] = a.get("seen_pos") if a.get("seen_pos") is not None else a.get("seen", 99)
+            a["_now"] = now
+            rows.append(a)
+    return name, rows, errors
+
+
+def merge(results: list[tuple[str, list[dict], int]]) -> dict[str, dict]:
+    """Une aeronaves de varias redes: por ICAO se queda la posición más fresca y se anotan las redes que la ven."""
+    seen: dict[str, dict] = {}
+    for name, rows, _ in results:
+        for a in rows:
             alt = a.get("alt_baro")
-            seen[a["hex"]] = {
+            item = {
                 "hex": a["hex"], "callsign": (a.get("flight") or "").strip(), "reg": a.get("r") or "",
                 "type": a.get("t") or "", "lat": a["lat"], "lon": a["lon"],
                 "alt": alt if isinstance(alt, (int, float)) else 0, "ground": alt == "ground",
                 "speed": round(a.get("gs") or 0), "track": a.get("track") or a.get("true_heading") or 0,
                 "squawk": a.get("squawk") or "", "military": bool((a.get("dbFlags") or 0) & 1),
+                "age_s": round(float(a.get("_seen") or 0), 1), "nets": [name],
             }
-    if errors == len(CIRCLES):
-        raise ConnectionError("adsb.lol no respondió en ningún círculo")
+            prev = seen.get(a["hex"])
+            if prev is None:
+                seen[a["hex"]] = item
+                continue
+            nets = sorted(set(prev["nets"]) | {name})
+            best = item if item["age_s"] < prev["age_s"] else prev
+            seen[a["hex"]] = best | {"nets": nets, "callsign": best["callsign"] or prev["callsign"] or item["callsign"],
+                                     "type": best["type"] or prev["type"] or item["type"]}
+    return seen
+
+
+def fetch() -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=len(PROVIDERS)) as pool:
+        results = list(pool.map(lambda kv: _one_provider(kv[0], kv[1][0]), PROVIDERS.items()))
+    per_net = {name: {"aircraft": len({a["hex"] for a in rows}), "failed_circles": err, "circles": len(CIRCLES)}
+               for name, rows, err in results}
+    if all(err == len(CIRCLES) for _, _, err in results):
+        raise ConnectionError("Ninguna red ADS-B respondió (adsb.lol, airplanes.live, adsb.fi)")
+    seen = merge(results)
     items = sorted(seen.values(), key=lambda v: v["callsign"] or "~")
     _persist(items)
-    return {"items": items, "partial": errors > 0, "attribution": "adsb.lol (ODbL)",
-            "note": "Aeronaves que transmiten ADS-B ahora sobre Perú. Cobertura comunitaria: puede haber vacíos."}
+    return {"items": items, "partial": any(err for _, _, err in results), "networks": per_net,
+            "attribution": "adsb.lol (ODbL) · airplanes.live · adsb.fi (datos abiertos comunitarios)",
+            "note": "Aeronaves que transmiten ADS-B ahora sobre el Perú, unidas de tres redes comunitarias. "
+                    "Donde no hay receptores (Amazonía, sierra sur) puede haber vacíos: no es la totalidad del tráfico."}
 
 
 def track(hexa: str, hours: float = 6) -> list[dict]:
@@ -106,4 +146,4 @@ def details(callsign: str, hexa: str) -> dict:
 
 
 _DETAILS: dict[str, tuple[float, dict]] = {}
-WORKER = Worker("flights", "adsb_lol", interval=15, fetch=fetch, idle_after=300)
+WORKER = Worker("flights", "adsb_lol", interval=12, fetch=fetch, idle_after=300)

@@ -80,6 +80,8 @@ export const state = {
   mpfnTid: false, devidaInd: 'coca_ha',
   selected: null, live: new Set(), satGroup: 'stations', weatherModel: 'gfs',
   extent: null, choropleth: null,
+  palette: (() => { try { return localStorage.getItem('pi-palette') || 'espectral' } catch { return 'espectral' } })(),
+  hotspots: true, wxfx: 'auto', oceanColor: 'sst',
 }
 export function setState(patch) {
   Object.assign(state, patch)

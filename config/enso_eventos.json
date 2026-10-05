@@ -1,0 +1,135 @@
+{
+  "_nota": "Catálogo curado y versionado. Cada cifra lleva su fuente (nombre + URL). Los trazos de huaicos/quebradas son ILUSTRATIVOS (kind=estimacion): indican el recorrido aproximado del cauce, no un levantamiento topográfico. Fechas y magnitudes de inicio/fin salen del ICEN (IGP/ENFEN), no de este archivo.",
+  "version": "2026-10-04",
+  "current": {
+    "status": "Alerta de El Niño Costero",
+    "comunicado": "Comunicado Oficial ENFEN N.° 17-2026",
+    "date": "2026-09-28",
+    "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-17-2026/",
+    "headline": "El Niño Costero se prolongaría hasta el otoño de 2027",
+    "points": [
+      "Región Niño 1+2 (frente a la costa): magnitud extraordinaria, respecto al calentamiento del mar, hasta enero de 2027; luego reduciría su magnitud hacia el otoño de 2027.",
+      "Región Niño 3.4 (Pacífico central): magnitud muy fuerte hasta enero de 2027.",
+      "Octubre–diciembre: lluvias superiores a lo normal en la costa norte, costa central y valles occidentales andinos del norte; episodios puntuales de lluvia moderada a fuerte, sobre todo en la costa norte.",
+      "Caudales por encima de lo habitual en los ríos Tumbes, Chira, Piura, La Leche y Jequetepeque.",
+      "Verano 2027: lluvias superiores a lo normal en costa norte, costa central y sierra norte occidental; deficitarias a normales en la sierra sur y la Amazonía.",
+      "Temperaturas del aire muy superiores a lo habitual en toda la costa, con alta probabilidad de nuevos récords."
+    ],
+    "rivers": [
+      {"name": "Río Tumbes", "lat": -3.57, "lon": -80.45},
+      {"name": "Río Chira", "lat": -4.90, "lon": -80.70},
+      {"name": "Río Piura", "lat": -5.19, "lon": -80.63},
+      {"name": "Río La Leche", "lat": -6.55, "lon": -79.80},
+      {"name": "Río Jequetepeque", "lat": -7.30, "lon": -79.40}
+    ],
+    "next": "2026-10-15",
+    "history": [
+      {"comunicado": "N.° 16-2026", "date": "2026-09-14", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-16-2026/",
+       "text": "Mayor probabilidad de magnitud extraordinaria de setiembre 2026 a enero 2027 en Niño 1+2."},
+      {"comunicado": "N.° 11-2026", "date": "2026-06-15", "url": "https://enfen.imarpe.gob.pe/2026/06/15/comunicado-oficial-enfen-n-11-2026-estado-del-sistema-de-alerta-alerta-de-el-nino-costero/",
+       "text": "El Niño Costero iniciado en marzo de 2026 se extendería hasta el verano 2027."}
+    ],
+    "dashboard": {"name": "Visor INDECI (escenarios de riesgo)", "url": "https://geo.indeci.gob.pe/visorindeci/"}
+  },
+  "storylines": [
+    {
+      "id": "1982-83", "title": "El Niño 1982-1983", "start": "1982-07", "end": "1983-11",
+      "summary": "Evento extraordinario según el ICEN. Lluvias intensas en la costa norte y sequía en el sur andino.",
+      "figures": [
+        {"label": "Pérdidas económicas", "value": "US$ 3 283 millones (11,6 % del PBI de 1983)", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"},
+        {"label": "Personas afectadas", "value": "1 267 730", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}
+      ],
+      "chapters": [
+        {"date": "1982-07", "title": "Se calienta el mar frente a la costa", "text": "Inicio del evento según el ICEN (IGP/ENFEN). El agua cálida avanza desde el Pacífico ecuatorial hacia el norte del Perú.",
+         "lat": -5.5, "lon": -82.5, "zoom": 4.6, "flow": "nino", "sources": [{"name": "IGP · lista de eventos ICEN", "url": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html"}]},
+        {"date": "1983-03", "title": "Lluvias e inundaciones en Piura y Tumbes", "text": "La costa norte concentra los daños: canales de riego, carreteras, puentes y aumento de enfermedades. 831 915 damnificados en la zona norte y 435 815 en la sur.",
+         "lat": -5.19, "lon": -80.63, "zoom": 7.2, "sources": [{"name": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}]},
+        {"date": "1983-11", "title": "Fin del evento", "text": "El ICEN regresa a valores neutros tras 17 meses de condiciones cálidas.",
+         "lat": -9.5, "lon": -78.5, "zoom": 4.6, "sources": [{"name": "IGP · lista de eventos ICEN", "url": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html"}]}
+      ]
+    },
+    {
+      "id": "1997-98", "title": "El Niño 1997-1998", "start": "1997-04", "end": "1998-08",
+      "summary": "Evento extraordinario según el ICEN. 23 departamentos afectados; los mayores daños en Piura, Tumbes, Ica, Chiclayo, Trujillo y Chimbote.",
+      "figures": [
+        {"label": "Daños totales", "value": "US$ 3 500 millones (6,2 % del PBI de 1998)", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"},
+        {"label": "Viviendas destruidas", "value": "más de 42 000", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}
+      ],
+      "chapters": [
+        {"date": "1997-04", "title": "Inicio del calentamiento", "text": "Inicio según el ICEN. El calentamiento se intensifica durante el invierno y la primavera de 1997.",
+         "lat": -5.5, "lon": -82.5, "zoom": 4.6, "flow": "nino", "sources": [{"name": "IGP · lista de eventos ICEN", "url": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html"}]},
+        {"date": "1998-03", "title": "Colapso del puente Bolognesi (Piura)", "text": "La crecida del río Piura derriba el puente Bolognesi; se registran 30 fallecidos. El puente se reconstruyó entre 2000 y 2002.",
+         "lat": -5.1966, "lon": -80.6290, "zoom": 12.5,
+         "path": [[-80.585, -5.168], [-80.605, -5.180], [-80.6200, -5.1905], [-80.6290, -5.1966], [-80.640, -5.205], [-80.660, -5.222]],
+         "path_label": "Cauce aproximado del río Piura (ilustrativo)",
+         "sources": [{"name": "Structurae · Puente Bolognesi", "url": "https://structurae.net/structures/20008916"}, {"name": "Bridge Failure Database", "url": "https://www-old.bridgeforum.org/dir/collapse/bridge/1998PE1.html"}]},
+        {"date": "1998-08", "title": "Fin del evento", "text": "Tras 17 meses termina el evento: 23 departamentos afectados y más de 42 000 viviendas destruidas.",
+         "lat": -8.0, "lon": -79.0, "zoom": 5.2, "sources": [{"name": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}]}
+      ]
+    },
+    {
+      "id": "2017", "title": "El Niño Costero 2017", "start": "2017-01", "end": "2017-04",
+      "summary": "Calentamiento focalizado frente a la costa. Huaicos, desbordes e inundaciones; 879 distritos en 13 regiones declarados en emergencia.",
+      "figures": [
+        {"label": "Fallecidos", "value": "162", "source": "Agencia Andina (INDECI)", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"},
+        {"label": "Afectados", "value": "casi 1,5 millones", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"},
+        {"label": "Pérdidas", "value": "US$ 3 000 millones (1,6 % del PBI, BCRP)", "source": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}
+      ],
+      "chapters": [
+        {"date": "2017-01", "title": "El mar se calienta junto a la costa", "text": "Inicio según el ICEN. A diferencia de 1997-98, el calentamiento se concentra en la franja costera (Niño 1+2).",
+         "lat": -6.0, "lon": -81.8, "zoom": 5.0, "flow": "nino", "sources": [{"name": "IGP · lista de eventos ICEN", "url": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html"}]},
+        {"date": "2017-03-15", "title": "Huaicos en Lima: río Huaycoloro y Carapongo", "text": "Se desbordan el Rímac y el Huaycoloro (km 4 de la av. Ramírez Prialé). Daños en Carapongo, Huachipa y Cajamarquilla; colapsa el puente de La Solidaridad entre San Juan de Lurigancho y El Agustino.",
+         "lat": -11.995, "lon": -76.955, "zoom": 11.4,
+         "path": [[-76.880, -11.915], [-76.900, -11.940], [-76.920, -11.962], [-76.940, -11.982], [-76.958, -11.998], [-76.975, -12.012]],
+         "path_label": "Recorrido aproximado de la quebrada Huaycoloro (ilustrativo)",
+         "sources": [{"name": "RPP · 15 de marzo, el día en que Lima sufrió los huaicos", "url": "https://rpp.pe/lima/actualidad/15-de-marzo-el-dia-en-que-lima-sufrio-la-devastacion-de-los-huaicos-noticia-1044293"}]},
+        {"date": "2017-03-15", "title": "Huaico en Punta Hermosa", "text": "Un huaico arrasa viviendas en Punta Hermosa; la imagen de Evangelina Chamorro saliendo del lodo da la vuelta al mundo.",
+         "lat": -12.326, "lon": -76.808, "zoom": 12.6,
+         "path": [[-76.770, -12.312], [-76.783, -12.317], [-76.796, -12.322], [-76.808, -12.326], [-76.820, -12.331]],
+         "path_label": "Recorrido aproximado de la quebrada (ilustrativo)",
+         "sources": [{"name": "RPP · ¿Cómo llegó a ser arrastrada Evangelina por el huaico?", "url": "https://rpp.pe/lima/desastres-naturales/como-llego-a-ser-arrastrada-evangelina-por-el-huaico-en-punta-hermosa-noticia-1037535"}]},
+        {"date": "2017-03-27", "title": "Desborde del río Piura", "text": "En la madrugada el río Piura alcanza unos 3 000 m³/s, el caudal más alto en 30 años, e inunda la ciudad.",
+         "lat": -5.194, "lon": -80.632, "zoom": 11.8,
+         "path": [[-80.585, -5.168], [-80.605, -5.180], [-80.620, -5.1905], [-80.632, -5.194], [-80.645, -5.207], [-80.665, -5.224]],
+         "path_label": "Cauce aproximado del río Piura (ilustrativo)",
+         "sources": [{"name": "Mongabay Latam", "url": "https://es.mongabay.com/2017/03/peru-ninocostero-rios/amp/"}]},
+        {"date": "2017-04", "title": "Fin del evento", "text": "El ICEN vuelve a neutro tras 4 meses. INDECI reporta 162 fallecidos en todo el país.",
+         "lat": -9.0, "lon": -78.5, "zoom": 5.0, "sources": [{"name": "Agencia Andina", "url": "https://andina.pe/agencia/noticia-como-impacto-nino-peru-los-eventos-19821983-19971998-y-2017-943812.aspx"}]}
+      ]
+    },
+    {
+      "id": "2023-24", "title": "Ciclón Yaku y El Niño Costero 2023-2024", "start": "2023-03", "end": "2024-02",
+      "summary": "Un ciclón tropical inusual (Yaku) trae lluvias intensas a la costa norte y a Lima; luego se desarrolla un Niño Costero fuerte.",
+      "figures": [
+        {"label": "Fallecidos atribuidos a Yaku", "value": "al menos 8", "source": "Wikipedia · Cyclone Yaku", "url": "https://en.wikipedia.org/wiki/Cyclone_Yaku"},
+        {"label": "Viviendas destruidas", "value": "más de 1 312", "source": "Wikipedia · Cyclone Yaku", "url": "https://en.wikipedia.org/wiki/Cyclone_Yaku"}
+      ],
+      "chapters": [
+        {"date": "2023-03-07", "title": "Se forma el ciclón Yaku", "text": "SENAMHI lo describe como un ciclón tropical no organizado, sin precedentes desde 1983 o 1998.",
+         "lat": -4.5, "lon": -82.0, "zoom": 5.4, "flow": "nino", "sources": [{"name": "Wikipedia · Cyclone Yaku", "url": "https://en.wikipedia.org/wiki/Cyclone_Yaku"}]},
+        {"date": "2023-03-11", "title": "Emergencia en siete departamentos", "text": "El Gobierno declara el estado de emergencia; en Piura y Lambayeque se reportan los primeros fallecidos.",
+         "lat": -5.6, "lon": -80.2, "zoom": 6.8, "sources": [{"name": "Wikipedia · Cyclone Yaku", "url": "https://en.wikipedia.org/wiki/Cyclone_Yaku"}]},
+        {"date": "2023-03-15", "title": "Quebradas activas en el este y sur de Lima", "text": "Chosica, Chaclacayo, Cieneguilla y Punta Hermosa son los distritos más afectados de Lima: se previó la activación de más de 30 quebradas.",
+         "lat": -11.95, "lon": -76.75, "zoom": 10.4,
+         "path": [[-76.640, -11.905], [-76.680, -11.925], [-76.710, -11.938], [-76.740, -11.950], [-76.775, -11.968]],
+         "path_label": "Valle del Rímac, sector Chosica–Chaclacayo (ilustrativo)",
+         "sources": [{"name": "Wikipedia · Cyclone Yaku", "url": "https://en.wikipedia.org/wiki/Cyclone_Yaku"}, {"name": "Andina · SENAMHI", "url": "https://andina.pe/agencia/noticia-senamhi-lima-tendra-episodio-lluvias-influencia-indirecta-ciclon-yacu-932190.aspx"}]},
+        {"date": "2024-02", "title": "Fin del Niño Costero (fuerte)", "text": "Tras 12 meses de condiciones cálidas, el ICEN regresa a neutro.",
+         "lat": -8.0, "lon": -80.0, "zoom": 4.8, "sources": [{"name": "IGP · lista de eventos ICEN", "url": "http://met.igp.gob.pe/datos/lista_eventos_ICEN.html"}]}
+      ]
+    },
+    {
+      "id": "2026-27", "title": "El Niño Costero 2026-2027 (en curso)", "start": "2026-03", "end": null,
+      "summary": "Iniciado en marzo de 2026 según ENFEN. Comunicado N.° 17-2026: magnitud extraordinaria en Niño 1+2 hasta enero de 2027.",
+      "figures": [
+        {"label": "Estado", "value": "Alerta de El Niño Costero", "source": "ENFEN · Comunicado Oficial N.° 17-2026", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-17-2026/"}
+      ],
+      "chapters": [
+        {"date": "2026-03", "title": "Inicio del Niño Costero", "text": "ENFEN activa la alerta en febrero y el calentamiento empieza en marzo de 2026.",
+         "lat": -5.5, "lon": -82.5, "zoom": 4.8, "flow": "nino", "sources": [{"name": "ENFEN · Comunicado N.° 11-2026", "url": "https://enfen.imarpe.gob.pe/2026/06/15/comunicado-oficial-enfen-n-11-2026-estado-del-sistema-de-alerta-alerta-de-el-nino-costero/"}]},
+        {"date": "2026-09-28", "title": "Magnitud extraordinaria hasta enero de 2027", "text": "Se esperan lluvias superiores a lo normal en la costa norte y caudales altos en los ríos Tumbes, Chira, Piura, La Leche y Jequetepeque.",
+         "lat": -5.2, "lon": -80.4, "zoom": 6.4, "rivers": true, "sources": [{"name": "ENFEN · Comunicado N.° 17-2026", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-17-2026/"}]}
+      ]
+    }
+  ]
+}

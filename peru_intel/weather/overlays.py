@@ -34,6 +34,7 @@ GIBS = [  # id, capa GIBS, nivel máximo, formato, etiqueta, grupo
     ("aerosol", "MODIS_Combined_Value_Added_AOD", 6, "png", "Aerosoles · espesor óptico (MODIS)", "Aerosoles"),
     ("lst", "MODIS_Terra_Land_Surface_Temp_Day", 7, "png", "Temperatura de superficie terrestre (día)", "Temperatura"),
     ("sst", "GHRSST_L4_MUR_Sea_Surface_Temperature", 7, "png", "Temperatura del mar (GHRSST MUR)", "Temperatura"),
+    ("ssta", "GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies", 7, "png", "Anomalía de temperatura del mar (El Niño)", "Temperatura"),
 ]
 
 

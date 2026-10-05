@@ -62,8 +62,21 @@ def _seasonal_naive(values: list[float], h: int):
     return out
 
 
+def _dense(series: list[dict]) -> list[dict]:
+    """Rellena con 0 los meses sin denuncias registradas (SIDPOL omite filas vacías en territorios pequeños)."""
+    ext = crime.sidpol_extent()
+    if not series or not ext:
+        return series
+    have = {(r["anio"], r["mes"]): r["value"] for r in series}
+    out, y, m = [], ext["first_year"], 1
+    while (y, m) <= (ext["last_year"], ext["last_month"]):
+        out.append({"anio": y, "mes": m, "value": have.get((y, m), 0)})
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return out
+
+
 def forecast(ubigeo: str | None = None, modalidad: str | None = None, horizon: int = HORIZON) -> dict:
-    series = crime.monthly_series(ubigeo, modalidad)
+    series = _dense(crime.monthly_series(ubigeo, modalidad))
     if len(series) < 36:
         return {"available": False, "reason": "Serie demasiado corta (se necesitan 36 meses)."}
     values = [float(r["value"]) for r in series]

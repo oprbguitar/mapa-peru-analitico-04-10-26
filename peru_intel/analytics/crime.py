@@ -111,10 +111,12 @@ def sidpol_choropleth(level: str = "departamento", year: int | None = None, mont
                      WHERE anio = ? AND mes BETWEEN ? AND ? {mod_sql} GROUP BY 1),
              prev AS (SELECT {col} AS u, sum(cantidad) c FROM sidpol_denuncias
                       WHERE anio = ? AND mes BETWEEN ? AND ? {mod_sql} GROUP BY 1),
+             tot AS (SELECT {col} AS u, sum(cantidad) c FROM sidpol_denuncias
+                     WHERE anio = ? AND mes BETWEEN ? AND ? GROUP BY 1),
              pop AS (SELECT ubigeo AS u, poblacion FROM poblacion WHERE nivel = ? AND anio = ?)
-        SELECT cur.u AS ubigeo, cur.c AS count, prev.c AS prev_count, pop.poblacion AS population
-        FROM cur LEFT JOIN prev USING (u) LEFT JOIN pop USING (u) ORDER BY cur.c DESC
-    """, [y, m0, m1, *mods, cy, m0, m1, *mods, level, y])
+        SELECT cur.u AS ubigeo, cur.c AS count, prev.c AS prev_count, pop.poblacion AS population, tot.c AS all_count
+        FROM cur LEFT JOIN prev USING (u) LEFT JOIN pop USING (u) LEFT JOIN tot USING (u) ORDER BY cur.c DESC
+    """, [y, m0, m1, *mods, cy, m0, m1, *mods, y, m0, m1, level, y])
     out = []
     for r in rows:
         rate = r["count"] / r["population"] * 100_000 if r["population"] else None
@@ -123,7 +125,8 @@ def sidpol_choropleth(level: str = "departamento", year: int | None = None, mont
                     "prev_count": int(r["prev_count"]) if r["prev_count"] is not None else None,
                     "population": int(r["population"]) if r["population"] else None,
                     "rate": round(rate, 1) if rate is not None else None,
-                    "change_pct": round(change, 1) if change is not None else None})
+                    "change_pct": round(change, 1) if change is not None else None,
+                    "share_pct": round(r["count"] / r["all_count"] * 100, 1) if mods and r["all_count"] else None})
     total = sum(r["count"] for r in out)
     prev_total = sum(r["prev_count"] or 0 for r in out)
     partial = not (m0 == 1 and m1 == 12)
@@ -137,6 +140,7 @@ def sidpol_choropleth(level: str = "departamento", year: int | None = None, mont
             "rate": {"label": "Tasa", "unit": "por 100 mil hab." + (" en el período" if partial else ""), "kind": "calculado"},
             "change_pct": {"label": "Cambio", "unit": f"% vs {period_label(cy, m0, m1)}", "kind": "calculado"},
             "population": {"label": "Población", "unit": "hab. (proyección)", "kind": "estimacion"},
+            **({"share_pct": {"label": "% del total", "unit": "% de las denuncias del territorio", "kind": "calculado"}} if mods else {}),
         },
         "default_measure": "rate",
         "total": total, "prev_total": prev_total, "rows": out, "modalities": ext["modalities"],

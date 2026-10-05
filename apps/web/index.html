@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/modules.css">
 </head>
 <body>
   <a class="skip" href="#panel">Saltar a la ficha del territorio</a>
@@ -28,8 +29,11 @@
     </form>
     <div class="live-strip" id="live-strip" aria-label="Estado de los proveedores en vivo"></div>
     <div class="top-actions">
+      <button class="btn btn-ghost" type="button" id="open-enso" title="Observatorio de El Niño: estado ENFEN, históricos y corrientes">El Niño</button>
+      <button class="btn btn-ghost" type="button" id="open-cameras" aria-haspopup="dialog" title="Conectar mis cámaras (Dahua, ONVIF, RTSP)">Cámaras</button>
       <button class="btn btn-ghost" type="button" id="open-sources" aria-haspopup="dialog">Fuentes</button>
       <button class="btn btn-ghost" type="button" id="open-settings" aria-haspopup="dialog">Claves</button>
+      <button class="btn btn-ghost btn-icon" type="button" id="toggle-wide" aria-pressed="false" aria-label="Vista amplia: ocultar todos los paneles (tecla F)" title="Vista amplia (F)">⛶</button>
       <button class="btn btn-ghost btn-icon" type="button" id="toggle-theme" aria-label="Cambiar entre modo noche y día" title="Noche / día">◐</button>
     </div>
   </header>
@@ -38,6 +42,7 @@
     <nav class="rail hud hud-frame" id="rail" aria-label="Familias de capas">
       <div class="rail-head">
         <h2 class="rail-title">Capas</h2>
+        <button class="btn btn-ghost btn-icon collapse-btn" type="button" data-collapse="rail" aria-label="Replegar el panel de capas (tecla [)" title="Replegar ([)">«</button>
         <div class="kind-key" aria-label="Naturaleza del dato" id="kind-key"></div>
       </div>
       <div id="families"></div>
@@ -56,6 +61,7 @@
     <div class="map-toast" id="toast" role="status" hidden></div>
 
     <aside class="panel hud hud-frame" id="panel" aria-label="Ficha del territorio" tabindex="-1">
+      <div class="panel-tools"><button class="btn btn-ghost btn-icon" type="button" data-collapse="panel" aria-label="Replegar la ficha (tecla ])" title="Replegar (])">»</button></div>
       <div class="panel-body" id="panel-body"></div>
     </aside>
   </div>
@@ -63,8 +69,19 @@
   <footer class="spine hud hud-frame" id="spine" aria-label="Línea de tiempo">
     <div class="spine-presets" role="radiogroup" aria-label="Ventana temporal" id="presets"></div>
     <div class="spine-chart" id="spine-chart"></div>
-    <div class="spine-note" id="spine-note"></div>
+    <div class="spine-note"><div id="spine-note"></div>
+      <div class="spine-actions"><button class="btn" type="button" id="play-years" aria-pressed="false" title="Recorrer los años en el mapa">▶ Años</button>
+      <button class="btn btn-ghost btn-icon" type="button" data-collapse="spine" aria-label="Replegar la línea de tiempo" title="Replegar">▾</button></div></div>
   </footer>
+
+  <button type="button" class="edge-tab edge-tab--rail" data-expand="rail" aria-label="Mostrar el panel de capas">Capas »</button>
+  <button type="button" class="edge-tab edge-tab--panel" data-expand="panel" aria-label="Mostrar la ficha">« Ficha</button>
+  <button type="button" class="edge-tab edge-tab--spine" data-expand="spine" aria-label="Mostrar la línea de tiempo">▴ Tiempo</button>
+  <button type="button" class="edge-tab edge-tab--wide" data-expand="wide" aria-label="Salir de la vista amplia">⛶ Paneles</button>
+
+  <section class="story hud hud-frame" id="story" aria-label="Historia del evento" aria-live="polite" hidden></section>
+  <section class="cam-viewer hud hud-frame" id="cam-viewer" aria-label="Visor de cámaras" hidden></section>
+  <div class="pick-banner hud" id="pick-banner" role="status" hidden></div>
 
   <nav class="tabbar hud" aria-label="Vistas en móvil">
     <button type="button" class="tab" data-sheet="rail" aria-pressed="false">Capas</button>
@@ -78,6 +95,14 @@
       <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Cerrar">✕</button>
     </div>
     <div class="drawer-body" id="sources-body"></div>
+  </dialog>
+
+  <dialog class="drawer" id="cameras-dialog" aria-labelledby="cameras-title">
+    <div class="drawer-head">
+      <h2 id="cameras-title">Mis cámaras · vision-edge</h2>
+      <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Cerrar">✕</button>
+    </div>
+    <div class="drawer-body" id="cameras-body"></div>
   </dialog>
 
   <dialog class="drawer" id="settings-dialog" aria-labelledby="settings-title">
