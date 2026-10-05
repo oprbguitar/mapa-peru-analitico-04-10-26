@@ -2,6 +2,7 @@
 import { esc, kindBadge, KIND_LABEL, setState, state } from './util.js'
 import { BASES, view } from './map.js'
 import { currentOverlay, overlayOptions } from './weather.js'
+import { FX, fxMode } from './wxfx.js'
 
 const THEMATIC = [
   { id: 'sidpol', label: 'Denuncias policiales', hint: 'SIDPOL · distrito', kind: 'oficial', patch: { dataset: 'sidpol' } },
@@ -16,22 +17,43 @@ const THEMATIC = [
 
 const FAMILIES = [
   { id: 'vista', label: 'Vista y relieve', view: true },
-  { id: 'seguridad', label: 'Seguridad', open: true, thematic: true },
+  { id: 'seguridad', label: 'Seguridad', open: true, thematic: true, live: [
+    { id: 'sede:comisaria', label: 'Comisarías', hint: 'Dependencias PNP · ubicación aproximada (OSM)', kind: 'vivo_tercero', dot: '--inst-comisaria' },
+    { id: 'sede:serenazgo', label: 'Serenazgo', hint: 'Sedes municipales · OSM', kind: 'vivo_tercero', dot: '--inst-serenazgo' },
+    { id: 'sede:fiscalia', label: 'Ministerio Público', hint: 'Fiscalías y medicina legal · OSM', kind: 'vivo_tercero', dot: '--inst-fiscalia' },
+    { id: 'sede:judicial', label: 'Poder Judicial', hint: 'Juzgados y cortes · OSM', kind: 'vivo_tercero', dot: '--inst-judicial' },
+  ] },
+  { id: 'servicios', label: 'Servicios', live: [
+    { id: 'svc:hospital', label: 'Hospitales', hint: 'RENIPRESS · categoría II–III', kind: 'oficial', dot: '--inst-fiscalia' },
+    { id: 'svc:salud', label: 'Centros y puestos de salud', hint: 'RENIPRESS · visibles desde zoom de ciudad', kind: 'oficial', dot: '--pal-esp-3' },
+    { id: 'svc:colegio', label: 'Colegios', hint: 'OSM · visibles desde zoom de ciudad', kind: 'vivo_tercero', dot: '--pal-esp-5' },
+    { id: 'svc:universidad', label: 'Universidades e institutos', hint: 'OSM', kind: 'vivo_tercero', dot: '--kind-ia' },
+    { id: 'svc:bomberos', label: 'Bomberos', hint: 'OSM', kind: 'vivo_tercero', dot: '--live-fire' },
+  ] },
+  { id: 'riesgos', label: 'Emergencias y riesgos', live: [
+    { id: 'emerg', label: 'Emergencias (90 días)', hint: 'INDECI · SINPAD', kind: 'oficial' },
+    { id: 'vias', label: 'Vías nacionales afectadas', hint: 'MTC · Provías Nacional', kind: 'oficial' },
+  ] },
   { id: 'movilidad', label: 'Movilidad', live: [
     { id: 'traffic', label: 'Tráfico', hint: 'TomTom · clave propia', kind: 'vivo_tercero' },
     { id: 'flights', label: 'Vuelos', hint: 'ADS-B · adsb.lol', kind: 'vivo_tercero' },
     { id: 'vessels', label: 'Embarcaciones', hint: 'AIS · aisstream.io · clave propia', kind: 'vivo_tercero' },
   ] },
   { id: 'ambiente', label: 'Ambiente', live: [
+    { id: 'wxfx', label: 'Clima animado', hint: 'Sol, lluvia, tormenta, viento · elige qué ver', kind: 'proyeccion' },
     { id: 'wxpoint', label: 'Clima en un punto', hint: 'Clic en el mapa · Open-Meteo, MET Norway y más, combinados', kind: 'proyeccion' },
     { id: 'wxlayer', label: 'Capas meteorológicas', hint: 'SENAMHI (oficial) · NASA GIBS (satélite)', kind: 'oficial' },
     { id: 'weather', label: 'Clima en capitales', hint: 'SENAMHI observado · GFS / ECMWF modelo', kind: 'proyeccion' },
     { id: 'fires', label: 'Focos de calor', hint: 'NASA FIRMS · clave propia', kind: 'vivo_tercero' },
     { id: 'seismic', label: 'Sismos', hint: 'IGP (primaria) · USGS', kind: 'oficial' },
   ] },
+  { id: 'oceano', label: 'El Niño y océano', live: [
+    { id: 'ocean', label: 'Corrientes animadas', hint: 'Open-Meteo Marine · modelo', kind: 'proyeccion' },
+    { id: 'ssta', label: 'Anomalía de temperatura del mar', hint: 'NASA GIBS · GHRSST MUR', kind: 'vivo_tercero' },
+  ] },
   { id: 'infra', label: 'Infraestructura', live: [
     { id: 'ports', label: 'Puertos', hint: 'APN + World Port Index', kind: 'oficial' },
-    { id: 'cameras', label: 'Cámaras propias', hint: 'Módulo vision-edge (no instalado)', kind: 'vivo_tercero', disabled: true },
+    { id: 'cameras', label: 'Cámaras propias', hint: 'Vision Edge · botón «Cámaras» para conectar', kind: 'vivo_tercero' },
     { id: 'datacenters', label: 'Centros de datos', hint: 'OpenStreetMap', kind: 'vivo_tercero' },
   ], extra: [{ id: 'cam107', label: 'Cámaras municipales operativas', hint: 'MININTER · indicador 107', kind: 'oficial', patch: { dataset: 'indicador', code: 107 } }] },
   { id: 'espacio', label: 'Espacio', live: [
@@ -90,7 +112,7 @@ export function renderRail(meta = {}) {
   const html = FAMILIES.map((f) => {
     let body = ''
     if (f.view) body = viewBlock()
-    if (f.thematic) body = THEMATIC.map((t) => radio(t, key === t.id)).join('')
+    if (f.thematic) body = THEMATIC.map((t) => radio(t, key === t.id)).join('') + '<div class="opt-sub">Sedes · ubicación aproximada</div>'
     if (f.extra) body += f.extra.map((t) => radio(t, key === t.id)).join('')
     if (f.live) {
       body += f.live.map((l) => {
@@ -106,6 +128,15 @@ export function renderRail(meta = {}) {
             <label class="range"><span>Opacidad</span><span class="num">${Math.round(currentOverlay().opacity * 100)} %</span>
             <input type="range" id="rng-wxo" min="0.2" max="1" step="0.05" value="${currentOverlay().opacity}"></label></div>`
         }
+        if (l.id === 'wxfx' && state.live.has('wxfx')) {
+          sub = `<div class="sub-control"><label class="sr-only" for="sel-fx">Fenómeno a ver</label><select id="sel-fx">${Object.entries(FX)
+            .map(([k, v]) => `<option value="${k}" ${fxMode() === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`
+        }
+        if (l.id === 'ocean' && state.live.has('ocean')) {
+          sub = `<div class="sub-control"><div class="seg" role="group" aria-label="Color de las corrientes">
+            <button type="button" data-ocean-color="sst" aria-pressed="${state.oceanColor === 'sst'}">Temperatura</button>
+            <button type="button" data-ocean-color="delta" aria-pressed="${state.oceanColor === 'delta'}">Cambio 7 d</button></div></div>`
+        }
         if (l.id === 'weather' && state.live.has('weather')) {
           sub = `<div class="sub-control"><label class="sr-only" for="sel-wx">Fuente de clima</label><select id="sel-wx">
             <option value="gfs" ${state.weatherModel === 'gfs' ? 'selected' : ''}>Modelo NOAA GFS</option>
@@ -113,7 +144,7 @@ export function renderRail(meta = {}) {
             <option value="obs" ${state.weatherModel === 'obs' ? 'selected' : ''}>Observado SENAMHI</option></select></div>`
         }
         return `<label class="opt"><input type="checkbox" value="${l.id}" data-live ${state.live.has(l.id) ? 'checked' : ''} ${l.disabled ? 'disabled' : ''}>
-          <span class="opt-label">${esc(l.label)}<small>${esc(l.hint)}</small></span><span class="opt-meta num" data-live-meta="${l.id}">${esc(metaTxt)}</span></label>${sub}`
+          <span class="opt-label">${l.dot ? `<span class="dot" style="--c:var(${l.dot})"></span> ` : ''}${esc(l.label)}<small>${esc(l.hint)}</small></span><span class="opt-meta num" data-live-meta="${l.id}">${esc(metaTxt)}</span></label>${sub}`
       }).join('')
     }
     const open = firstRender ? f.open : wasOpen.has(f.id) || f.live?.some((l) => state.live.has(l.id))
@@ -167,6 +198,8 @@ export function bindRail({ onThematic, onLive, onView }) {
       onView('base', t.value)
     } else if (t.id === 'sel-wxo') {
       onView('wxo', t.value)
+    } else if (t.id === 'sel-fx') {
+      onLive('wxfx-mode', t.value)
     } else if (t.id === 'sel-wx') {
       setState({ weatherModel: t.value })
       onLive('weather', true)
@@ -193,6 +226,8 @@ export function bindRailView(onView) {
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-view]')
     if (b) onView(b.dataset.view)
+    const oc = e.target.closest('[data-ocean-color]')
+    if (oc) onView('oceanColor', oc.dataset.oceanColor)
   })
 }
 

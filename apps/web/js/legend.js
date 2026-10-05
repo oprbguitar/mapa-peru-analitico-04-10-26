@@ -14,7 +14,9 @@ export function renderLegend(c, measure, cls, onMeasure, { onPalette, onHot } = 
   const meta = c.measures[measure]
   const swatches = cls.colors.map((col) => `<span style="background:${col}"></span>`).join('')
   let ticks = ''
-  if (cls.diverging) {
+  if (cls.gi) {
+    ticks = `<span>frío 99 %</span><span></span><span></span><span>0</span><span></span><span></span><span>foco 99 %</span>`
+  } else if (cls.diverging) {
     ticks = `<span>≤ −30 %</span><span></span><span></span><span>0</span><span></span><span></span><span>≥ +30 %</span>`
   } else if (cls.breaks.length) {
     ticks = `<span>${fmt(cls.min)}</span>${cls.colors.slice(2).map(() => '<span></span>').join('')}<span>${fmt(cls.max)}</span>`
@@ -25,7 +27,7 @@ export function renderLegend(c, measure, cls, onMeasure, { onPalette, onHot } = 
     <div class="legend-scale" aria-hidden="true">${swatches}</div>
     <div class="legend-ticks" aria-hidden="true">${ticks}</div>
     <div class="legend-foot"><span>${esc(meta.unit)}</span>${kindBadge(meta.kind)}</div>
-    <div class="legend-foot"><span><span class="swatch-none"></span> sin dato publicado</span><span>${cls.diverging ? 'cortes fijos · ▼ azul baja · ▲ rojo sube' : 'cuantiles · 7 clases · posición relativa'}</span></div>
+    <div class="legend-foot"><span><span class="swatch-none"></span> sin dato publicado</span><span>${cls.gi ? 'z de Getis-Ord · ±1,96 = 95 %' : cls.diverging ? 'cortes fijos · ▼ azul baja · ▲ rojo sube' : 'cuantiles · 7 clases · posición relativa'}</span></div>
     <div class="legend-tools">
       <label class="sr-only" for="sel-palette">Colores del mapa</label>
       <select id="sel-palette" ${cls.diverging ? 'disabled title="El cambio % usa siempre azul (baja) → rojo (sube)"' : ''}>${Object.entries(PALETTES)

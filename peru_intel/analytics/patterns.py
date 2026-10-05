@@ -80,7 +80,7 @@ def hotspots(modalidad: str | None = None, year: int | None = None, scope: str |
         trend = ("persistente" if was else "nuevo") if hot else ("se disipa" if was else None)
         if hot and was and b is not None and z - b >= 1:
             trend = "intensificado"
-        rows.append({"ubigeo": u, "z": z, "z_prev": b, "band": _band(z), "trend": trend})
+        rows.append({"ubigeo": u, "nombre": crime._name("distrito", u), "z": z, "z_prev": b, "band": _band(z), "trend": trend})
     rows.sort(key=lambda r: -r["z"])
     counts = {t: sum(1 for r in rows if r["trend"] == t) for t in ("nuevo", "persistente", "intensificado", "se disipa")}
     return {"available": True, "year": y, "compare_year": y0, "modalidad": modalidad or "todas", "rows": rows, "counts": counts,

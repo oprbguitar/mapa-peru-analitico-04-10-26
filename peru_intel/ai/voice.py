@@ -86,7 +86,7 @@ def parse(text: str) -> list[dict]:
         return [{"name": "ruta", "arguments": {"origen": m[1], "destino": m[2]}}]
     m = re.search(r"\b(?:ubica(?:me)?|llevame a|vamos a|ir a|muestrame|busca|ve a|anda a|localiza)\s+(?:en )?(.+)$", t)
     if m and not re.search(r"capa|modulo|denuncia|modalidad|\bano\b|\banio\b|historia", m[1]):
-        lugar = re.split(r"\s+y\s+(?:inform|dime|cuentame|que)", m[1])[0]
+        lugar = re.split(r"\s+y\s+(?:inform|dime|cuentame|que|enciend|activ|muestr|apag|abr|traz|prend|ocult|quit)", m[1])[0]
         acts.append({"name": "ubicar", "arguments": {"lugar": lugar}})
     if re.search(r"\binform\w*|\bdime\b|\bcuentame\b|\bresumen\b|\bque pasa\b|\bcomo esta\b|\breporte\b", t):
         tema = next((v for k, v in (("segur", "seguridad"), ("denuncia", "seguridad"), ("servicio", "servicios"),

@@ -168,6 +168,10 @@ def load() -> dict:
             doc["features"].setdefault(k, copy.deepcopy(v))
         doc.setdefault("budget", dict(DEFAULT_BUDGET))
         doc = _migrate_legacy(doc)
+        for p in doc["providers"]:  # contenedor: PI_AI_BASE_<ID> apunta a servicios del anfitrión o de compose
+            env = os.environ.get("PI_AI_BASE_" + p["id"].upper().replace("-", "_"))
+            if env:
+                p["base_url"] = env.rstrip("/")
         return doc
 
 

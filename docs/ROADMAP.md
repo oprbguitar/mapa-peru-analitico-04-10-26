@@ -15,8 +15,15 @@ Leyenda: ✅ hecho y verificado · 🟡 parcial / requiere configuración · ⬜
 | 6c · Interfaz HUD | Estilo táctico inspirado en God's Eye View, noche/día | ✅ | `DESIGN.md` v0.2 |
 | 7 · IA | Router local/externo, DataAgent, GeoAnalyst, Verifier | ✅ | Probado con Ollama `qwen3.5:9b` (7/7 oraciones verificadas) |
 | 8 · Predicción | StatsForecast AutoETS + anomalías; respaldo naive estacional | ✅ | `requirements-forecast.txt` |
-| 9 · Cámaras | Contrato `plugins/vision-edge/` | ⬜ | Implementación fuera de este repo |
+| 9 · Cámaras | Vision Edge: registro, prueba Dahua, búsqueda en red, visor/mosaico, go2rtc, ingesta de eventos | ✅ | Probar con el XVR conectado; nodo de detección fuera del repo |
 | 10 · API Route 360 | `/api/v1/intel/*` solo lectura | ✅ (contrato) | Autenticación para acceso en red pendiente |
+
+| 11 · Decisión | Informador 360, observatorio, patrones (Gi*, secuencias, lead/lag, cambios, anomalías, competencia de modelos), rutas estratégicas, Event Store H3 | ✅ | v0.3 |
+| 12 · Fuentes de riesgo | INDECI SINPAD, MTC vías, INGEMMET (en línea), RENIPRESS, colegios/bomberos OSM, GDELT (no verificado) | ✅ | datosabiertos exige descarga manual (HTTP 418) |
+| 13 · El Niño | ENFEN, ICEN, NOAA CPC, historias animadas, corrientes | ✅ | Actualizar `config/enso_eventos.json` cada comunicado |
+| 14 · AI Gateway y voz | Modos EOS, intersección, presupuesto, circuitos, administrador; asistente local/pago y Realtime | ✅ | Probar proveedores de pago con claves reales |
+| 15 · Contenedor | Dockerfile, compose con perfiles, exportación a .tar | 🟡 | Construir y probar con Docker Desktop encendido |
+| 16 · Siguiente | WorldPop/GHSL/VIIRS, COES, OSIPTEL, CDC-MINSA, Overture, SatNOGS/SDR, Valhalla offline | ⬜ | Priorizar con el usuario |
 
 ## Siguientes pasos sugeridos
 

@@ -23,6 +23,12 @@ python -m peru_intel serve --open
 Los datos oficiales normalizados ya vienen en el repositorio (`data/parquet`, `data/peru`); el mapa funciona sin
 descargar nada. Para actualizar: `python -m peru_intel ingest all --download`.
 
+## Novedades v0.3
+
+Modos **Mapa · Patrones · Rutas · El Niño**, **Informador 360** al hacer clic, **asistente de voz** local o de pago,
+**AI Gateway** con administrador, sedes y servicios, emergencias INDECI/MTC, **Cámaras** (Dahua XVR, ONVIF, RTSP) y
+**contenedor único** (`INICIAR-CONTENEDOR.bat`). Detalle en [DOCUMENTACION.md](DOCUMENTACION.md).
+
 ## Qué incluye
 
 - **Seguridad y criminalidad**: denuncias SIDPOL por departamento, provincia y distrito (2018-01 → 2026-07),

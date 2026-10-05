@@ -136,10 +136,14 @@ def route_get(path: str, q: dict):
     if p[:1] == ["patterns"]:
         return _patterns(p[1:], q)
     if p == ["routes"]:
+        def end(k: str, txt: str):
+            if _one(q, f"{k}lat"):
+                return {"lat": float(_one(q, f"{k}lat")), "lon": float(_one(q, f"{k}lon")), "name": _one(q, f"{k}name")}
+            if not _one(q, txt):
+                raise ValueError("falta origen o destino")
+            return _one(q, txt)
         try:
-            return routes.plan(_one(q, "from"), _one(q, "to")) if not _one(q, "alat") else \
-                routes.plan({"lat": float(_one(q, "alat")), "lon": float(_one(q, "alon")), "name": _one(q, "aname")},
-                            {"lat": float(_one(q, "blat")), "lon": float(_one(q, "blon")), "name": _one(q, "bname")})
+            return routes.plan(end("a", "from"), end("b", "to"))
         except ValueError as e:
             raise ApiError(400, str(e))
     if p == ["layers", "services"]:

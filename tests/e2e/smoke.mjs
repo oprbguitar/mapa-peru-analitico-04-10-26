@@ -108,6 +108,48 @@ try {
     }
     await page.close()
   }
+  // ── v0.3: Informador 360, modos, El Niño, administrador de IA, asistente y vista amplia ──
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
+  const errors = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto(URL)
+  await page.waitForFunction(() => document.querySelector('#layer-title h2'), null, { timeout: 30000 })
+  await page.evaluate(() => window.__piMap.jumpTo({ center: [-76.99, -12.045], zoom: 12 }))
+  await page.waitForTimeout(1500)
+  const pt = await page.evaluate(() => {
+    const p = window.__piMap.project([-76.9982, -12.0447])
+    const r = window.__piMap.getCanvas().getBoundingClientRect()
+    return { x: p.x + r.left, y: p.y + r.top }
+  })
+  await page.mouse.click(pt.x, pt.y)
+  await page.waitForFunction(() => /Informador 360/i.test(document.getElementById('panel-body').textContent), null, { timeout: 60000 })
+  const ctx = await page.textContent('#panel-body')
+  check('Informador 360 del punto (El Agustino)', /El Agustino/.test(ctx) && /Servicios y sedes cercanas/.test(ctx), ctx.slice(0, 80))
+  await page.click('#modes [data-mode="patrones"]')
+  await page.waitForFunction(() => /distritos foco/.test(document.getElementById('panel-body').textContent), null, { timeout: 90000 })
+  check('Patrones: hotspots Gi* calculados y pintados', await page.evaluate(() => document.getElementById('layer-title').textContent.includes('Gi*')))
+  await page.click('#modes [data-mode="ninio"]')
+  await page.waitForSelector('.story-btn[data-story="2017"]', { timeout: 30000 })
+  await page.click('.story-btn[data-story="2017"]')
+  await page.waitForFunction(() => !document.getElementById('story').hidden, null, { timeout: 10000 })
+  check('El Niño: historia 2017 con ICEN del mes', /ICEN del mes/.test(await page.textContent('#story')))
+  await page.screenshot({ path: `${OUT}/ninio-historia.png` })
+  await page.click('[data-st="close"]')
+  await page.click('#open-admin')
+  await page.waitForFunction(() => /interruptor general/.test(document.getElementById('admin-body').textContent), null, { timeout: 20000 })
+  check('Administrador de IA (/admin/engineering/ai) abre', true)
+  await page.keyboard.press('Escape')
+  await page.click('#open-assistant')
+  await page.fill('#as-text', 'abre el módulo de rutas')
+  await page.click('#as-form button[type="submit"]')
+  await page.waitForFunction(() => document.querySelector('#modes [data-mode="rutas"]').getAttribute('aria-selected') === 'true', null, { timeout: 20000 })
+  check('Asistente: orden «abre el módulo de rutas»', true)
+  await page.keyboard.press('f')
+  await page.waitForTimeout(500)
+  check('Vista amplia oculta los paneles (tecla F)', await page.evaluate(() => document.body.dataset.wide === 'on' && document.body.dataset.rail === 'off'))
+  await page.screenshot({ path: `${OUT}/vista-amplia.png` })
+  check('v0.3 sin errores de JS', errors.length === 0, errors.join(' | '))
+  await page.close()
 } finally {
   await browser.close()
 }

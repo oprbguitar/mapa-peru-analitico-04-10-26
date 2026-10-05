@@ -4,4 +4,4 @@ Local-first: el servidor, los datos normalizados y el mapa funcionan sin RUC360,
 Route 360 y, para lo ya descargado, sin internet.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"

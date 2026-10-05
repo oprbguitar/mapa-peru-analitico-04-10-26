@@ -153,7 +153,8 @@ def stream_name(cam: dict, ch: int) -> str:
 def _go2rtc_frame(cam: dict, ch: int) -> bytes | None:
     base = go2rtc_base()
     host = urllib.parse.urlparse(base).hostname or ""
-    if host not in ("127.0.0.1", "localhost", "::1"):
+    from .cameras import host_allowed
+    if host not in ("127.0.0.1", "localhost", "::1") and not host_allowed(host):  # go2rtc local o en la red/compose
         return None
     try:
         req = urllib.request.Request(f"{base}/api/frame.jpeg?src={stream_name(cam, ch)}")
@@ -175,8 +176,9 @@ def go2rtc_status() -> dict:
 
 def go2rtc_yaml(cams: list[dict]) -> str:
     """Configuración de go2rtc con el flujo secundario de cada canal habilitado (contiene credenciales)."""
+    api = config.setting("go2rtc_listen") or "127.0.0.1:1984"   # en docker compose: ":1984" (red interna)
     lines = ["# Generado por Mapa Perú Analítico · vision-edge. Contiene credenciales: no lo compartas.",
-             "api:", "  listen: \"127.0.0.1:1984\"", "rtsp:", "  listen: \"127.0.0.1:8554\"", "streams:"]
+             "api:", f"  listen: \"{api}\"", "rtsp:", "  listen: \"127.0.0.1:8554\"", "streams:"]
     for c in cams:
         for ch in c["channels"]:
             if ch["enabled"]:

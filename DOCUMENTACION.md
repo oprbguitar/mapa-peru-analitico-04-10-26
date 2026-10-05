@@ -2,7 +2,7 @@
 
 Plataforma **standalone y local-first** de inteligencia geoespacial y situacional del Perú. Reúne en un solo
 mapa seguridad ciudadana, movilidad, ambiente, infraestructura y espacio, con la procedencia de cada cifra a
-la vista. Versión 0.1.0 · 4 de octubre de 2026.
+la vista. Versión 0.3.0 · 4 de octubre de 2026.
 
 ---
 
@@ -148,3 +148,71 @@ node "C:\Users\oprbg\Documents\Claude\AI-Design-Harness\bin\design-lint.mjs" .
 - **Pendientes y riesgos:** ver `docs/ROADMAP.md` y `docs/eos/AUDIT-inicial.md` (claves en texto plano local,
   licencias de terceros antes de uso comercial, proveedores BYOK sin probar con claves reales, carpeta 3SL no encontrada).
 - **Dirección visual:** `DESIGN.md` (espina temporal · pizarra + cian · Space Grotesk/Noto Sans/Space Mono · bloque).
+
+---
+
+## v0.3 — decisión, voz, patrones y contenedor (4 de octubre de 2026)
+
+| Bloque | Resultado |
+|---|---|
+| Modos de trabajo | Barra superior **Mapa · Patrones · Rutas · El Niño**. Paneles replegables («, », ▾) y **vista amplia** (⛶ o tecla F; `[` y `]` repliegan capas y ficha). |
+| Informador 360 | Clic en cualquier punto → ficha viva: territorio + H3, seguridad del distrito, servicios cercanos (≤ 1 y 5 km), emergencias INDECI y vías MTC, peligros INGEMMET (≤ 5 km), ambiente, estado ENFEN y titulares GDELT (señal no verificada). Botón **Escuchar**. |
+| Observatorio de denuncias | Por territorio: año por año (▲ rojo sube · ▼ azul baja), % por modalidad, «¿hacia dónde se sesgó?», posición frente a vecinos y **proyección del año**. Al elegir una modalidad, el mapa se colorea con su **% del total**. **▶ Años** recorre 2018 → hoy en el mapa. |
+| Colores | Paletas elegibles en la leyenda: **Espectral (azul → rojo, por defecto)**, Calor, Viridis (daltonismo) y Cian. **Focos**: contorno rojo discontinuo animado en el 10 % de territorios con valor más alto. Al acercarse (zoom ≥ 10) el coloreado se atenúa para leer calles. |
+| Sedes y servicios | Comisarías (1 383), serenazgo (96), Ministerio Público (133) y Poder Judicial (244) desde OSM (aproximado); 19 970 establecimientos de salud RENIPRESS (oficial); 47 098 colegios, 1 135 universidades/institutos y 226 bomberos (OSM). |
+| Emergencias | INDECI SINPAD 2015–2026 (149 765 con coordenadas) y emergencias en la Red Vial Nacional (MTC, 1 362). |
+| Patrones | **Hotspots** Gi* con evolución (nuevo · persistente · intensificado · se disipa), **Secuencias** A → B en 14 días con lift, **Correlaciones** desfasadas, **Cambios** estructurales, **Anomalías** y **Proyección** con competencia de modelos (backtesting). Botón «Explicar con IA» verificado. |
+| Rutas estratégicas | A → B (texto o clic en el mapa) con OSRM; tabla de decisión por criterios explícitos (tiempo, km en focos, vías afectadas, emergencias, sedes de apoyo, lluvia) y recomendación explicada. |
+| Event Store | `data/parquet/eventos.parquet`: SIDPOL + INDECI + MTC en un esquema común con celda **H3 r7**. |
+| El Niño | Estado ENFEN (Comunicado N.° 17-2026), ICEN 1950–hoy con eventos oficiales, NOAA CPC, comparación de magnitud, **historias animadas** (1982-83, 1997-98, 2017, 2023-24, 2026-27) con trazos ilustrativos y fuentes, y **corrientes animadas** (Open-Meteo Marine). |
+| Clima animado | Sol que brilla con calor, lluvia, tormentas, nubes, viento, niebla y frío sobre una rejilla de modelo; el usuario elige qué fenómeno ver. |
+| Vuelos | Tres redes ADS-B unidas (adsb.lol, airplanes.live, adsb.fi). |
+| Cámaras (Vision Edge) | Botón **Cámaras**: búsqueda en la red (ONVIF + barrido de puertos 37777/554/80), prueba paso a paso del **Dahua DH-XVR5108HS-X** (CGI Digest), nombres de canal, ubicación de cada canal en el mapa, visor y mosaico (foto ~1 s o go2rtc), URLs RTSP y `go2rtc.yaml`. Contraseñas solo en el servidor. |
+| AI Gateway | Según el manual EOS *AI Integration Port* (dev-funcy-agents): modos OFF · LOCAL · LOCAL_REMOTE · CLOUD_API · PRIVATE_CLOUD · HYBRID · AUTO; admisión por **intersección**; presupuesto con **reserva atómica**; circuitos; recursos; kill switch; auditoría. Administrador en **IA** (`/admin/engineering/ai`). |
+| Asistente de voz | **🎙 Asistente** (Alt+V): «Ubica El Agustino y infórmame», «enciende las comisarías», «traza una ruta de Miraflores a Chosica», «reproduce la historia del Niño de 1998». Intérprete local sin modelo + modelo con herramientas; voz a texto y texto a voz locales (Whisper/Kokoro, navegador) o de pago (OpenAI, Groq, ElevenLabs); **voz a voz en tiempo real** (OpenAI Realtime, patrón GOdEyes). |
+| Contenedor | `Dockerfile`, `docker-compose.yml` (perfiles `voz` y `camaras`), `INICIAR-CONTENEDOR.bat` y `scripts/exportar-contenedor.ps1` → un solo `.tar` para usar sin Internet. |
+
+### Uso rápido v0.3
+
+- **Clic en el mapa** = Informador 360 del punto. **Buscar** acepta distritos, lugares y direcciones (Nominatim con caché).
+- **Patrones**: elige la vista (chips); el mapa muestra el z de Gi*. Acota a una provincia desde el Informador («Patrones aquí»).
+- **Rutas**: escribe origen y destino o «Marcar en el mapa»; «Explicar la decisión con IA» redacta sobre la tabla y verifica cada cifra.
+- **El Niño**: clic en una banda roja del ICEN o en una historia; «Corrientes del mar ahora» anima el océano.
+- **Cámaras**: 1) «Buscar en mi red» o escribe la IP del XVR; 2) usuario y contraseña; 3) «Probar conexión»; 4) «Guardar»;
+  5) «Ubicar» cada canal y haz clic en el mapa; 6) «Ver» o «Mosaico». Video fluido: «Generar go2rtc.yaml» y ejecuta go2rtc.
+- **IA**: pestaña *Funciones* (modo y orden de proveedores por función), *Proveedores* (URL, modelo, voz, clave, probar),
+  *Modelos locales* (cargar/descargar de memoria/descargar con Ollama), *Voz* (prueba y recetas locales), *Estado* (kill switch, pago, presupuesto).
+  Los proveedores de pago **no se usan** hasta: habilitarlos + estado APPROVED + clave + «Permitir proveedores de pago» + presupuesto diario y mensual.
+
+### Fuentes nuevas e instrucciones
+
+```bash
+python -m peru_intel ingest emergencias --download   # INDECI (ArcGIS) + MTC
+python -m peru_intel ingest servicios --download     # RENIPRESS + colegios/bomberos OSM
+python -m peru_intel ingest instituciones --download # comisarías, serenazgo, fiscalías, juzgados (OSM)
+python -m peru_intel ingest enso --download          # ICEN, eventos, NOAA CPC
+python -m peru_intel ingest eventos                  # reconstruye el Event Store
+```
+
+**datosabiertos.gob.pe bloquea descargas automáticas (HTTP 418).** No se suplanta un navegador: descarga el CSV con el
+navegador (RENIPRESS, MTC), guárdalo con el nombre que indica el mensaje y ejecuta `ingest <fuente> --dir <carpeta>`.
+
+**El Niño:** el estado ENFEN vive en `config/enso_eventos.json` (curado, con enlaces). Actualízalo con cada comunicado
+quincenal (próximo: 15 oct 2026) y ejecuta `ingest enso --download` para el ICEN y NOAA.
+
+**Contenedor:** con Docker Desktop abierto, doble clic en `INICIAR-CONTENEDOR.bat` (`voz` o `todo` como argumento para
+servicios locales). Para otra PC sin Internet: `scripts/exportar-contenedor.ps1` → `mapa-peru-analitico-0.3.tar`.
+Dentro del contenedor, Ollama del anfitrión se alcanza en `host.docker.internal:11434`; la búsqueda ONVIF por multicast
+no atraviesa la red de Docker: escribe la IP del XVR a mano.
+
+**Ajustes nuevos** (`data/config.local.json` o variables `PI_*`): `admin_pin` (exige PIN en el administrador de IA),
+`osrm_url` (OSRM/Valhalla propio para rutas sin Internet), `go2rtc_url`, `vision_allow_public` (no recomendado),
+`vision_allow_plates` (exige base legal), `vision_token` (token del nodo edge), `ai_key_<proveedor>` (lo escribe el administrador).
+
+### Límites declarados
+
+- SIDPOL ubica la denuncia por distrito: el mapa no sombrea calles dentro del distrito; los focos son territoriales.
+- Sedes OSM son aproximadas; RENIPRESS es oficial. Colegios: reemplazables por el padrón ESCALE cuando se integre.
+- La comparación de El Niño actual con eventos pasados es un cálculo de magnitud, no un pronóstico; el pronóstico es del ENFEN.
+- Las proyecciones son univariadas con backtesting; las variables externas aparecen como correlaciones, no entran a la cifra.
+- Siguiente fase: WorldPop/GHSL/VIIRS, COES, OSIPTEL, CDC-MINSA, Overture, SatNOGS/SDR y Valhalla offline.

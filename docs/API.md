@@ -66,3 +66,27 @@ Regla de integración: **Route 360 → (GET) → esta API**. Esta plataforma nun
 
 Las capas en vivo devuelven `{status: {status, updated, age_s, error, count}, data, provenance}`.
 `status.status` ∈ `ok | esperando | desactualizado | error | sin_configurar`.
+
+## v0.3
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/map/geocode?q=` | Territorio oficial (offline) y lugares Nominatim (en línea, caché) |
+| GET | `/api/v1/intel/context?lat=&lon=` | Informador 360 del punto (`online=0` evita consultas en línea) |
+| GET | `/api/v1/intel/context/media?q=` | Titulares GDELT — señal no verificada |
+| GET | `/api/v1/intel/observatory/{ubigeo}?modalidad=` | Observatorio de denuncias del territorio |
+| GET | `/api/v1/intel/patterns/{hotspots, sequences, leadlag, changes, anomalies, forecast}?scope=&modalidad=` | Motor de patrones |
+| GET | `/api/v1/intel/routes?from=&to=` o `?alat=&alon=&blat=&blon=` | Rutas estratégicas comparadas |
+| GET | `/api/v1/intel/layers/{services, emergencies, roads}` | Servicios (bbox, cat), INDECI (days) y MTC |
+| GET | `/api/v1/intel/institutions?cat=&ubigeo=` | Sedes de seguridad y justicia (OSM) |
+| GET | `/api/v1/intel/enso`, `/api/v1/intel/ocean`, `/api/v1/intel/weather/grid` | El Niño, corrientes y rejilla meteorológica |
+| POST | `/api/v1/intel/ai/enso`, `/api/v1/intel/ai/explain` | IA verificada sobre hechos numerados |
+| GET | `/api/v1/admin/engineering/ai` | Vista del AI Gateway (sin secretos) |
+| POST | `/api/v1/admin/engineering/ai/{kill, allow_paid, provider, key, feature, budget, test, load, unload, pull, reset}` | Acciones auditadas (PIN si `admin_pin`) |
+| POST | `/api/v1/ai/voice/command`, `/ai/voice/tts` (JSON), `/ai/voice/stt` (audio/*) | Asistente de voz |
+| POST | `/api/v1/ai/voice/realtime`, `/ai/voice/realtime/settle` | Credencial efímera OpenAI Realtime y liquidación |
+| GET/POST | `/api/v1/intel/vision/{cameras, discover, events, probe, go2rtc, cameras/delete}` | Vision Edge |
+| GET | `/api/v1/intel/vision/snap/{cam}/{canal}.jpg` | Foto del canal (solo equipos de la red local) |
+
+Errores del gateway: `AI_DISABLED · INVALID_REQUEST · INVALID_MODE · CAPABILITY_UNSUPPORTED · PRIVACY_DENIED · RESOURCE_DENIED ·
+BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · CANCELLED · TOOL_DENIED`.

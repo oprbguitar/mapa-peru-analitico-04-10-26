@@ -27,11 +27,18 @@
       <span id="search-hint" class="sr-only">Escribe al menos dos letras y elige un resultado</span>
       <ul id="search-results" class="search-results" role="listbox" hidden></ul>
     </form>
+    <div class="modes" role="tablist" aria-label="Modo de trabajo" id="modes">
+      <button type="button" role="tab" data-mode="mapa" aria-selected="true">Mapa</button>
+      <button type="button" role="tab" data-mode="patrones" aria-selected="false">Patrones</button>
+      <button type="button" role="tab" data-mode="rutas" aria-selected="false">Rutas</button>
+      <button type="button" role="tab" data-mode="ninio" aria-selected="false">El Niño</button>
+    </div>
     <div class="live-strip" id="live-strip" aria-label="Estado de los proveedores en vivo"></div>
     <div class="top-actions">
-      <button class="btn btn-ghost" type="button" id="open-enso" title="Observatorio de El Niño: estado ENFEN, históricos y corrientes">El Niño</button>
+      <button class="btn btn-primary" type="button" id="open-assistant" aria-haspopup="dialog" title="Asistente de voz (Alt+V)">🎙 Asistente</button>
       <button class="btn btn-ghost" type="button" id="open-cameras" aria-haspopup="dialog" title="Conectar mis cámaras (Dahua, ONVIF, RTSP)">Cámaras</button>
       <button class="btn btn-ghost" type="button" id="open-sources" aria-haspopup="dialog">Fuentes</button>
+      <button class="btn btn-ghost" type="button" id="open-admin" aria-haspopup="dialog" title="Administrador de IA: modos, proveedores, voz y presupuesto">IA</button>
       <button class="btn btn-ghost" type="button" id="open-settings" aria-haspopup="dialog">Claves</button>
       <button class="btn btn-ghost btn-icon" type="button" id="toggle-wide" aria-pressed="false" aria-label="Vista amplia: ocultar todos los paneles (tecla F)" title="Vista amplia (F)">⛶</button>
       <button class="btn btn-ghost btn-icon" type="button" id="toggle-theme" aria-label="Cambiar entre modo noche y día" title="Noche / día">◐</button>
@@ -79,6 +86,7 @@
   <button type="button" class="edge-tab edge-tab--spine" data-expand="spine" aria-label="Mostrar la línea de tiempo">▴ Tiempo</button>
   <button type="button" class="edge-tab edge-tab--wide" data-expand="wide" aria-label="Salir de la vista amplia">⛶ Paneles</button>
 
+  <section class="assistant hud hud-frame" id="assistant" aria-label="Asistente de voz" hidden></section>
   <section class="story hud hud-frame" id="story" aria-label="Historia del evento" aria-live="polite" hidden></section>
   <section class="cam-viewer hud hud-frame" id="cam-viewer" aria-label="Visor de cámaras" hidden></section>
   <div class="pick-banner hud" id="pick-banner" role="status" hidden></div>
@@ -103,6 +111,14 @@
       <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Cerrar">✕</button>
     </div>
     <div class="drawer-body" id="cameras-body"></div>
+  </dialog>
+
+  <dialog class="drawer" id="admin-dialog" aria-labelledby="admin-title">
+    <div class="drawer-head">
+      <h2 id="admin-title">Administrador de IA · /admin/engineering/ai</h2>
+      <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Cerrar">✕</button>
+    </div>
+    <div class="drawer-body" id="admin-body"></div>
   </dialog>
 
   <dialog class="drawer" id="settings-dialog" aria-labelledby="settings-title">

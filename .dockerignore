@@ -1,0 +1,16 @@
+.git
+.eos
+.agents
+.claude
+**/__pycache__
+*.pyc
+output
+data/raw
+data/live
+data/config.local.json
+data/cameras.local.json
+data/ai_gateway.json
+data/vision
+data/catalog/*.sqlite*
+data/normalized/_*
+*.tar

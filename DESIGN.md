@@ -9,6 +9,19 @@
 
 ## 2. Dirección visual
 
+**v0.3 (vigente) — HUD v0.2 + decisión.** design-pick (`Mapa Peru Analitico v0.3`, modo explore) propuso «command bar + tabla
+maestra · petróleo + coral · motion seco». Se conserva la carcasa HUD que fijó el usuario y se adopta del selector:
+**barra de modos** (Mapa · Patrones · Rutas · El Niño) como command bar, **tablas de decisión** en la ficha (rutas, patrones,
+servicios), **coral** (`--hot`, `--enso-warm`) solo para focos y alerta, y motion seco en UI (la animación queda para datos:
+clima, corrientes, focos, historias).
+Tres direcciones consideradas: (a) tablero denso separado del mapa — descartado, rompe la lectura territorial;
+(b) **modos sobre el mismo mapa con ficha contextual** — elegida; (c) narrativa scrollytelling a pantalla completa — solo
+para las historias de El Niño (tarjeta inferior con capítulos).
+
+**Desviación de color pedida por el usuario:** el coloreado ya no es solo cian. La paleta por defecto es **espectral
+(azul → verde → amarillo → rojo)**, con Calor, Viridis (apta para daltonismo) y Cian elegibles en la leyenda. Se declara en
+la leyenda «cuantiles · posición relativa»: es magnitud relativa, **no un semáforo oficial de riesgo**.
+
 **v0.2 (vigente) — HUD táctico, a pedido del usuario, con referencia visual en God's Eye View (`GOdEyes`).**
 Desviación declarada del selector: la referencia la fijó el usuario; se conservó del selector la espina temporal, la
 tipografía y la rampa cian, y se adaptó lo que el harness prohíbe (sin Inter; vidrio solo con función).
@@ -69,10 +82,22 @@ dato validada en ambos modos con `validate_palette.js` (PASS).
 
 ## 8. Anti-patrones prohibidos en este proyecto
 - Fila de KPIs decorativos sin relación con el período; métricas sin fuente.
-- Rojo «peligro» como rampa de criminalidad; degradados morado-azul; glass; cards anidadas.
+- Presentar la rampa espectral como nivel oficial de riesgo (siempre «cuantiles · posición relativa»); degradados morado-azul; glass sin función; cards anidadas.
+- Animación decorativa: todo lo que se mueve representa un dato (lluvia, calor, corrientes, focos) y respeta `prefers-reduced-motion`.
 - Repartir una cifra regional entre distritos.
 
+## 8b. Componentes v0.3
+| Componente | Estados |
+|---|---|
+| Barra de modos (`.modes`) | seleccionado, hover, active, focus |
+| Paneles replegables + pestañas de borde (`.edge-tab`) | abierto/replegado, vista amplia, teclas `[` `]` F Esc |
+| Chips (`.chip`) | pressed (glow), hover, active, focus |
+| Columnas por año (`.year-col`) | sube/baja/estable, parcial (rayado), proyección (rombo), seleccionado |
+| Asistente (`.assistant`) | idle, listening (pulso rojo), busy, error |
+| Historia (`.story`) | reproduciendo/pausa, capítulo actual, progreso |
+| Visor de cámaras | ok, sin imagen, pausado, mosaico |
+
 ## 9. Auditoría
-- `design-lint`: **0 / 20 — APROBADO**.
+- `design-lint`: **0 / 20 — APROBADO** (v0.3, 30 archivos).
 - E2E Playwright (`tests/e2e/smoke.mjs`): 19/19 a 1280, 1600, 768 y 360 px — incluye clima por punto, capas SENAMHI/GIBS,
   satélite + relieve 3D y cambio noche/día conservando capas.

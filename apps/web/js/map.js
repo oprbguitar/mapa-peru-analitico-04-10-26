@@ -246,6 +246,7 @@ export function showLevel(level) {
 
 function classify(values, measure) {
   if (measure === 'change_pct') return { breaks: DIV_BREAKS, colors: DIV.map(cssVar), diverging: true }
+  if (measure === 'gi_z') return { breaks: [-2.58, -1.96, -1, 1, 1.96, 2.58], colors: DIV.map(cssVar), diverging: true, gi: true }
   const v = values.filter((x) => x !== null && x !== undefined && Number.isFinite(x)).sort((a, b) => a - b)
   const SEQ = seqVars()
   if (!v.length) return { breaks: [], colors: SEQ.map(cssVar) }
@@ -279,7 +280,7 @@ export function paint(choropleth, measure) {
   const expr = ['case', ['==', ['coalesce', ['feature-state', 'cls'], -1], -1], cssVar('--seq-none'),
     ['match', ['feature-state', 'cls'], ...cls.colors.flatMap((c, i) => [i, c]), cssVar('--seq-none')]]
   map.setPaintProperty(`${src}-fill`, 'fill-color', expr)
-  map.setPaintProperty(`${src}-fill`, 'fill-opacity', state.choroplethOpacity ?? 0.78)
+  map.setPaintProperty(`${src}-fill`, 'fill-opacity', zoomOpacity(state.choroplethOpacity ?? 0.78))
   map.setPaintProperty(`${src}-line`, 'line-color', cssVar('--void'))
   return cls
 }
@@ -290,7 +291,7 @@ export let hotList = []
 function markHotspots(choropleth, measure, src) {
   const rows = choropleth.rows.filter((r) => Number.isFinite(r[measure]))
   const n = Math.max(3, Math.ceil(rows.length * 0.1))
-  hotList = measure === 'change_pct' || rows.length < 6 ? [] : [...rows].sort((a, b) => b[measure] - a[measure]).slice(0, n)
+  hotList = measure === 'change_pct' || measure === 'gi_z' || rows.length < 6 ? [] : [...rows].sort((a, b) => b[measure] - a[measure]).slice(0, n)
   for (const r of hotList) map.setFeatureState({ source: src, id: r.ubigeo }, { hot: true })
   clearInterval(hotTimer)
   if (!state.hotspots || matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -309,9 +310,12 @@ export function setHotspots(on) {
   if (state.choropleth) paint(state.choropleth, state.measure)
 }
 
+// al acercarse a la escala de calle el coloreado se atenúa para leer el mapa base (calles, quebradas, trazos)
+const zoomOpacity = (v) => ['interpolate', ['linear'], ['zoom'], 9, v, 12, v * 0.28]
+
 export function setChoroplethOpacity(v) {
   state.choroplethOpacity = v
-  for (const src of Object.values(LEVEL_SRC)) map.setPaintProperty(`${src}-fill`, 'fill-opacity', v)
+  for (const src of Object.values(LEVEL_SRC)) map.setPaintProperty(`${src}-fill`, 'fill-opacity', zoomOpacity(v))
 }
 
 export function setSelected(ubigeo) {
@@ -334,3 +338,49 @@ export function refreshThemeColors() {
   map.setPaintProperty('dep-context', 'line-color', cssVar('--accent'))
   applySky()
 }
+
+// ── capas de puntos y líneas genéricas (sedes, servicios, emergencias, rutas) ─────────────
+const fcol = (features) => ({ type: 'FeatureCollection', features })
+export const ptFeature = (lon, lat, props) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props })
+
+/** Crea (una vez) una capa de círculos con color por categoría y la devuelve. */
+export function ensurePointLayer(id, { colorBy = 'cat', colors = {}, radius = 5, minzoom = 0, onClick, before } = {}) {
+  if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: fcol([]) })
+  if (!map.getLayer(id)) {
+    const match = ['match', ['get', colorBy], ...Object.entries(colors).flatMap(([k, v]) => [k, cssVar(v)]), cssVar('--ink-soft')]
+    map.addLayer({ id, type: 'circle', source: id, minzoom, layout: { visibility: 'none' },
+      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, radius * 0.55, 12, radius, 16, radius * 1.6],
+        'circle-color': match, 'circle-stroke-width': 1.2, 'circle-stroke-color': cssVar('--inst-ring'), 'circle-opacity': 0.92 } }, before)
+    if (onClick) {
+      map.on('click', id, (e) => onClick(e.features[0], e.lngLat))
+      map.on('mouseenter', id, () => (map.getCanvas().style.cursor = 'pointer'))
+      map.on('mouseleave', id, () => (map.getCanvas().style.cursor = ''))
+    }
+  }
+}
+
+export function setPoints(id, features, visible = true) {
+  map.getSource(id)?.setData(fcol(features))
+  if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+}
+
+export function showLayer(id, on) {
+  if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
+}
+
+/** Líneas (rutas, trazos de huaicos). `dashed`: discontinua; `width` y `color` por propiedad. */
+export function ensureLineLayer(id, { dashed = false, color = '--accent', width = 3 } = {}) {
+  if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: fcol([]) })
+  if (!map.getLayer(id)) {
+    map.addLayer({ id, type: 'line', source: id, layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ['coalesce', ['get', 'color'], cssVar(color)], 'line-width': ['coalesce', ['get', 'width'], width],
+        'line-opacity': ['coalesce', ['get', 'opacity'], 0.95], ...(dashed ? { 'line-dasharray': [2, 1.5] } : {}) } })
+  }
+}
+
+export function setLines(id, features) {
+  map.getSource(id)?.setData(fcol(features))
+}
+
+export const flyTo = (lon, lat, zoom = 12) =>
+  map.flyTo({ center: [lon, lat], zoom, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1600, essential: true })

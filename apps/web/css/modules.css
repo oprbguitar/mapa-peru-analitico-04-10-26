@@ -186,3 +186,61 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
 @media (prefers-reduced-motion: reduce) {
   .alert-band .eyebrow::before { animation: none; }
 }
+
+/* ── modos de trabajo (barra superior) ───────────────────── */
+.modes { display: flex; border: var(--border) solid var(--line); border-radius: var(--radius); overflow: hidden; flex: none; }
+.modes button { border: 0; border-right: var(--border) solid var(--line); background: transparent; min-height: 32px; padding: 0 var(--sp-3); cursor: pointer;
+  font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.modes button:last-child { border-right: 0; }
+.modes button:hover { background: var(--accent-dim); }
+.modes button:active { background: var(--line); }
+.modes button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* ── asistente de voz ────────────────────────────────────── */
+.assistant { position: fixed; z-index: 15; top: calc(var(--topbar-h) + var(--gap) * 2); right: calc(var(--panel-space) + var(--gap));
+  width: min(400px, calc(100vw - var(--gap) * 2)); padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.assistant[hidden] { display: none; }
+.as-head { display: flex; gap: var(--sp-2); align-items: center; }
+.as-head select { margin-left: auto; min-height: 30px; border: var(--border) solid var(--line); border-radius: var(--radius); background: var(--surface-2); font-size: var(--fs-caption); }
+.as-row { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); align-items: center; }
+.as-mic { width: 56px; height: 56px; border-radius: 50%; border: var(--rule) solid var(--accent); background: var(--accent-dim); cursor: pointer; font-size: var(--fs-h2);
+  transition: box-shadow var(--dur) var(--ease), background var(--dur) var(--ease); }
+.as-mic:hover { box-shadow: var(--glow); }
+.as-mic:active { background: var(--line); }
+.assistant[data-state="listening"] .as-mic { background: var(--danger); border-color: var(--danger); animation: pulse 1.2s var(--ease) infinite; }
+.assistant[data-state="busy"] .as-mic { cursor: progress; opacity: .7; }
+.as-form { display: flex; gap: var(--sp-1); min-width: 0; }
+.as-form input { flex: 1; min-width: 0; min-height: 34px; border: var(--border) solid var(--line); border-radius: var(--radius); background: var(--surface-2); padding: 0 var(--sp-2); }
+.as-status { font: 700 var(--fs-caption) var(--font-mono); color: var(--ink-soft); letter-spacing: .04em; }
+.assistant[data-state="error"] .as-status { color: var(--danger); }
+.as-log { max-height: 220px; overflow: auto; display: grid; gap: var(--sp-1); font-size: var(--fs-label); }
+.as-log:empty { display: none; }
+.as-line { margin: 0; }
+.as-line b { font-family: var(--font-mono); color: var(--accent); margin-right: var(--sp-1); }
+.as-line.err b { color: var(--danger); }
+.as-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+
+@media (max-width: 1279px) { .modes button { padding: 0 var(--sp-2); } #open-assistant { padding: 0 var(--sp-2); } }
+@media (max-width: 1023px) { #open-cameras, #open-sources { display: none; } }
+@media (max-width: 767px) {
+  .modes { order: 3; }
+  .topbar { flex-wrap: wrap; height: auto; min-height: var(--topbar-h); padding-block: var(--sp-1); }
+  .modes button { padding: 0 var(--sp-2); min-height: 30px; }
+  #open-assistant { display: inline-flex !important; font-size: 0; width: 34px; padding: 0; justify-content: center; align-items: center; }
+  #open-assistant::before { content: "🎙"; font-size: var(--fs-ui); }
+  .assistant { right: var(--gap); left: var(--gap); width: auto; }
+}
+@media (max-width: 767px) { :root { --topbar-h: 84px; } }
+#open-assistant { white-space: nowrap; }
+.field select[multiple] { min-height: 120px; padding: var(--sp-1); }
+.field select[multiple] option { padding: 2px var(--sp-2); }
+.field select[multiple] option:checked { background: var(--accent-dim); color: var(--accent); font-weight: 700; }
+@media (max-width: 767px) {
+  :root { --topbar-h: 92px; }
+  .topbar { column-gap: var(--sp-2); row-gap: var(--sp-1); }
+  .search { flex: 1 1 0; min-width: 0; }
+  .top-actions { flex: none; }
+  .modes { flex: 1 1 100%; }
+  .modes button { flex: 1; }
+  .spine { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+}

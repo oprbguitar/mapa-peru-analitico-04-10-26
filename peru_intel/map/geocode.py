@@ -37,6 +37,15 @@ def geocode(q: str) -> list[dict]:
     terr = ADAPTER.resolve_ubigeo(q) or []
     n = _norm(q)
     exact = [t for t in terr if _norm(t["nombre"]) == n or n.endswith(_norm(t["nombre"]))]
+    if len(exact) > 1:  # homónimos: primero el más poblado (proyección INEI), salvo que se indique el departamento
+        try:
+            from ..storage import warehouse
+            ids = [t["ubigeo"] for t in exact]
+            pop = {r["ubigeo"]: r["p"] for r in warehouse.query(
+                f"SELECT ubigeo, max(poblacion) p FROM poblacion WHERE ubigeo IN ({','.join('?' for _ in ids)}) GROUP BY 1", ids)}
+            exact.sort(key=lambda t: -(pop.get(t["ubigeo"]) or 0))
+        except Exception:  # noqa: BLE001 — sin población, se conserva el orden
+            pass
     for t in (exact or terr)[:5]:
         r = territory.lookup(t["ubigeo"])
         if r:

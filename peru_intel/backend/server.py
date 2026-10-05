@@ -224,6 +224,7 @@ def run(host: str = "127.0.0.1", port: int = 8360, live: bool = True, open_brows
         from ..live import load_all
         load_all()
     def _warm():
+        time.sleep(120)  # después del arranque: no compite con la primera carga del mapa
         try:
             from ..analytics import patterns
             patterns.warmup()
