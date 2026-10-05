@@ -122,6 +122,10 @@ function bindEnso() {
 // ── historia: todo el período en paralelo + recorrido opcional ─────────────
 const TYPE = { mar: 'Mar cálido', lluvia: 'Lluvias', inundacion: 'Inundación', huaico: 'Huaico', rio: 'Desborde de río', emergencia: 'Emergencia', fin: 'Fin del evento', pronostico: 'Pronóstico oficial' }
 let markers = []
+let evs = null          // registros del período (SINPAD + DesInventar)
+const evOff = new Set() // tipos ocultos por el usuario
+const EV_COLORS = { huaico: '--kind-estimacion', rio: '--pal-esp-2', inundacion: '--info', lluvia: '--fx-rain', deslizamiento: '--live-quake', marejada: '--enso-cold' }
+let evPopup = null
 const icenTxt = (ch) => (ch.icen != null ? (ch.icen > 0 ? '+' : '') + fmt(ch.icen, 2) + ' °C' : '—')
 const sstTxt = (ch) => (ch.sst ? fmt(ch.sst.sst, 1) + ' °C (' + (ch.sst.anom > 0 ? '+' : '') + fmt(ch.sst.anom, 1) + ')' : '—')
 
@@ -136,6 +140,44 @@ function marchDash(id) {
 function clearMarkers() {
   markers.forEach((m) => m.remove())
   markers = []
+}
+
+function evFilter() {
+  if (!evs) return
+  setPoints('enso-ev', evs.events.flatMap((e, i) => (evOff.has(e[2]) ? [] : [ptFeature(e[0], e[1], { t: e[2], i })])), true)
+}
+
+function evClick(f, lngLat) {
+  const e = evs?.events[f.properties.i]
+  if (!e) return
+  const [, , t, fecha, fen, lugar, dam, afe, fal, reg, fuente, ubic] = e
+  evPopup ??= new maplibregl.Popup({ closeButton: true, maxWidth: '300px', offset: 6 })
+  evPopup.setLngLat(lngLat).setHTML(`<div class="pop-title">${esc(evs.types[t])}</div><div class="src-meta">${esc(fecha)} · ${esc(lugar)}</div>
+    <div class="pop-row"><span>Registro</span><b>${esc(fen)}</b></div>
+    ${dam ? `<div class="pop-row"><span>Damnificados</span><b>${fmt(dam)}</b></div>` : ''}${afe ? `<div class="pop-row"><span>Afectados</span><b>${fmt(afe)}</b></div>` : ''}
+    ${fal ? `<div class="pop-row"><span>Fallecidos</span><b>${fmt(fal)}</b></div>` : ''}
+    <div class="src-meta">${esc(reg)}${fuente ? ` · prensa: ${esc(fuente)}` : ''}${ubic !== 'punto' ? ` · ubicado en el centroide del ${esc(ubic)}` : ''}</div>`).addTo(map)
+}
+
+async function loadEvents(id) {
+  evs = null
+  ensurePointLayer('enso-ev', { colorBy: 't', colors: EV_COLORS, radius: 5, onClick: evClick })
+  try {
+    const d = await getJSON(`/api/v1/intel/enso/events/${encodeURIComponent(id)}`)
+    if (story?.s.id !== id) return
+    evs = d
+    evFilter()
+    render()
+  } catch (err) {
+    toast(err.message)
+  }
+}
+
+function evBlock() {
+  if (!evs) return '<p class="loading">Reuniendo registros del período</p>'
+  return `<div class="ev-types" role="group" aria-label="Tipos de registro">${Object.entries(evs.types).map(([k, v]) => `<button type="button" data-ev="${k}" data-type="${k}" aria-pressed="${!evOff.has(k)}" ${evs.counts[k] ? '' : 'disabled'}>
+      <span class="sw" aria-hidden="true"></span>${esc(v)} <b>${fmt(evs.counts[k])}</b></button>`).join('')}</div>
+    <p class="src-meta">${fmt(evs.total)} registros ${esc(evs.from)} → ${esc(evs.to)} · ${evs.provenance.map((p) => kindBadge(p.kind, p.institution)).join(' ')} · clic en un punto para ver el detalle</p>`
 }
 
 /** Dibuja TODOS los registros del período a la vez: marcadores fijos con fecha, tipo y temperatura del mar del momento. */
@@ -161,7 +203,7 @@ function drawAll() {
   })
   const b = new maplibregl.LngLatBounds()
   s.chapters.forEach((c) => { b.extend([c.lon, c.lat]); (c.path || []).forEach((p) => b.extend(p)) })
-  map.fitBounds(b, { padding: { top: 80, bottom: 260, left: 60, right: 380 }, maxZoom: 9, duration: reduce() ? 0 : 900 })
+  map.fitBounds(b, { padding: { top: 80, bottom: 80, left: 380, right: 380 }, maxZoom: 9, duration: reduce() ? 0 : 900 })
 }
 
 function render() {
@@ -170,8 +212,11 @@ function render() {
   markers.forEach((m, k) => m.getElement().setAttribute('aria-current', String(k === i)))
   const el = document.getElementById('story')
   el.hidden = false
-  el.innerHTML = `<div class="story-head"><span class="when">${esc(s.title)} · ${s.chapters.length} registros${s.duration_months ? ` · ${s.duration_months} meses` : ''}</span>
-      <button class="btn btn-ghost btn-icon" type="button" data-st="close" aria-label="Cerrar la historia">✕</button></div>
+  el.classList.toggle('min', !!story.min)
+  el.innerHTML = `<div class="story-head"><span class="when">${esc(s.title)}${s.duration_months ? ` · ${s.duration_months} meses` : ''}</span>
+      <span><button class="btn btn-ghost btn-icon" type="button" data-st="min" aria-expanded="${!story.min}" aria-label="${story.min ? 'Mostrar' : 'Ocultar'} el panel">${story.min ? '▴' : '▾'}</button>
+      <button class="btn btn-ghost btn-icon" type="button" data-st="close" aria-label="Cerrar la historia">✕</button></span></div>
+    <div class="story-body">${evBlock()}
     <ol class="ev-list">${s.chapters.map((c, k) => `<li><button type="button" data-st="go" data-k="${k}" data-type="${esc(c.type || 'mar')}" aria-current="${k === i}">
       <span class="n">${k + 1}</span><span><b>${esc(c.title)}</b><small>${esc(TYPE[c.type] || '')} · ${esc(c.date)} · ICEN ${icenTxt(c)} · mar ${sstTxt(c)}</small></span></button></li>`).join('')}</ol>
     <div class="ev-detail"><h3>${i + 1}. ${esc(ch.title)}</h3><p>${esc(ch.text)}</p>
@@ -181,7 +226,7 @@ function render() {
     <div class="story-nav"><button class="btn" type="button" data-st="all">Ver todo</button>
       <button class="btn btn-primary" type="button" data-st="play" aria-pressed="${story.playing}">${story.playing ? '❚❚ Pausa' : '▶ Recorrido'}</button>
       <button class="btn" type="button" data-st="prev" ${i ? '' : 'disabled'} aria-label="Anterior">◀</button>
-      <button class="btn" type="button" data-st="next" ${i < s.chapters.length - 1 ? '' : 'disabled'} aria-label="Siguiente">▶</button></div>`
+      <button class="btn" type="button" data-st="next" ${i < s.chapters.length - 1 ? '' : 'disabled'} aria-label="Siguiente">▶</button></div></div>`
   const bar = document.getElementById('st-bar')
   if (story.playing && !reduce()) {
     bar.style.transition = 'none'
@@ -213,6 +258,9 @@ function close() {
   document.getElementById('story').hidden = true
   setLines('st-path', [])
   showLayer('st-pts', false)
+  showLayer('enso-ev', false)
+  evPopup?.remove()
+  evs = null
 }
 
 export async function playStory(id) {
@@ -220,19 +268,30 @@ export async function playStory(id) {
   const s = d.storylines.find((x) => x.id === id)
   if (!s) return toast('Historia no disponible')
   if (story) close()
-  story = { s, i: 0, playing: false, timer: null }
+  story = { s, i: 0, playing: false, timer: null, min: false }
   drawAll()
   render()
+  loadEvents(id)
 }
 
 export const closeStory = () => story && close()
 
 export function initStory() {
   document.getElementById('story').addEventListener('click', (e) => {
+    const ev = e.target.closest('[data-ev]')
+    if (ev && story) {
+      evOff.has(ev.dataset.ev) ? evOff.delete(ev.dataset.ev) : evOff.add(ev.dataset.ev)
+      evFilter()
+      return render()
+    }
     const b = e.target.closest('[data-st]')
     if (!b || !story) return
     const a = b.dataset.st
     if (a === 'close') close()
+    else if (a === 'min') {
+      story.min = !story.min
+      render()
+    }
     else if (a === 'prev') go(Math.max(0, story.i - 1))
     else if (a === 'next') go(Math.min(story.s.chapters.length - 1, story.i + 1))
     else if (a === 'go') go(+b.dataset.k)

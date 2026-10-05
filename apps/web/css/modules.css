@@ -127,8 +127,13 @@ body[data-wide="on"] .edge-tab--wide { display: inline-flex; }
 .story-btn:active { background: var(--line); }
 .story-btn .mag { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; color: var(--enso-warm); }
 .story-btn .play { color: var(--enso-warm); font-size: var(--fs-ui); }
-.story { position: fixed; z-index: 13; left: calc(var(--rail-space) + var(--gap)); right: calc(var(--panel-space) + var(--gap)); margin: 0 auto; max-width: 580px;
-  bottom: calc(var(--spine-space) + var(--gap) + var(--attrib-h)); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); }
+.story { position: fixed; z-index: 13; left: calc(var(--rail-space) + var(--gap)); width: min(330px, calc(100vw - 2 * var(--gap)));
+  bottom: calc(var(--spine-space) + var(--gap) + var(--attrib-h)); max-height: calc(100vh - 220px); overflow-y: auto; padding: var(--sp-2) var(--sp-3);
+  display: grid; gap: var(--sp-2); background: color-mix(in srgb, var(--surface) 68%, transparent); backdrop-filter: blur(6px); /* translúcido: deja ver el mapa */ }
+.story.min { overflow: hidden; }
+.story.min .story-body { display: none; }
+.story-body { display: grid; gap: var(--sp-2); }
+.story-head .btn-icon { min-height: 28px; }
 .story[hidden] { display: none; }
 .story-head { display: flex; justify-content: space-between; gap: var(--sp-2); align-items: baseline; }
 .story-head .when { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-hud); color: var(--enso-warm); }
@@ -256,7 +261,7 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
 .ev-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ev-mark[aria-current="true"] { z-index: 2; }
 .ev-mark[aria-current="true"] .n { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ev) 40%, transparent); }
-.ev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 168px; overflow-y: auto; }
+.ev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 132px; overflow-y: auto; }
 .ev-list button { display: flex; gap: var(--sp-2); align-items: center; width: 100%; text-align: left; border: var(--border) solid transparent; border-left: var(--rule) solid var(--ev); background: transparent; color: var(--ink); padding: 2px var(--sp-2); cursor: pointer; }
 .ev-list button:hover { background: var(--accent-dim); }
 .ev-list button[aria-current="true"] { border-color: var(--ev); background: var(--accent-dim); }
@@ -275,3 +280,15 @@ body[data-mode="rutas"] #layer-title, body[data-mode="rutas"] #legend { display:
 .th-chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .th-chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 @media (max-height: 760px) { .ev-list { max-height: 92px; } .ev-detail p { display: none; } }
+
+/* El Niño · registros del período por tipo */
+[data-type="deslizamiento"] { --ev: var(--live-quake); } [data-type="marejada"] { --ev: var(--enso-cold); }
+.ev-types { display: flex; flex-wrap: wrap; gap: 2px; }
+.ev-types button { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 26px; padding: 0 var(--sp-2); border: var(--border) solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; font: 400 var(--fs-caption) var(--font-mono); }
+.ev-types button b { font-weight: 700; }
+.ev-types .sw { width: 9px; height: 9px; border-radius: 50%; background: var(--ev); }
+.ev-types button:hover { background: var(--accent-dim); }
+.ev-types button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ev-types button[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.ev-types button:disabled { opacity: .3; cursor: default; }

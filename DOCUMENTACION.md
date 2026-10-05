@@ -216,3 +216,13 @@ no atraviesa la red de Docker: escribe la IP del XVR a mano.
 - La comparación de El Niño actual con eventos pasados es un cálculo de magnitud, no un pronóstico; el pronóstico es del ENFEN.
 - Las proyecciones son univariadas con backtesting; las variables externas aparecen como correlaciones, no entran a la cifra.
 - Siguiente fase: WorldPop/GHSL/VIIRS, COES, OSIPTEL, CDC-MINSA, Overture, SatNOGS/SDR y Valhalla offline.
+
+## Registros de El Niño por período (v0.3.2)
+
+`GET /api/v1/intel/enso/events/{historia}` devuelve todos los huaicos/quebradas activadas, desbordes de río,
+inundaciones, lluvias intensas, deslizamientos y marejadas registrados entre el inicio y el fin oficial (ICEN) del evento.
+
+- **SINPAD · INDECI** (2015 →): coordenada del registro. Antes de 2018 el SINPAD no distingue «desborde de río» de «inundación».
+- **DesInventar · OSSO/LA RED** (1970–2015): fichas tomadas de prensa (columna `fuente`, p. ej. «ElC 18.03.98» = El Comercio),
+  ubicadas en el centroide del territorio publicado (distrito, provincia o departamento). Ingesta: `python -m peru_intel ingest desinventar --download`.
+- La caja de la historia es lateral, translúcida y plegable (▾); los tipos se filtran con los botones de color y cada punto abre su detalle.

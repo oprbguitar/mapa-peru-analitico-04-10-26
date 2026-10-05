@@ -2,7 +2,7 @@
 
   serve [--port 8360] [--host 127.0.0.1] [--no-live]   servidor local + mapa
   build-territory [--from DIR]                          paquete territorial data/peru/
-  ingest <fuente|all> [--download] [--dir DIR]           sidpol | indicadores | mpfn | devida | ports | instituciones | enso | emergencias | servicios | eventos | all
+  ingest <fuente|all> [--download] [--dir DIR]           sidpol | indicadores | mpfn | devida | ports | instituciones | enso | emergencias | desinventar | servicios | eventos | all
   sources                                               registro de fuentes y su estado
   index                                                 recalcula el Índice Situacional v1
   export-ofm                                            copia a data/ofm las teselas de Perú ya vistas en RUC360
@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("build-territory")
     b.add_argument("--from", dest="src", type=Path)
     i = sub.add_parser("ingest")
-    i.add_argument("source", choices=["sidpol", "indicadores", "mpfn", "devida", "ports", "instituciones", "enso", "emergencias", "servicios", "eventos", "all"])
+    i.add_argument("source", choices=["sidpol", "indicadores", "mpfn", "devida", "ports", "instituciones", "enso", "emergencias", "desinventar", "servicios", "eventos", "all"])
     i.add_argument("--download", action="store_true", help="descargar del portal oficial (si no, usa copias locales)")
     i.add_argument("--dir", type=Path, help="carpeta con archivos ya descargados")
     sub.add_parser("sources")

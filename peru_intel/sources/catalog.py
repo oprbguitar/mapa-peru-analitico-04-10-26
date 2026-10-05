@@ -291,6 +291,12 @@ SOURCES: list[dict] = [
      "official": 1, "kind": "oficial", "type": "arcgis", "license": "Datos públicos del Estado peruano", "update_frequency": "diaria",
      "geographic_level": "punto + distrito (UBIGEO)", "coverage_start": "2015",
      "notes": "Registro administrativo de emergencias: afectados, damnificados, fallecidos, viviendas, carreteras y puentes."},
+    {"source_id": "desinventar_per", "name": "Inventario histórico de desastres del Perú (DesInventar)", "institution": "Corporación OSSO · LA RED",
+     "url": "https://www.desinventar.net/DesInventar/profiletab.jsp?countrycode=per", "adapter": "peru_intel.ingestion.desinventar",
+     "official": 0, "kind": "vivo_tercero", "type": "xml", "license": "Uso libre con atribución (DesInventar)", "update_frequency": "histórico (cerrado)",
+     "geographic_level": "distrito (UBIGEO)", "coverage_start": "1970",
+     "notes": "Fichas de eventos tomadas de prensa y reportes oficiales (columna fuente: diario y fecha). Sirve para los Niños "
+              "1982-83 y 1997-98, anteriores al SINPAD. Ubicación: distrito publicado, no coordenada exacta."},
     {"source_id": "mtc_emergencias_viales", "name": "Emergencias en la Red Vial Nacional (MTC-COES)", "institution": "MTC · Provías Nacional",
      "url": "https://www.datosabiertos.gob.pe/dataset/emergencias-en-la-red-vial-nacional-ministerio-de-transportes-y-comunicaciones-%E2%80%93-mtc",
      "adapter": "peru_intel.ingestion.emergencies", "official": 1, "kind": "oficial", "type": "csv",

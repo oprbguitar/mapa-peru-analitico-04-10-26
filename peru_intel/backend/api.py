@@ -14,7 +14,7 @@ from ..analytics import context, crime, forecast, index, observatory, patterns, 
 from ..ai import gateway, voice
 from ..map import geocode
 from ..storage import warehouse
-from ..climate import enso
+from ..climate import enso, enso_events
 from ..vision import cameras as vcams
 from ..vision import device as vdev
 from ..vision import discovery as vdisc
@@ -164,6 +164,11 @@ def route_get(path: str, q: dict):
         return _institutions(_one(q, "cat"), _one(q, "ubigeo"))
     if p == ["enso"]:
         return enso.overview()
+    if p[:2] == ["enso", "events"] and len(p) == 3:
+        try:
+            return enso_events.period_events(p[2])
+        except ValueError as e:
+            raise ApiError(404, str(e))
     if p == ["ocean"]:
         return _live("ocean") | {"provenance": registry.provenance("openmeteo_marine", "noaa_cpc_semanal")}
     if p == ["weather", "grid"]:

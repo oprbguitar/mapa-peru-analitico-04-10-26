@@ -10,6 +10,18 @@
     "status": "ok",
     "transform": "Subconjunto apn.ports de OCE/FEDTID (APN carga/TEU + WPI posición y UN/LOCODE)."
   },
+  "desinventar_per": {
+    "checksum": "6423141fd05b9abbca174ca519ef88ede5e25aa80975919203da8a11886b2b41",
+    "coverage_end": "2015",
+    "coverage_start": "1970",
+    "last_downloaded": "2026-10-04T22:27:16-0500",
+    "normalized_path": "C:\\Users\\oprbg\\Documents\\Claude\\Mapa analizador\\data\\parquet\\desinventar_eventos.parquet",
+    "origin": "https://www.desinventar.net/DesInventar/download/DI_export_per.zip",
+    "raw_path": "raw/desinventar_per/2026-10-04/DI_export_per.zip",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "XML DesInventar → una fila por ficha: fecha, UBIGEO publicado (distrito/provincia/departamento), tipo de evento, daños y fuente hemerográfica. Sin redistribuir cifras entre territorios."
+  },
   "devida": {
     "checksum": "878b35ab1eb059ce,5fc2ef7b6c642a21,affe8b5cd36529a8,2de6b7f48df94ae1,9fc94216dc244cdc,7c368911c9fbc64a",
     "coverage_end": "2023",
