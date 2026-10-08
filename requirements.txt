@@ -3,3 +3,5 @@ duckdb>=1.1
 openpyxl>=3.1
 # Índice hexagonal H3 para el Event Store (opcional: sin él, el store funciona sin celda)
 h3>=4.0
+# Motor de patrones (importado por la API); no requiere StatsForecast.
+numpy>=1.26

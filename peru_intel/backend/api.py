@@ -66,7 +66,7 @@ def route_get(path: str, q: dict):
         raise ApiError(404, "ruta no encontrada")
     p = parts[2:]
     if p == ["health"]:
-        return {"ok": True, "time": time.time(), "version": __import__("peru_intel").__version__}
+        return {"ok": True, "app": "Mapa Perú Analítico", "time": time.time(), "version": __import__("peru_intel").__version__}
     if p == ["meta", "sources"]:
         registry.sync()
         return {"sources": registry.all_sources(), "kinds": KINDS}

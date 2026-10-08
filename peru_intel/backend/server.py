@@ -257,7 +257,8 @@ def run(host: str = "127.0.0.1", port: int = 8360, live: bool = True, open_brows
             patterns.warmup()
         except Exception:  # noqa: BLE001 — opcional
             pass
-    threading.Thread(target=_warm, name="warmup", daemon=True).start()
+    if config.setting("warm_patterns", "0") == "1":
+        threading.Thread(target=_warm, name="warmup", daemon=True).start()
     srv = ThreadingHTTPServer((host, port), Handler)
     srv.daemon_threads = True
     url = f"http://{host}:{port}/"

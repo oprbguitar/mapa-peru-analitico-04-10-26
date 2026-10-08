@@ -40,8 +40,25 @@ la vista. Versión 0.3.0 · 4 de octubre de 2026.
 ### Arranque con doble clic
 
 1. Doble clic en **`INICIAR-MAPA.bat`**.
-2. La primera vez instala `duckdb` y `openpyxl`. Si no hay datos normalizados, los descarga de los portales oficiales.
+2. Ejecuta Python directamente, sin Docker ni WSL. Solo instala dependencias si faltan (`duckdb`, `openpyxl`, `h3`, `numpy`); no importa StatsForecast ni descarga fuentes durante el arranque.
 3. Se abre el navegador en `http://127.0.0.1:8360/`. Cierra la ventana negra para detener el servidor.
+
+Si faltan datos, el mapa arranca igualmente e informa cómo cargarlos con `python -m peru_intel ingest all --download`.
+Las actualizaciones se ejecutan explícitamente, fuera del inicio habitual. El lanzador comprueba la identidad
+del servidor antes de reutilizar el puerto. No inicia servicios de voz, cámaras ni modelos automáticamente.
+
+El precalentamiento de modelos de Patrones queda desactivado: se calculan al solicitar esa función. Para habilitarlo
+explícitamente usa `PI_WARM_PATTERNS=1` antes de arrancar. StatsForecast sigue siendo opcional.
+Los servicios externos de voz y go2rtc requieren una instalación nativa aparte si se desean esas capacidades;
+el mapa, la API, los datos locales y las fotos de cámaras no requieren Docker. Docker queda como alternativa opcional.
+Los datos y claves de un volumen Docker no se copian automáticamente: el inicio nativo utiliza la carpeta `data/` del proyecto.
+
+Verificación del 8 de octubre de 2026: Python 3.12.10 en Windows, servidor nativo en puerto de prueba 8361:
+salud disponible en 1,33 s; GET `/` en 0,651 s; estado API en 0,019 s. Son medidas locales de una ejecución,
+no tiempos garantizados de renderizado ni de descarga de teselas externas. 55 pruebas Python aprobadas.
+Comprobación de carga en Chromium a 360/768/1280/1600 px: sin desbordamiento horizontal ni errores JavaScript;
+25 polígonos departamentales dibujados a 1280 px. El smoke E2E completo queda pendiente: su selector `#ai-run`
+agotó el tiempo de espera al navegar a Cusco. Se observaron desconexiones de clientes al cerrar las páginas de prueba.
 
 ### Arranque manual
 
