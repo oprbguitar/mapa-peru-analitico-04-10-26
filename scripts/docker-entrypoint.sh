@@ -7,4 +7,5 @@ if [ ! -f /app/data/.seeded ]; then
   date > /app/data/.seeded
 fi
 # Dentro del contenedor se escucha en todas las interfaces; publica el puerto solo en 127.0.0.1 del anfitrión.
-exec python -m peru_intel serve --host 0.0.0.0 --port 8360 "$@"
+port="${PORT:-8360}"
+exec python -m peru_intel serve --host 0.0.0.0 --port "$port" "$@"

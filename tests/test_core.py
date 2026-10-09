@@ -1,6 +1,7 @@
 """Pruebas de núcleo (sin red). Ejecutar: python -m unittest discover -s tests -v"""
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
@@ -194,6 +195,78 @@ class ApiSecurityTest(unittest.TestCase):
         code, body = self._req("/api/v1/health")
         self.assertEqual(code, 200)
         self.assertTrue(json.loads(body)["ok"])
+
+
+class PublicAccessTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from http.server import ThreadingHTTPServer
+        from peru_intel.backend.server import Handler
+        cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        cls.port = cls.srv.server_port
+        threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown()
+        cls.srv.server_close()
+
+    def setUp(self):
+        from peru_intel.backend import server
+        with server._AUTH_FAILURES_LOCK:
+            server._AUTH_FAILURES.clear()
+        self.previous_password = os.environ.get("PI_PUBLIC_ACCESS_PASSWORD")
+        os.environ["PI_PUBLIC_ACCESS_PASSWORD"] = "deployment-test-password"
+
+    def tearDown(self):
+        if self.previous_password is None:
+            os.environ.pop("PI_PUBLIC_ACCESS_PASSWORD", None)
+        else:
+            os.environ["PI_PUBLIC_ACCESS_PASSWORD"] = self.previous_password
+
+    def _req(self, path, password=None):
+        headers = {}
+        if password is not None:
+            token = base64.b64encode(f"viewer:{password}".encode()).decode()
+            headers["Authorization"] = f"Basic {token}"
+        req = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}", headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                return response.status, response.headers, response.read()
+        except urllib.error.HTTPError as error:
+            return error.code, error.headers, error.read()
+
+    def test_health_stays_available_to_platform_probe(self):
+        code, _, body = self._req("/api/v1/health")
+        self.assertEqual(code, 200)
+        self.assertTrue(json.loads(body)["ok"])
+
+    def test_public_routes_require_configured_password(self):
+        for path in ("/", "/api/v1/meta/settings"):
+            with self.subTest(path=path):
+                code, headers, _ = self._req(path)
+                self.assertEqual(code, 401)
+                self.assertIn("Basic", headers.get("WWW-Authenticate", ""))
+
+    def test_repeated_bad_passwords_are_throttled(self):
+        results = [self._req("/", "wrong-password")[0] for _ in range(10)]
+        correct_after_limit = self._req("/", "deployment-test-password")[0]
+        self.assertEqual(results[:9], [401] * 9)
+        self.assertEqual(results[-1], 429)
+        self.assertEqual(correct_after_limit, 429)
+
+    def test_correct_password_allows_routes_and_wrong_password_does_not(self):
+        denied, _, _ = self._req("/api/v1/meta/settings", "wrong-password")
+        allowed, _, body = self._req("/api/v1/meta/settings", "deployment-test-password")
+        self.assertEqual(denied, 401)
+        self.assertEqual(allowed, 200)
+        self.assertIn("secrets", json.loads(body))
+
+    def test_public_origin_supports_https_and_rejects_invalid_host_or_scheme(self):
+        from peru_intel.backend.server import _public_origin
+        self.assertEqual(_public_origin("mapa.onrender.com", 8360, "https"), "https://mapa.onrender.com")
+        self.assertEqual(_public_origin("bad host", 8360, "https"), "https://127.0.0.1:8360")
+        self.assertEqual(_public_origin("mapa.onrender.com", 8360, "javascript"), "http://mapa.onrender.com")
 
 
 if __name__ == "__main__":

@@ -8,9 +8,12 @@ Seguridad local:
 """
 from __future__ import annotations
 
+import base64
 import gzip
+import hmac
 import json
 import mimetypes
+import os
 import re
 import threading
 import time
@@ -47,7 +50,17 @@ SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jp
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
 
 
+def _public_origin(host: str, port: int, scheme: str) -> str:
+    safe_host = host if re.fullmatch(r"[A-Za-z0-9.\-\[\]:]+", host) else f"127.0.0.1:{port}"
+    safe_scheme = scheme.lower() if scheme.lower() in ("http", "https") else "http"
+    return f"{safe_scheme}://{safe_host}"
+
+
 _GZ: dict[int, bytes] = {}  # cuerpos ya comprimidos (límites, catálogos): no se recomprimen en cada pedido
+_AUTH_FAILURES: dict[str, tuple[int, float]] = {}
+_AUTH_FAILURES_LOCK = threading.Lock()
+_AUTH_WINDOW_SECONDS = 300
+_AUTH_MAX_FAILURES = 10
 
 
 def _gzip(body: bytes) -> bytes:
@@ -70,7 +83,8 @@ class Handler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
     # ── salida ────────────────────────────────────────────────────────────
-    def _send(self, status: int, body: bytes, ctype: str, cache: str = "no-store", compress: bool = True):
+    def _send(self, status: int, body: bytes, ctype: str, cache: str = "no-store", compress: bool = True,
+              extra_headers: dict[str, str] | None = None):
         if compress and len(body) > 1400 and "gzip" in (self.headers.get("Accept-Encoding") or "") and \
                 not ctype.startswith(("image/", "application/x-protobuf", "font/")):
             body = _gzip(body)
@@ -87,6 +101,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Security-Policy", csp())
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -99,9 +115,54 @@ class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
+    def _authorized(self, path: str, method: str) -> bool:
+        expected = os.environ.get("PI_PUBLIC_ACCESS_PASSWORD", "")
+        if not expected or (path == "/api/v1/health" and method in ("GET", "HEAD")):
+            return True
+        now = time.monotonic()
+        client = self.client_address[0]
+        with _AUTH_FAILURES_LOCK:
+            previous = _AUTH_FAILURES.get(client)
+            throttled = bool(previous and now - previous[1] < _AUTH_WINDOW_SECONDS and
+                              previous[0] >= _AUTH_MAX_FAILURES)
+        if throttled:
+            return self._auth_challenge(429, b"Demasiados intentos.", retry_after=True)
+        header = self.headers.get("Authorization", "")
+        scheme, _, token = header.partition(" ")
+        try:
+            credentials = base64.b64decode(token, validate=True).decode("utf-8") if scheme.lower() == "basic" else ""
+        except (ValueError, UnicodeDecodeError):
+            credentials = ""
+        _, separator, supplied = credentials.partition(":")
+        if separator and hmac.compare_digest(supplied.encode("utf-8"), expected.encode("utf-8")):
+            with _AUTH_FAILURES_LOCK:
+                _AUTH_FAILURES.pop(client, None)
+            return True
+        with _AUTH_FAILURES_LOCK:
+            attempts, started = _AUTH_FAILURES.get(client, (0, now))
+            if now - started >= _AUTH_WINDOW_SECONDS:
+                attempts, started = 0, now
+            attempts += 1
+            _AUTH_FAILURES[client] = (attempts, started)
+            if len(_AUTH_FAILURES) > 4096:
+                _AUTH_FAILURES.clear()
+                _AUTH_FAILURES[client] = (attempts, started)
+        limited = attempts >= _AUTH_MAX_FAILURES
+        body = b"Demasiados intentos." if limited else b"Se requiere autenticacion."
+        return self._auth_challenge(429 if limited else 401, body, retry_after=limited)
+
+    def _auth_challenge(self, status: int, body: bytes, retry_after: bool = False) -> bool:
+        self._send(status, body, "text/plain; charset=utf-8", extra_headers={
+            "WWW-Authenticate": 'Basic realm="Mapa Peru Analitico", charset="UTF-8"',
+            **({"Retry-After": str(_AUTH_WINDOW_SECONDS)} if retry_after else {}),
+        })
+        return False
+
     def do_GET(self):
         url = urlparse(self.path)
         path = url.path
+        if not self._authorized(path, self.command):
+            return
         try:
             if path == "/api/v1/stream":
                 return self._sse()
@@ -130,9 +191,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, data, "application/geo+json", "max-age=86400") if data else self._json(404, {"error": "no existe"})
             if path.startswith("/ofm/"):
                 host = self.headers.get("Host") or f"127.0.0.1:{self.server.server_port}"
-                if not re.fullmatch(r"[A-Za-z0-9.\-\[\]:]+", host):  # evita inyectar texto arbitrario en el estilo
-                    host = f"127.0.0.1:{self.server.server_port}"
-                r = ofm_proxy.get(unquote(path[5:]), origin=f"http://{host}")
+                scheme = os.environ.get("PI_PUBLIC_SCHEME", "http")
+                r = ofm_proxy.get(unquote(path[5:]), origin=_public_origin(host, self.server.server_port, scheme))
                 if not r:
                     return self._send(404, b"", "text/plain")
                 cache = "max-age=31536000, immutable" if path.endswith((".pbf", ".png")) else "no-cache"
@@ -142,11 +202,13 @@ class Handler(BaseHTTPRequestHandler):
             self._json(e.status, {"error": str(e)})
         except (BrokenPipeError, ConnectionResetError):
             pass
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             traceback.print_exc()
-            self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            self._json(500, {"error": "error interno"})
 
     def do_POST(self):
+        if not self._authorized(urlparse(self.path).path, self.command):
+            return
         try:
             origin = self.headers.get("Origin")
             host = self.headers.get("Host")
@@ -191,9 +253,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json(e.status, {"error": str(e)})
         except ValueError as e:
             self._json(400, {"error": f"JSON inválido: {e}"})
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             traceback.print_exc()
-            self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            self._json(500, {"error": "error interno"})
 
     def _static(self, path: str):
         if path in ("", "/"):

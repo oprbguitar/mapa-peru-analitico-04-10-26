@@ -26,13 +26,12 @@ COPY data/peru ./seed/data/peru
 COPY data/parquet ./seed/data/parquet
 COPY data/normalized ./seed/data/normalized
 COPY data/catalog/manifest.json ./seed/data/catalog/manifest.json
-COPY data/ofm ./seed/data/ofm
-COPY data/tiles ./seed/data/tiles
+# OFM and extra tile caches are optional local-only directories and are not tracked in Git.
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && useradd -m -u 10001 mapa && mkdir -p /app/data && chown -R mapa /app
 USER mapa
 VOLUME ["/app/data"]
 EXPOSE 8360
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8360/api/v1/health',timeout=4)"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s CMD python -c "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','8360')+'/api/v1/health',timeout=4)"
 ENTRYPOINT ["docker-entrypoint.sh"]

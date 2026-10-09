@@ -107,6 +107,17 @@ python -m peru_intel export-ofm                   # copiar la caché de mapas de
 
 ## 4. Instrucciones específicas
 
+### Publicación protegida en Render
+
+El contenedor puede exponerse detrás de autenticación HTTP Basic configurando `PI_PUBLIC_ACCESS_PASSWORD` como
+variable secreta del servicio. Configura también `PI_PUBLIC_SCHEME=https` cuando el proveedor termine TLS antes de
+la aplicación, para que los estilos del mapa generen recursos del mismo origen seguro. Render asigna `PORT` al
+contenedor; el punto de entrada y la comprobación de salud usan ese valor. Usa una contraseña larga y
+única; no la guardes en Git ni en `data/config.local.json`.
+Si la variable no existe, el servidor conserva el modo local sin autenticación. `/api/v1/health` queda disponible
+para la comprobación de salud del proveedor. En Render Free el sistema de archivos es efímero: los ajustes hechos
+desde la interfaz y las cachés locales se pierden al reiniciar, suspender o volver a desplegar el servicio.
+
 ### Actualizar datos oficiales (mensual)
 
 SIDPOL y los indicadores MININTER se publican cada mes. Cuando el portal cambie el nombre del archivo, actualiza
