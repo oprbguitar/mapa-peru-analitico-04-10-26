@@ -53,6 +53,10 @@ const FAMILIES = [
     { id: 'ssta', label: 'Anomalía de temperatura del mar', hint: 'NASA GIBS · GHRSST MUR', kind: 'vivo_tercero' },
   ] },
   { id: 'infra', label: 'Infraestructura', live: [
+    { id: 'telecom:coverage', label: 'Cobertura móvil declarada', hint: 'OSIPTEL · centro poblado · corte 2025', kind: 'oficial' },
+    { id: 'telecom:mobile', label: 'Antenas móviles registradas', hint: 'OpenStreetMap · área visible', kind: 'vivo_tercero' },
+    { id: 'telecom:antenna', label: 'Antenas de telecomunicaciones', hint: 'OpenStreetMap · área visible', kind: 'vivo_tercero' },
+    { id: 'telecom:tower', label: 'Torres de comunicación', hint: 'OpenStreetMap · área visible', kind: 'vivo_tercero' },
     { id: 'ports', label: 'Puertos', hint: 'APN + World Port Index', kind: 'oficial' },
     { id: 'cameras', label: 'Cámaras propias', hint: 'Vision Edge · botón «Cámaras» para conectar', kind: 'vivo_tercero' },
     { id: 'datacenters', label: 'Centros de datos', hint: 'OpenStreetMap', kind: 'vivo_tercero' },
@@ -142,6 +146,20 @@ export function renderRail(meta = {}) {
           sub = `<div class="sub-control"><label class="sr-only" for="sel-sat">Grupo de satélites</label><select id="sel-sat">${Object.entries(SAT_GROUPS)
             .map(([k, v]) => `<option value="${k}" ${state.satGroup === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`
         }
+        if (l.id === 'telecom:coverage' && state.live.has(l.id)) {
+          const operator = state.mobileOperator || 'all'
+          const technology = state.mobileTechnology || '4g'
+          const scope = state.mobileScope || 'cg'
+          const technologies = operator === 'bitel' ? ['3g', '4g', '5g'] : ['2g', '3g', '4g', '5g']
+          sub = `<div class="sub-control"><label class="sr-only" for="sel-cov-op">Operadora</label><select id="sel-cov-op">
+            ${[['all', 'Todas (máximo por centro poblado)'], ['bitel', 'Bitel'], ['claro', 'Claro'], ['entel', 'Entel'], ['integratel', 'Integratel']]
+              .map(([v, label]) => `<option value="${v}" ${operator === v ? 'selected' : ''}>${label}</option>`).join('')}</select>
+            <label class="sr-only" for="sel-cov-tech">Tecnología</label><select id="sel-cov-tech">
+              ${technologies.map((v) => `<option value="${v}" ${technology === v ? 'selected' : ''}>${v.toUpperCase()}</option>`).join('')}</select>
+            <label class="sr-only" for="sel-cov-scope">Medida OSIPTEL</label><select id="sel-cov-scope">
+              <option value="cg" ${scope === 'cg' ? 'selected' : ''}>CG</option><option value="cgcar" ${scope === 'cgcar' ? 'selected' : ''}>CG+CAR</option></select>
+            <p class="note">Datos declarados por operadoras, corte 2025. Cada punto es un centro poblado, no una antena ni una medición independiente. <a href="https://www.datosabiertos.gob.pe/dataset/porcentaje-de-cobertura-m%C3%B3vil-por-centro-poblado-empresa-operadora-y-tecnolog%C3%ADa" target="_blank" rel="noopener noreferrer">Fuente OSIPTEL</a>.</p></div>`
+        }
         if (l.id === 'wxlayer' && state.live.has('wxlayer')) {
           sub = `<div class="sub-control"><label class="sr-only" for="sel-wxo">Capa meteorológica</label><select id="sel-wxo">${overlayOptions()}</select>
             <label class="range"><span>Opacidad</span><span class="num">${Math.round(currentOverlay().opacity * 100)} %</span>
@@ -214,6 +232,21 @@ export function bindRail({ onThematic, onLive, onView }) {
     } else if (t.id === 'sel-devida') {
       setState({ devidaInd: t.value })
       onThematic()
+    } else if (t.id === 'sel-cov-op') {
+      const patch = { mobileOperator: t.value }
+      if (t.value === 'bitel' && state.mobileTechnology === '2g') patch.mobileTechnology = '3g'
+      setState(patch)
+      onLive('telecom:coverage', true, {
+        operator: t.value,
+        technology: patch.mobileTechnology || state.mobileTechnology || '4g',
+        scope: state.mobileScope || 'cg',
+      })
+    } else if (t.id === 'sel-cov-tech') {
+      setState({ mobileTechnology: t.value })
+      onLive('telecom:coverage', true, { operator: state.mobileOperator || 'all', technology: t.value, scope: state.mobileScope || 'cg' })
+    } else if (t.id === 'sel-cov-scope') {
+      setState({ mobileScope: t.value })
+      onLive('telecom:coverage', true, { operator: state.mobileOperator || 'all', technology: state.mobileTechnology || '4g', scope: t.value })
     } else if (t.dataset.live !== undefined) {
       const live = new Set(state.live)
       t.checked ? live.add(t.value) : live.delete(t.value)

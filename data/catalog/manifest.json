@@ -165,6 +165,17 @@
     "schema_changed": false,
     "status": "ok"
   },
+  "osiptel_cobertura_movil": {
+    "checksum": "ffb9d0fd1ea7bc94a73b902b3cbc07dba86e389063662ed16f7106bf1294a1f9",
+    "coverage_end": "2025",
+    "last_downloaded": "2026-10-08T19:42:40-0500",
+    "normalized_path": "data/parquet/osiptel_cobertura_movil.parquet",
+    "origin": "https://www.datosabiertos.gob.pe/sites/default/files/Porcentaje%20de%20cobertura%20movil%20por%20centro%20poblado%20empresa%20operadora%20y%20tecnolog%C3%ADa.csv",
+    "raw_path": "raw/osiptel_cobertura_movil/2026-10-08/cobertura-movil-osiptel.csv",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Se conserva una fila por centro poblado/UBIGEO; porcentajes reportados se normalizan a 0–100; no se geocodifica ni se reubican estaciones base."
+  },
   "osm_datacenters": {
     "checksum": "ef255e38ea1a28262ceb99f816c4ed2ca5abf5e416e36ee99ab45a9465481015",
     "last_downloaded": "2026-10-04T14:45:01-0500",

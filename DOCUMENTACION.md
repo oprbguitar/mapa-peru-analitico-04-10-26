@@ -2,7 +2,7 @@
 
 Plataforma **standalone y local-first** de inteligencia geoespacial y situacional del Perú. Reúne en un solo
 mapa seguridad ciudadana, movilidad, ambiente, infraestructura y espacio, con la procedencia de cada cifra a
-la vista. Versión 0.3.0 · 4 de octubre de 2026.
+la vista. Versión 0.4.0 · 8 de octubre de 2026.
 
 ---
 
@@ -74,6 +74,12 @@ python -m peru_intel serve --open
   UNA capa temática (denuncias, victimización, homicidios y violencia, criminalidad organizada, capacidad policial,
   Fiscalía, drogas/TID, índice compuesto). Las capas en vivo se encienden con casillas; «sin clave» indica que falta
   configurar el proveedor.
+- **Infraestructura → Telecomunicaciones:** cobertura móvil declarada por OSIPTEL (corte 2025), filtrable por operadora,
+  tecnología y medida (`CG` / `CG+CAR`). Los puntos representan centros poblados y los porcentajes son declaraciones de
+  operadoras. Antenas y torres OSM se consultan para el área visible y se distinguen como cartografía comunitaria ODbL,
+  incompleta y no oficial. Cada punto muestra su procedencia y límite de interpretación.
+- **Otras capas ya disponibles:** puertos y centros de datos en Infraestructura; salud, hospitales, educación y bomberos
+  en Servicios; emergencias INDECI, vías afectadas MTC, ambiente y población en sus familias actuales.
 - **Nivel:** Departamento / Provincia / Distrito. Un nivel aparece deshabilitado cuando la fuente no lo publica:
   nunca se reparte una cifra regional entre distritos.
 - **Leyenda:** cambia la medida — Denuncias (absoluto, oficial), Tasa (calculada), Cambio (calculado).
@@ -100,6 +106,7 @@ python -m peru_intel serve --open
 python -m peru_intel sources                      # estado del registro de fuentes
 python -m peru_intel ingest all --download        # actualizar todas las fuentes oficiales
 python -m peru_intel ingest sidpol --dir <carpeta> # usar archivos ya descargados
+python -m peru_intel ingest telecom --dir <carpeta> # CSV oficial cobertura-movil-osiptel.csv
 python -m peru_intel index                        # recalcular e imprimir el índice
 python -m peru_intel build-territory --from <dir> # regenerar data/peru
 python -m peru_intel export-ofm                   # copiar la caché de mapas de RUC360
@@ -123,6 +130,13 @@ desde la interfaz y las cachés locales se pierden al reiniciar, suspender o vol
 SIDPOL y los indicadores MININTER se publican cada mes. Cuando el portal cambie el nombre del archivo, actualiza
 la URL en `peru_intel/sources/catalog.py` (`download`) y ejecuta `python -m peru_intel ingest sidpol --download`.
 Si el esquema cambia, el adaptador se detiene con un mensaje y `download_log.schema_changed` queda en 1.
+
+La cobertura OSIPTEL corresponde al dataset anual con cobertura 2025 (metadatos publicados el 2026-05-12; última
+actualización reportada 2025-05-31). Descarga el CSV desde la ficha oficial enlazada en «Infraestructura →
+Telecomunicaciones», guárdalo como `cobertura-movil-osiptel.csv` y ejecuta `ingest telecom`. El portal puede bloquear
+descargas automáticas con HTTP 418; se importa la descarga manual, se conserva el original bajo `data/raw/`
+(ignorado por Git) y se actualizan Parquet y manifiesto. OpenStreetMap se consulta por ventana visible; OpenCellID y
+scraping de Checa tu Señal no están conectados.
 
 ### Población (tasas)
 

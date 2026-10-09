@@ -10,7 +10,7 @@ import time
 
 from .. import config
 from ..ai import agents, router
-from ..analytics import context, crime, forecast, index, observatory, patterns, routes
+from ..analytics import connectivity, context, crime, forecast, index, observatory, patterns, routes
 from ..ai import gateway, voice
 from ..map import geocode
 from ..storage import warehouse
@@ -19,7 +19,7 @@ from ..vision import cameras as vcams
 from ..vision import device as vdev
 from ..vision import discovery as vdisc
 from ..vision import events as vevents
-from ..live import adsb, celestrak, firms, seismic, weather
+from ..live import adsb, celestrak, firms, seismic, telecom, weather
 from ..live import ais as ais_live
 from ..live.traffic import PROVIDER as TRAFFIC
 from ..live.worker import WORKERS, all_status
@@ -155,6 +155,18 @@ def route_get(path: str, q: dict):
             return {"available": False, "reason": "python -m peru_intel ingest emergencias --dir <carpeta>"}
         rows = warehouse.query("SELECT id, fecha, evento, fenomeno, ruta, tramo, sector, estado, hechos, lat, lon FROM mtc_vias ORDER BY fecha DESC")
         return {"available": True, "items": [r | {"fecha": str(r["fecha"])} for r in rows], "provenance": registry.provenance("mtc_emergencias_viales")}
+    if p == ["layers", "mobile-coverage"]:
+        try:
+            bounds = _bbox_values(q)
+            return connectivity.coverage(_one(q, "operator", "all"), _one(q, "technology", "4g"),
+                                         _one(q, "scope", "cg"), bounds)
+        except ValueError as e:
+            raise ApiError(400, str(e))
+    if p == ["layers", "telecom"]:
+        try:
+            return telecom.within_view(_bbox_values(q), [c for c in (_one(q, "cat") or "").split(",") if c])
+        except ValueError as e:
+            raise ApiError(400, str(e))
     if len(p) == 2 and p[0] == "observatory":
         try:
             return observatory.observatory(p[1], _one(q, "modalidad"))
@@ -492,6 +504,16 @@ def _bbox_layer(table: str, q: dict, cols: str, *sources: str, limit: int = 3000
     rows = warehouse.query(f"SELECT {cols} FROM {table} WHERE lon BETWEEN ? AND ? AND lat BETWEEN ? AND ?{cat_sql} LIMIT {int(limit) + 1}",
                            [w, e, s, n, *cats])
     return {"available": True, "items": rows[:limit], "truncated": len(rows) > limit, "provenance": registry.provenance(*sources)}
+
+
+def _bbox_values(q: dict) -> tuple[float, float, float, float]:
+    try:
+        bounds = tuple(float(x) for x in (_one(q, "bbox") or "").split(","))
+    except ValueError:
+        raise ApiError(400, "bbox = oeste,sur,este,norte")
+    if len(bounds) != 4:
+        raise ApiError(400, "bbox = oeste,sur,este,norte")
+    return bounds
 
 
 def _emergency_layer(q: dict) -> dict:

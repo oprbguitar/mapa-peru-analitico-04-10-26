@@ -9,7 +9,7 @@ from typing import Iterator
 def run_ingest(source: str, download: bool = False, folder: Path | None = None) -> Iterator[str]:
     from ..climate import enso
     from ..events import store as events
-    from . import desinventar, devida, emergencies, institutions, mininter_indicators, mininter_sidpol, mpfn, ports, services
+    from . import desinventar, devida, emergencies, institutions, mininter_indicators, mininter_sidpol, mpfn, ports, services, telecom
 
     steps = {
         "sidpol": mininter_sidpol.ingest,
@@ -22,6 +22,7 @@ def run_ingest(source: str, download: bool = False, folder: Path | None = None) 
         "emergencias": emergencies.ingest,
         "desinventar": desinventar.ingest,
         "servicios": services.ingest,
+        "telecom": telecom.ingest,
         "eventos": events.build,
     }
     names = list(steps) if source == "all" else [source]

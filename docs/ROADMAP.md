@@ -23,7 +23,8 @@ Leyenda: ✅ hecho y verificado · 🟡 parcial / requiere configuración · ⬜
 | 13 · El Niño | ENFEN, ICEN, NOAA CPC, historias animadas, corrientes | ✅ | Actualizar `config/enso_eventos.json` cada comunicado |
 | 14 · AI Gateway y voz | Modos EOS, intersección, presupuesto, circuitos, administrador; asistente local/pago y Realtime | ✅ | Probar proveedores de pago con claves reales |
 | 15 · Contenedor | Dockerfile, compose con perfiles, exportación a .tar | 🟡 | Construir y probar con Docker Desktop encendido |
-| 16 · Siguiente | WorldPop/GHSL/VIIRS, COES, OSIPTEL, CDC-MINSA, Overture, SatNOGS/SDR, Valhalla offline | ⬜ | Priorizar con el usuario |
+| 16 · Conectividad territorial | Cobertura OSIPTEL 2025 por centro poblado y telecom OSM por área visible | 🟡 | Corte OSIPTEL anual; validar futuras actualizaciones. OSM es comunitario e incompleto; PRONATEL, OpenCellID y fibra requieren revisión de fuente, licencia y granularidad |
+| 17 · Siguiente | WorldPop/GHSL/VIIRS, COES, CDC-MINSA, Overture, SatNOGS/SDR, Valhalla offline | ⬜ | Priorizar con el usuario |
 
 ## Siguientes pasos sugeridos
 

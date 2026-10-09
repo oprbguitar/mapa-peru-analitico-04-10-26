@@ -11,6 +11,7 @@ import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
 import { fitBBox, flyTo, initMap, map, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
   setHotspots, setRelief, setSelected, setTerrain, showLevel, view } from './map.js'
 import { setOcean, setOceanColor } from './ocean.js'
+import { initTelecom, toggleCoverage, toggleOsm } from './telecom.js'
 import { renderOverview, renderRegion } from './panel.js'
 import { renderPatterns, setPatternScope } from './patterns.js'
 import { initPlaces, toggleEmergencias, toggleSede, toggleServicio, toggleVias } from './places.js'
@@ -341,7 +342,7 @@ async function onView(kind, value) {
   if (['base', 'terrain', 'relief', 'choro'].includes(kind)) renderRail(meta)
 }
 
-async function onLive(id, on) {
+async function onLive(id, on, filters = {}) {
   if (id === 'wxfx-mode') {
     setFxMode(on)
     return renderRail(meta)
@@ -373,6 +374,11 @@ async function onLive(id, on) {
       setLiveMeta('ocean', on ? (s?.loading ? 'cargando' : `${s?.n || 0} celdas`) : '')
       if (s?.loading) setTimeout(() => state.live.has('ocean') && onLive('ocean', true), 6000)
     } else if (id === 'cameras') setLiveMeta('cameras', on ? `${await refreshCameras(true)} canales` : (await refreshCameras(false), ''))
+    else if (kind === 'telecom') {
+      const status = on ? (cat === 'coverage' ? await toggleCoverage(true, filters) : await toggleOsm(cat, true))
+        : (cat === 'coverage' ? await toggleCoverage(false) : await toggleOsm(cat, false))
+      setLiveMeta(id, status || '')
+    }
     else toggle(id, on) // capas en vivo existentes (vuelos, barcos, sismos…)
   } catch (e) {
     toast(e.message)
@@ -575,6 +581,7 @@ async function boot() {
   })
   initLive()
   initPlaces()
+  initTelecom()
   initStory()
   initSun()
   setEnsoRepaint(paintEnso)

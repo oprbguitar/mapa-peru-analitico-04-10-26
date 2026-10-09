@@ -66,6 +66,7 @@ Regla de integración: **Route 360 → (GET) → esta API**. Esta plataforma nun
 
 Las capas en vivo devuelven `{status: {status, updated, age_s, error, count}, data, provenance}`.
 `status.status` ∈ `ok | esperando | desactualizado | error | sin_configurar`.
+Las respuestas OSIPTEL incluyen año, checksum, licencia y transformación. OSM incluye atribución ODbL y advierte que el registro no equivale a un inventario oficial ni confirma que una instalación esté operativa.
 
 ## v0.3
 
@@ -78,6 +79,8 @@ Las capas en vivo devuelven `{status: {status, updated, age_s, error, count}, da
 | GET | `/api/v1/intel/patterns/{hotspots, sequences, leadlag, changes, anomalies, forecast}?scope=&modalidad=` | Motor de patrones |
 | GET | `/api/v1/intel/routes?from=&to=` o `?alat=&alon=&blat=&blon=` | Rutas estratégicas comparadas |
 | GET | `/api/v1/intel/layers/{services, emergencies, roads}` | Servicios (bbox, cat), INDECI (days) y MTC |
+| GET | `/api/v1/intel/layers/mobile-coverage?bbox=&operator=&technology=&scope=` | OSIPTEL 2025, centros poblados con cobertura móvil declarada; `operator=all|bitel|claro|entel|integratel`, `technology=2g|3g|4g|5g`, `scope=cg|cgcar`. Máximo 4 000 puntos por vista; si se excede, solicita acercar el mapa y no devuelve una muestra sesgada. |
+| GET | `/api/v1/intel/layers/telecom?bbox=&cat=` | Objetos de antena/torre etiquetados en OSM dentro del área visible; `cat=mobile,antenna,tower`, consulta acotada a 8 grados² y caché en memoria por 5 min. |
 | GET | `/api/v1/intel/institutions?cat=&ubigeo=` | Sedes de seguridad y justicia (OSM) |
 | GET | `/api/v1/intel/enso`, `/api/v1/intel/ocean`, `/api/v1/intel/weather/grid` | El Niño, corrientes y rejilla meteorológica |
 | POST | `/api/v1/intel/ai/enso`, `/api/v1/intel/ai/explain` | IA verificada sobre hechos numerados |
