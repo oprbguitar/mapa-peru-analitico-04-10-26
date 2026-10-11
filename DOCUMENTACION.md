@@ -13,6 +13,8 @@
 - Al elegir un territorio en el buscador, el mapa vuela al instante; la ficha se completa después.
 - Salir de **Satélite** devuelve el mapa limpio (sin escenas ni área) y restaura la base anterior; entrar activa la base satelital.
 - Marcar la zona lanza la búsqueda sola. Con la vista nacional, se busca en un recuadro central de ~0,3° y se acerca el mapa.
+- Nube (Render): el contenedor empaqueta `apps/web/js` en un solo módulo minificado con esbuild (≈225 KB frente a 344 KB
+  y ~25 peticiones). En local se sirve el código fuente legible; el repositorio no se ofusca para no perder mantenibilidad.
 - El catálogo conserva su fecha y huella de procedencia en una caché de 120 segundos. Las teselas leen únicamente la ventana
   necesaria y sus niveles reducidos; la descarga GeoTIFF conserva la resolución original.
 

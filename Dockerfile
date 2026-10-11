@@ -6,6 +6,12 @@
 #   docker run -p 127.0.0.1:8360:8360 -v mapa-peru-datos:/app/data mapa-peru-analitico:0.3
 #
 # Para llevarlo a otra PC sin Internet: scripts/exportar-contenedor.ps1 genera un único .tar (docker save).
+# Etapa web: un solo paquete minificado (menos peticiones, carga más rápida y código servido no legible a simple vista).
+FROM node:20-alpine AS web
+WORKDIR /w
+COPY apps/web/js ./js
+RUN npx --yes esbuild@0.24.0 js/main.js --bundle --minify --splitting --format=esm --target=es2020     --legal-comments=none --outdir=dist
+
 FROM python:3.12-slim
 
 ARG FORECAST=1
@@ -19,6 +25,8 @@ RUN pip install -r requirements.txt -r requirements-imagery.txt && if [ "$FORECA
 
 COPY peru_intel ./peru_intel
 COPY apps ./apps
+RUN rm -rf ./apps/web/js
+COPY --from=web /w/dist ./apps/web/js
 COPY config ./config
 COPY plugins ./plugins
 # datos semilla: se copian al volumen /app/data la primera vez (las descargas y ajustes posteriores persisten en el volumen)
