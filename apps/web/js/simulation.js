@@ -7,10 +7,12 @@
 import { setPanel } from './chrome.js'
 import { map } from './map.js'
 import { cssVar, esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js'
-import { dataHtml, runsHtml, signed } from './sim-data.js'
+import { dataHtml, runsHtml, scenariosHtml, signed } from './sim-data.js'
 import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
+import { clearAll, finishTramo, hasUnits, hideOps, initOps, loadSpec, onOpsClick, onReplayClick, onReplayInput, opsKeyHtml,
+  opsSpec, opsTool, replayHtml, setTool, showOps, showResult, toolbarHtml } from './sim-ops.js'
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const BANDS = [[15, '--seq-7', '≤ 15 min'], [30, '--seq-5', '≤ 30'], [45, '--seq-3', '≤ 45'], [Infinity, '--seq-1', '> 45']]
@@ -35,16 +37,18 @@ let meta = null
 let hud = null
 let score = null
 let active = false
-let engine = 'acc'          // acc = tiempo de llegada · cap = capacidad (S3)
+let engine = 'acc'          // acc = tiempo de llegada · cap = capacidad (S3) · ops = operativo (ejercicio de mesa)
 let view = 'swipe'          // swipe (hoy ⟷ hipótesis) · delta (qué cambia)
 let split = 0
 let runSeq = 0
 let liveTimer = 0
 let layersBound = false
 let lastError = ''
-const lastBy = { acc: null, cap: null }
+const lastBy = { acc: null, cap: null, ops: null }
+let scenario = { id: null, name: 'Escenario A' }
 const cfg = { service: 'hospital', preset: 'lluvia', iterations: 400, seed: 2026, speed_kmh: 30, closed: new Set(),
-  rate_per_h: 6, capacity: 2, service_min: 45, horizon_h: 24, replications: 30, ...CALM, ...PRESETS[0].h }
+  rate_per_h: 6, capacity: 2, service_min: 45, horizon_h: 24, replications: 30,
+  ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, ...CALM, ...PRESETS[0].h }
 
 const last = () => lastBy[engine]
 const presetById = (id) => PRESETS.find((p) => p.id === id)
@@ -101,6 +105,7 @@ function drawResult() {
   const r = last()
   for (const id of LAYERS) vis(id, false)
   hideSwipe()
+  if (engine === 'ops') return showOps()
   if (!r) return
   if (r.params.engine === 'queue') return drawCapacity(r)
   const radius = cellRadius(r.sample.spacing_km, r.params.area.lat)
@@ -146,7 +151,15 @@ const tone = (from, to) => (to < from - 1 ? 'peor' : to > from + 1 ? 'mejor' : '
 function scoreHtml() {
   const r = last()
   if (lastError) return `<p class="sim-score-k">No se pudo simular</p><p class="sim-score-s">${esc(lastError)}</p>`
+  if (engine === 'ops' && !hasUnits()) return '<p class="sim-score-k">Operativo</p><p class="sim-score-s">Elige una unidad arriba y haz clic en el mapa para colocarla.</p>'
   if (!r) return '<p class="sim-score-busy">Calculando…</p>'
+  if (r.params.engine === 'operations') {
+    const R = r.results
+    return `<p class="sim-score-k">Operativo · ${esc(scenario.name)} · ${esc(scenarioName())}</p>
+      <p class="sim-score-n"><b data-tone="${(R.within_target_pct.p50 ?? 0) < 70 ? 'peor' : 'mejor'}">${R.within_target_pct.p50 == null ? '—' : `${fmt(R.within_target_pct.p50, 0)} %`}</b></p>
+      <p class="sim-score-s">a tiempo (≤ ${r.params.ops.target_min} min) · respuesta típica ${R.response_p50_min.p50 == null ? '—' : `${fmt(R.response_p50_min.p50, 0)} min`}
+        · ${r.saturated.length} unidad(es) saturada(s) · ${kindBadge('estimacion')}</p>`
+  }
   if (r.params.engine === 'queue') {
     const A = r.results.A.within_30_pct?.p50, B = r.results.B.within_30_pct?.p50
     const sat = (s) => s.sites.filter((x) => (x.utilization_pct ?? 0) >= 80).length
@@ -198,12 +211,16 @@ function hudHtml() {
   return `<div class="sim-bar sim-top hud hud-frame" role="toolbar" aria-label="Qué simular">
       <div class="seg" role="group" aria-label="Qué medir">
         <button type="button" data-sim-engine="acc" aria-pressed="${engine === 'acc'}">Tiempo de llegada</button>
-        <button type="button" data-sim-engine="cap" aria-pressed="${engine === 'cap'}" ${capOk ? '' : 'disabled title="Falta SimPy: pip install -r requirements-simulation.txt"'}>Capacidad</button></div>
-      <div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
-        `<button type="button" data-sim-service="${k}" aria-pressed="${cfg.service === k}">${s.label}</button>`).join('')}</div>
+        <button type="button" data-sim-engine="cap" aria-pressed="${engine === 'cap'}" ${capOk ? '' : 'disabled title="Falta SimPy: pip install -r requirements-simulation.txt"'}>Capacidad</button>
+        <button type="button" data-sim-engine="ops" aria-pressed="${engine === 'ops'}">Operativo</button></div>
+      ${engine === 'ops' ? toolbarHtml(scenario.name) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
+        `<button type="button" data-sim-service="${k}" aria-pressed="${cfg.service === k}">${s.label}</button>`).join('')}</div>`}
     </div>
-    <p class="sim-hint hud" id="sim-hint" ${getZone() ? 'hidden' : ''}>Haz clic en el mapa para elegir la zona · después arrastra su borde para agrandarla</p>
+    <p class="sim-hint hud" id="sim-hint" ${getZone() && (engine !== 'ops' || hasUnits()) ? 'hidden' : ''}>${!getZone()
+      ? 'Haz clic en el mapa para elegir la zona · después arrastra su borde para agrandarla'
+      : 'Elige Patrullero, Serenazgo, Ambulancia o Bomberos arriba y haz clic en el mapa para colocar unidades · ╱ Tramo cortado: clic punto a punto y «Terminar tramo»'}</p>
     <div class="sim-bottom">
+      ${engine === 'ops' ? replayHtml(cfg.ops.horizon_h * 60) : ''}
       <div class="sim-cards" role="group" aria-label="¿Qué pasa si…?">${PRESETS.filter((p) => !p.cap || engine === 'cap').map((p) =>
         `<button type="button" class="sim-card hud" data-sim-preset="${p.id}" aria-pressed="${cfg.preset === p.id}">
           <span class="sim-card-i" aria-hidden="true">${p.icon}</span><b>${p.label}</b><small>${p.hint}</small></button>`).join('')}</div>
@@ -219,6 +236,7 @@ function hudHtml() {
 
 function keyHtml() {
   const sw = (v, l) => `<span><i style="background:var(${v})"></i>${l}</span>`
+  if (engine === 'ops') return opsKeyHtml()
   if (engine === 'cap') return Object.values(UTIL).map(([v, l]) => sw(v, l)).join('')
   if (view === 'delta') return Object.values(DELTA).map(([v, l]) => sw(v, l)).join('')
   return BANDS.map(([, v, l]) => sw(v, l)).join('') + sw('--danger', 'sin servicio')
@@ -231,7 +249,9 @@ function renderHud() {
     hud.id = 'sim-hud'
     document.body.appendChild(hud)
     hud.addEventListener('click', onHudClick)
+    hud.addEventListener('input', onReplayInput)
   }
+  hud.dataset.anim = hud.hidden || !hud.innerHTML ? 'on' : 'off'   // la entrada escalonada solo al abrir, no en cada ajuste
   hud.hidden = false
   hud.innerHTML = hudHtml()
 }
@@ -247,13 +267,29 @@ function syncHud() {
 
 function onHudClick(e) {
   const t = e.target
+  if (onReplayClick(e)) return
+  const kindB = t.closest('[data-ops-kind]')
+  if (kindB) { setTool('unit', kindB.dataset.opsKind); return renderHud() }
+  const tool = t.closest('[data-ops-tool]')
+  if (tool) {
+    const a = tool.dataset.opsTool
+    if (a === 'tramo') setTool(opsTool() === 'tramo' ? 'unit' : 'tramo')
+    else if (a === 'finish') { finishTramo(); setTool('unit') }   // terminar el tramo ya recalcula (onChange)
+    else if (a === 'clear') { clearAll(); lastBy.ops = null; placeScore(false) }
+    return renderHud()
+  }
+  const scn = t.closest('[data-scn]')
+  if (scn) return scenarioAction(scn.dataset.scn)
   const eng = t.closest('[data-sim-engine]')
   if (eng && !eng.disabled) {
+    if (engine === 'ops' && eng.dataset.simEngine !== 'ops') hideOps()
     engine = eng.dataset.simEngine
+    if (engine === 'ops') setTool('unit')
     if (engine === 'acc' && cfg.preset === 'demanda') applyPreset('lluvia', false)
     renderHud()
     drawResult()
     placeScore(!last())
+    if (getZone()) frameZone()   // la barra superior cambia de alto: el marcador debe seguir visible
     return simulate()
   }
   const s = t.closest('[data-sim-service]')
@@ -297,6 +333,10 @@ function payload() {
     base: { speed_kmh: cfg.speed_kmh },
     hypothesis: { rain: cfg.rain, congestion_pct: cfg.congestion_pct, out_of_service_pct: cfg.out_of_service_pct, detour_pct: cfg.detour_pct,
       closed_ids: [...cfg.closed] } }
+  if (engine === 'ops') {
+    return ['/api/v1/sim/operations/run', { area: common.area, base: common.base, seed: cfg.seed, replications: 20,
+      hypothesis: { ...common.hypothesis, closed_ids: [] }, ...opsSpec(), ops: cfg.ops }]
+  }
   return engine === 'cap'
     ? ['/api/v1/sim/queue/run', { ...common, replications: cfg.replications, hypothesis: { ...common.hypothesis, demand_pct: cfg.demand_pct },
       queue: { rate_per_h: cfg.rate_per_h, capacity: cfg.capacity, service_min: cfg.service_min, horizon_h: cfg.horizon_h } }]
@@ -307,6 +347,7 @@ function payload() {
 function simulate() {
   if (!getZone() || !active) return
   clearTimeout(liveTimer)
+  if (engine === 'ops' && !hasUnits()) { lastBy.ops = null; return placeScore(false) }
   placeScore(true)
   liveTimer = setTimeout(async () => {
     const seq = ++runSeq
@@ -316,9 +357,11 @@ function simulate() {
       const r = await postJSON(url, body)
       if (seq !== runSeq || !active) return
       lastBy[forEngine] = r
+      if (forEngine === 'ops') showResult(r)
       drawResult()
       placeScore(false)
-      if (document.getElementById('sim-data-panel')) openData()
+      // refresca las cifras solo si el panel está a la vista; cerrado, no debe reabrirse solo
+      if (document.getElementById('sim-data-panel') && document.body.dataset.panelC === 'on') openData(document.getElementById('sim-compare')?.open ? 'compare' : undefined)
     } catch (e) {
       if (seq !== runSeq) return
       lastError = e.message
@@ -328,7 +371,7 @@ function simulate() {
 }
 
 // ── panel de cifras (solo a pedido) ─────────────────────────────────────────
-function openData() {
+function openData(section) {
   document.dispatchEvent(new CustomEvent('sim-open-panel'))
   const box = document.getElementById('panel-body')
   box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName() })}</div>`
@@ -342,6 +385,27 @@ function openData() {
   num('sim-rate', 'rate_per_h')
   num('sim-capacity', 'capacity', true)
   num('sim-svc', 'service_min')
+  const opsNum = (id, key) => {
+    const el = document.getElementById(id)
+    if (el) el.onchange = () => { cfg.ops = { ...cfg.ops, [key]: Number(el.value) }; renderHud(); simulate() }
+  }
+  opsNum('ops-rate', 'rate_per_h')
+  opsNum('ops-horizon', 'horizon_h')
+  opsNum('ops-service', 'service_min')
+  opsNum('ops-target', 'target_min')
+  opsNum('ops-detour', 'detour_per_tramo_pct')
+  const cmp = document.getElementById('sim-compare')
+  if (cmp) {
+    const load = async () => {
+      const box2 = document.getElementById('sim-cmp')
+      try { box2.innerHTML = await scenariosHtml() } catch (err) { box2.innerHTML = `<p class="note">${esc(err.message)}</p>` }
+    }
+    cmp.addEventListener('toggle', () => { if (cmp.open) load() })
+    if (section === 'compare') {
+      cmp.open = true
+      cmp.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    }
+  }
   const dem = document.getElementById('sim-demand_pct')
   if (dem) dem.oninput = () => {
     cfg.demand_pct = Number(dem.value)
@@ -359,6 +423,8 @@ function openData() {
   box.querySelector('#sim-data-panel').addEventListener('click', (e) => {
     const run = e.target.closest('[data-run]')
     if (run) loadRun(run.dataset.run)
+    const scn = e.target.closest('[data-load-scn]')
+    if (scn) loadScenario(scn.dataset.loadScn)
   })
 }
 
@@ -381,7 +447,59 @@ async function loadRun(id) {
   } catch (err) { toast(err.message) }
 }
 
+// ── escenarios A/B/C (operativo) ────────────────────────────────────────────
+function scenarioSpec() {
+  const z = getZone()
+  return { engine: 'operations', area: z && { lat: +z.lat.toFixed(5), lon: +z.lon.toFixed(5), radius_km: z.radius_km }, ...opsSpec(),
+    preset: cfg.preset, hypothesis: { rain: cfg.rain, congestion_pct: cfg.congestion_pct, out_of_service_pct: cfg.out_of_service_pct,
+      detour_pct: cfg.detour_pct }, ops: { ...cfg.ops }, seed: cfg.seed }
+}
+
+function scenarioMetrics() {
+  const r = lastBy.ops
+  if (!r) return null
+  return { within_target_pct: r.results.within_target_pct.p50, response_p50_min: r.results.response_p50_min.p50,
+    response_p90_min: r.results.response_p90_min.p50, unattended: r.results.unattended.p50, saturated: r.saturated.length,
+    units: r.params.units.length, tramos: r.params.tramos.length, scenario: scenarioName() }
+}
+
+async function scenarioAction(a) {
+  try {
+    if (a === 'save') {
+      const s = await postJSON('/api/v1/sim/scenarios', { id: scenario.id, name: scenario.name, spec: scenarioSpec(),
+        run_id: lastBy.ops?.run_id, metrics: scenarioMetrics() })
+      scenario = { id: s.id, name: s.name }
+      toast(`«${s.name}» guardado (versión ${s.versions.at(-1).v})`)
+    } else if (a === 'dup') {
+      if (!scenario.id) await scenarioAction('save')
+      const letter = String.fromCharCode(65 + Math.min(25, (await getJSON('/api/v1/sim/scenarios')).scenarios.length))
+      const d = await postJSON(`/api/v1/sim/scenarios/${scenario.id}/duplicate`, { name: `Escenario ${letter}` })
+      scenario = { id: d.id, name: d.name }
+      toast(`Ahora editas «${d.name}», copia independiente. Cambia unidades, tramos o el «¿qué pasa si…?».`)
+    } else if (a === 'compare') return openData('compare')
+    renderHud()
+  } catch (e) { toast(e.message) }
+}
+
+export async function loadScenario(id) {
+  try {
+    const s = await getJSON(`/api/v1/sim/scenarios/${id}`)
+    const spec = s.versions.at(-1).spec
+    scenario = { id: s.id, name: s.name }
+    engine = 'ops'
+    Object.assign(cfg, CALM, spec.hypothesis || {}, { preset: spec.preset || 'propio', seed: spec.seed ?? cfg.seed, ops: { ...cfg.ops, ...(spec.ops || {}) } })
+    if (spec.area) { setZone(spec.area); fitZone(80) }
+    loadSpec(spec)
+    renderHud()
+    setRain(cfg.rain, getZone())
+    simulate()
+  } catch (e) { toast(e.message) }
+}
+
 // ── ciclo de vida del modo ──────────────────────────────────────────────────
+initOps({ onChange: () => { renderHudKeepingTool(); simulate() } })
+function renderHudKeepingTool() { if (hud && !hud.hidden) renderHud() }
+
 initZone({
   onEdit: (z) => { setRain(cfg.rain, z); placeScore(true) },
   onCommit: (z) => { centerSwipeOn(z.lon, z.lat); simulate() },
@@ -391,7 +509,7 @@ initZone({
 function frameZone() {
   const top = hud?.querySelector('.sim-top')?.getBoundingClientRect().bottom ?? 0
   const bottomEl = hud?.querySelector('.sim-bottom')?.getBoundingClientRect()
-  const pad = { top: top + 130, bottom: (bottomEl ? innerHeight - bottomEl.top : 0) + 16, left: 24, right: 24 }
+  const pad = { top: top + 160, bottom: (bottomEl ? innerHeight - bottomEl.top : 0) + 16, left: 24, right: 24 }
   const free = innerHeight - pad.top - pad.bottom
   if (free < 120) { const k = (innerHeight - 120) / (pad.top + pad.bottom); pad.top *= k; pad.bottom *= k }
   fitZone(pad)
@@ -401,6 +519,11 @@ function frameZone() {
 export function onMapClick(e) {
   if (!active) return false
   if (map.getLayer('sim-sites') && map.queryRenderedFeatures(e.point, { layers: ['sim-sites'] }).length) return true
+  if (engine === 'ops' && getZone() && onOpsClick(e)) {
+    hud?.querySelector('#sim-hint')?.setAttribute('hidden', '')
+    if (opsTool() !== 'tramo') simulate()
+    return true
+  }
   const z = getZone()
   const b = map.getBounds()
   const viewKm = (b.getEast() - b.getWest()) * 111.32 * Math.cos(e.lngLat.lat * Math.PI / 180)
@@ -442,6 +565,7 @@ export function hideSimulation() {
   hideZone()
   stopRain()
   hideSwipe()
+  hideOps()
   score?.remove()
   for (const id of LAYERS) vis(id, false)
 }

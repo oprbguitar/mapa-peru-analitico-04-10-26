@@ -32,6 +32,8 @@ from ..sources import registry
 from .. import simulation
 from ..simulation import accessibility as sim_access
 from ..simulation import queue as sim_queue
+from ..simulation import operations as sim_ops
+from ..simulation import scenarios as sim_scen
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -310,6 +312,22 @@ def route_post(path: str, body: dict):
             return sim_runs.run_accessibility(body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
+    if p == ["sim", "operations", "run"]:
+        _sim_local()
+        try:
+            return sim_runs.run_operations(body)
+        except sim_access.SimError as e:
+            raise ApiError(400, str(e))
+    if p[:2] == ["sim", "scenarios"]:
+        _sim_local()
+        try:
+            if len(p) == 2:
+                return sim_scen.save(body)
+            if len(p) == 4 and p[3] == "duplicate":
+                return sim_scen.duplicate(p[2], body.get("name"))
+        except sim_access.SimError as e:
+            raise ApiError(400, str(e))
+        raise ApiError(404, "ruta no encontrada")
     if p == ["sim", "queue", "run"]:
         _sim_local()
         try:
@@ -343,10 +361,18 @@ def _sim_get(p: list[str], q: dict) -> dict:
                 "services": {k: v["label"] for k, v in sim_access.SERVICES.items()}, "rain": list(sim_access.RAIN),
                 "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS,
                 "queue": {"available": sim_queue.available(), "defaults": sim_queue.DEFAULTS, "limits": sim_queue.LIMITS,
-                          "within_min": sim_queue.WITHIN_MIN, "bottleneck_pct": sim_queue.BOTTLENECK_UTIL * 100}}
+                          "within_min": sim_queue.WITHIN_MIN, "bottleneck_pct": sim_queue.BOTTLENECK_UTIL * 100},
+                "operations": {"kinds": sim_ops.KINDS, "calls": sim_ops.CALL_LABEL, "defaults": sim_ops.DEFAULTS, "limits": sim_ops.LIMITS}}
     _sim_local()
     if p == ["runs"]:
         return {"runs": sim_runs.list_runs(_int(q, "limit", 20))}
+    if p == ["scenarios"]:
+        return {"scenarios": sim_scen.list_all(_int(q, "limit", 50))}
+    if len(p) == 2 and p[0] == "scenarios":
+        try:
+            return sim_scen.get(p[1])
+        except sim_access.SimError as e:
+            raise ApiError(404, str(e))
     if len(p) == 2 and p[0] == "runs":
         rec = sim_runs.get_run(p[1])
         if not rec:

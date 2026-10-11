@@ -122,5 +122,9 @@ BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · 
 | GET | `/api/v1/sim/engines` | Catálogo S1–S12 con estado, servicios, valores por defecto, límites, `local` (false en la nube) y `queue.available` (SimPy instalado). |
 | POST | `/api/v1/sim/accessibility/run` | `{area:{lat,lon,radius_km}, service, base?, hypothesis?, iterations?, seed?}` → resultados A/B, puntos, supuestos, `provenance`, `run_id`. 403 en la nube, 400 si los parámetros están fuera de rango. |
 | POST | `/api/v1/sim/queue/run` | S3 (SimPy, opcional). `{area, service, base?, hypothesis?{…, demand_pct}, queue?{rate_per_h, capacity, capacity_by_id?, service_min, horizon_h, max_sites?}, replications?, seed?}` → espera p50/p90, respuesta, % atendidas ≤ 30 min, utilización y derivadas por sede, cuellos de botella (A/B y B − A), supuestos, `provenance`, `run_id` `cap-…`. 403 en la nube, 400 fuera de rango, 503 si falta SimPy. |
+| POST | `/api/v1/sim/operations/run` | Operativo simulado: `{area, units:[{id,kind,lat,lon}], tramos:[{id,coords}], hypothesis?, base?, ops?:{rate_per_h,horizon_h,service_min,target_min,detour_per_tramo_pct,mix}, replications?, seed?}` → métricas, ocupación por unidad y `timeline` reproducible. |
+| GET · POST | `/api/v1/sim/scenarios` | Lista · guarda (nuevo o nueva versión con `id`) `{name, spec, run_id?, metrics?, note?}`. |
+| GET | `/api/v1/sim/scenarios/<esc-id>` | Escenario con todas sus versiones. |
+| POST | `/api/v1/sim/scenarios/<esc-id>/duplicate` | Copia independiente `{name?}` que recuerda su origen. |
 | GET | `/api/v1/sim/runs?limit=` | Últimas ejecuciones registradas (`engine`: `accessibility` o `queue`). |
 | GET | `/api/v1/sim/runs/<run_id>` | Ejecución completa (parámetros, semilla, versión del motor, resultados). |

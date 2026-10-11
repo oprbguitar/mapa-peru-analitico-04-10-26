@@ -1,7 +1,7 @@
 // Genera las capturas de docs/GUIA-SIMULADOR.md recorriendo la app local real (no son maquetas).
 // Uso: PLAYWRIGHT_MODULE=<ruta a playwright> node scripts/capturas_guia_simulador.mjs [http://127.0.0.1:8360]
 import { createRequire } from 'node:module'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
@@ -9,6 +9,9 @@ const base = process.argv[2] || 'http://127.0.0.1:8360'
 const dir = fileURLToPath(new URL('../docs/img/simulador/', import.meta.url))
 mkdirSync(dir, { recursive: true })
 
+// los escenarios de demostración que crea el recorrido se borran al final
+const scnDir = fileURLToPath(new URL('../data/simulation/scenarios/', import.meta.url))
+const before = new Set(existsSync(scnDir) ? readdirSync(scnDir) : [])
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 const settled = () => page.waitForFunction(() => document.querySelector('.sim-score')?.dataset.busy === 'false', null, { timeout: 30000 })
@@ -93,7 +96,47 @@ try {
   }
   await page.locator('#sim-data').click()
   await page.waitForSelector('#sim-data-panel table')
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.panel')).opacity === '1')
   await mark('9', 'VER CIFRAS abre el detalle verificable: tablas, supuestos, fuentes y ajustes', '#sim-data-panel')
   await shot('09-ver-cifras.png')
+
+  // Operativo: marcar unidades y un tramo, reproducir en tiempo virtual y comparar escenarios
+  await page.locator('[data-collapse="panel"]').click()   // vuelve al mapa: las cifras se abren solo a pedido
+  await page.locator('[data-sim-engine="ops"]').click()
+  await page.locator('[data-sim-preset="lluvia"]').click()
+  await page.waitForTimeout(800)
+  const z = await page.evaluate(() => { const r = document.getElementById('map').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2 + 40] })
+  await mark('10', 'OPERATIVO: elige el tipo de unidad y haz clic en el mapa para colocarla (arrástrala para moverla)', '[data-ops-kind="patrulla"]')
+  await shot('10-operativo-unidades.png')
+  for (const [kind, dx, dy] of [['patrulla', -90, -10], ['patrulla', 110, 60], ['ambulancia', 20, -70], ['bomberos', -40, 90]]) {
+    await page.locator(`[data-ops-kind="${kind}"]`).click()
+    await page.mouse.click(z[0] + dx, z[1] + dy)
+  }
+  await page.locator('[data-ops-tool="tramo"]').click()
+  await page.mouse.click(z[0] - 20, z[1] - 110)
+  await page.mouse.click(z[0] - 20, z[1] + 130)
+  await mark('11', 'TRAMO CORTADO: clic punto a punto y «Terminar tramo» (o doble clic / Enter)', '[data-ops-tool="finish"]')
+  await shot('11-tramo-cortado.png')
+  await page.locator('[data-ops-tool="finish"]').click()
+  await settled()
+  await page.waitForTimeout(2500)
+  await mark('12', 'Tiempo virtual: reproduce, pausa, retrocede o adelanta 15 min, o arrastra la línea de tiempo', '#ops-replay')
+  await shot('12-tiempo-virtual.png')
+  await page.locator('[data-scn="save"]').click()
+  await page.waitForTimeout(500)
+  await page.locator('[data-scn="dup"]').click()
+  await page.waitForTimeout(500)
+  await page.locator('[data-sim-preset="punta"]').click()
+  await settled()
+  await page.locator('[data-scn="save"]').click()
+  await page.waitForTimeout(500)
+  await page.locator('[data-scn="compare"]').click()
+  await page.waitForSelector('#sim-cmp table')
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.panel')).opacity === '1')
+  await mark('13', 'GUARDAR · DUPLICAR · COMPARAR: escenarios A, B, C… con versiones y su resultado', '#sim-compare')
+  await shot('13-comparar-escenarios.png')
   console.log('Capturas en docs/img/simulador/')
-} finally { await browser.close() }
+} finally {
+  await browser.close()
+  if (existsSync(scnDir)) for (const f of readdirSync(scnDir)) if (!before.has(f)) rmSync(scnDir + f)
+}

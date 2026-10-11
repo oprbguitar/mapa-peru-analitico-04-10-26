@@ -364,21 +364,22 @@ body.sim-on .spine, body.sim-on .edge-tab--spine, body.sim-on .legend, body.sim-
 .sim-hud[hidden] { display: none; }
 .sim-hud > * { pointer-events: auto; }
 .sim-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2); }
-.sim-top { position: absolute; top: calc(var(--topbar-h) + var(--gap) * 2); left: 50%; transform: translateX(-50%);
-  max-width: calc(100% - var(--gap) * 2); flex-wrap: nowrap; overflow-x: auto; }
+.sim-top { position: absolute; top: calc(var(--topbar-h) + var(--gap) * 2); left: calc((100% - var(--panel-space)) / 2); transform: translateX(-50%);
+  max-width: calc(100% - var(--panel-space) - var(--gap) * 2); flex-wrap: nowrap; overflow-x: auto; }
 .sim-top .seg { flex: 0 0 auto; flex-wrap: nowrap; }
+.sim-top:has(.ops-scn) { flex-wrap: wrap; justify-content: center; width: min(1180px, calc(100% - var(--panel-space) - var(--gap) * 2)); }
 .sim-top .seg button { padding: 0 var(--sp-3); white-space: nowrap; }
 .sim-hint { position: absolute; top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) + var(--sp-4)); left: 50%; transform: translateX(-50%);
   margin: 0; padding: var(--sp-2) var(--sp-4); font-size: var(--fs-ui); text-align: center; max-width: calc(100% - var(--gap) * 2);
   border-color: var(--accent); animation: sim-breathe 2.4s var(--ease) infinite; }
 .sim-hint[hidden] { display: none; }
-.sim-bottom { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--gap) * 2 + var(--attrib-h));
-  width: min(1040px, calc(100% - var(--gap) * 2)); display: grid; gap: var(--sp-2); justify-items: center; }
+.sim-bottom { position: absolute; left: calc((100% - var(--panel-space)) / 2); transform: translateX(-50%); bottom: calc(var(--gap) * 2 + var(--attrib-h));
+  width: min(1040px, calc(100% - var(--panel-space) - var(--gap) * 2)); display: grid; gap: var(--sp-2); justify-items: center; }
 .sim-cards { display: flex; gap: var(--sp-2); max-width: 100%; overflow-x: auto; padding: var(--sp-1) var(--sp-1) var(--sp-2); scroll-snap-type: x mandatory; }
 .sim-card { flex: 0 0 auto; scroll-snap-align: start; display: grid; grid-template-columns: auto 1fr; column-gap: var(--sp-2); align-items: center;
   min-width: 132px; padding: var(--sp-2) var(--sp-3); text-align: left; color: var(--ink); cursor: pointer; font: inherit;
-  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-  animation: sim-in var(--dur-slow) var(--ease) both; }
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+.sim-hud[data-anim="on"] .sim-card { animation: sim-in var(--dur-slow) var(--ease) both; }
 .sim-card:nth-child(2) { animation-delay: var(--stagger); } .sim-card:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
 .sim-card:nth-child(4) { animation-delay: calc(var(--stagger) * 3); } .sim-card:nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
 .sim-card:nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
@@ -434,7 +435,7 @@ body.sim-on .spine, body.sim-on .edge-tab--spine, body.sim-on .legend, body.sim-
   .sim-top { top: calc(var(--topbar-h) + var(--gap)); left: var(--gap); right: var(--gap); transform: none; flex-wrap: wrap; justify-content: center; }
   .sim-top .seg { flex-wrap: wrap; }
   .sim-hint { top: calc(var(--topbar-h) + var(--tap) + var(--sp-5)); }
-  .sim-bottom { bottom: calc(48px + var(--gap) * 2); }
+  .sim-bottom { bottom: calc(48px + var(--gap) * 2); left: 50%; width: calc(100% - var(--gap) * 2); }
   .sim-card { min-width: 112px; padding: var(--sp-1) var(--sp-2); }
   .sim-bottom .sim-key { display: none; }
   .sim-score { min-width: 0; max-width: 220px; }
@@ -444,3 +445,37 @@ body.sim-on .spine, body.sim-on .edge-tab--spine, body.sim-on .legend, body.sim-
   .sim-card, .sim-hint { animation: none; }
   .sim-card, .sim-score { transition: none; }
 }
+
+/* Operativo simulado: unidades marcadas, barra de tiempo virtual y comparación de escenarios */
+.ops-unit { width: var(--sp-6); height: var(--sp-6); border-radius: 50%; border: var(--rule) solid var(--void); padding: 0; cursor: grab;
+  background: var(--unit); color: var(--void); font: 700 var(--fs-ui) var(--font-mono); box-shadow: var(--shadow);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+.ops-unit:hover { transform: scale(1.1); }
+.ops-unit:active { cursor: grabbing; }
+.ops-unit[data-ghost="true"] { opacity: .55; }
+.ops-dot { display: inline-grid; place-items: center; width: var(--sp-4); height: var(--sp-4); margin-right: var(--sp-1); border-radius: 50%;
+  background: var(--unit); color: var(--void); font: 700 var(--fs-caption) var(--font-mono); font-style: normal; }
+.ops-scn { display: inline-flex; align-items: center; gap: var(--sp-1); padding-left: var(--sp-2); border-left: var(--border) solid var(--line); }
+.ops-scn b { font: 700 var(--fs-ui) var(--font-display); white-space: nowrap; }
+.ops-replay { width: 100%; justify-content: center; flex-wrap: wrap; }
+.ops-replay[hidden] { display: none; }
+.ops-replay input[type="range"] { flex: 1 1 200px; min-width: 140px; accent-color: var(--accent); }
+.ops-replay select { min-height: 34px; background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }
+.ops-clock { font: 700 var(--fs-h3) var(--font-mono); font-variant-numeric: tabular-nums; min-width: 6ch; text-align: center; }
+.ops-live { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin: 0; font-size: var(--fs-caption); color: var(--ink-soft); flex-basis: 100%; justify-content: center; }
+.ops-live b { color: var(--ink); font-family: var(--font-mono); }
+.ops-live [data-s="espera"] b { color: var(--danger); }
+.ops-live [data-s="atencion"] b { color: var(--warn); }
+.sim-cmp td small { display: block; color: var(--ink-muted); }
+.sim-cmp tr[data-best="true"] td { color: var(--accent); }
+@media (max-width: 767px) {
+  /* móvil: una fila desplazable arriba y una fila de tiempo abajo, para dejar el mapa libre */
+  .sim-top:has(.ops-scn) { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; width: auto; }
+  .sim-top:has(.ops-scn) > * { flex: 0 0 auto; }
+  .ops-scn { border-left: 0; padding-left: 0; }
+  .ops-replay { flex-wrap: nowrap; gap: var(--sp-1); padding: var(--sp-1); }
+  .ops-replay [data-ops="start"], .ops-replay [data-ops="back"], .ops-replay [data-ops="fwd"], .ops-replay select { display: none; }
+  .ops-replay .ops-clock { font-size: var(--fs-ui); min-width: 5ch; }
+  .ops-live { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ops-unit { transition: none; } }

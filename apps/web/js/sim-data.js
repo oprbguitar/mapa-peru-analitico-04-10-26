@@ -55,12 +55,47 @@ function capacityHtml(r, within) {
     ${runLine(r, `${fmt(r.sample.replications, 0)} réplicas`)}`
 }
 
+function opsHtml(r) {
+  const R = r.results
+  const u = [...r.units].sort((a, b) => b.utilization_pct - a.utilization_pct)
+  return `${table([['A tiempo (≤ ' + r.params.ops.target_min + ' min)', q1(R.within_target_pct, ' %'), '', ''],
+      ['Respuesta p50', q1(R.response_p50_min, ' min'), '', ''], ['Respuesta p90', q1(R.response_p90_min, ' min'), '', ''],
+      ['Llamadas', q1(R.calls, ''), '', ''], ['Sin atender al cierre', q1(R.unattended, ''), '', ''],
+      ['Trayectos que cruzan tramos cortados', q1(R.crossing_tramos_pct, ' %'), '', '']]).replace('<th>Hoy (A)</th><th>Hipótesis (B)</th><th>B − A</th>', '<th>Mediana y rango 90 %</th><th></th><th></th>')}
+    <table class="why-table sim-sites"><caption>Ocupación por unidad (mediana entre ${r.sample.replications} réplicas).</caption>
+      <thead><tr><th>Unidad</th><th>Tipo</th><th>Ocupada</th><th>Llamadas</th></tr></thead><tbody>
+      ${u.map((x) => `<tr><td>${esc(x.id)}</td><td>${esc(x.label)}</td><td>${fmt(x.utilization_pct, 0)} %</td><td>${fmt(x.served_p50, 0)}</td></tr>`).join('')}</tbody></table>
+    ${r.warnings.length ? `<p class="note">${r.warnings.map(esc).join(' ')}</p>` : ''}
+    ${assumptions(r, `${r.sample.units} unidades · ${r.sample.tramos} tramo(s) cortado(s) · ${r.sample.replications} réplicas.`)}
+    ${runLine(r, `${fmt(r.sample.replications, 0)} réplicas`)}`
+}
+
+export async function scenariosHtml() {
+  const { scenarios } = await getJSON('/api/v1/sim/scenarios')
+  const ops = scenarios.filter((s) => s.engine === 'operations')
+  if (!ops.length) return '<p class="src-meta">Aún no hay escenarios guardados. Usa «Guardar» y luego «Duplicar» para crear B, C…</p>'
+  const m = (s, k, u) => (s.metrics?.[k] == null ? '—' : `${fmt(s.metrics[k], 0)}${u}`)
+  const best = Math.max(...ops.map((s) => s.metrics?.within_target_pct ?? -1))
+  return `<table class="why-table sim-cmp"><thead><tr><th>Escenario</th><th>A tiempo</th><th>Resp. p50</th><th>Sin atender</th><th>Unid.</th><th>Tramos</th><th></th></tr></thead><tbody>
+    ${ops.map((s) => `<tr ${s.metrics?.within_target_pct === best && best >= 0 ? 'data-best="true"' : ''}><td>${esc(s.name)}<small>v${s.version} · ${esc(s.metrics?.scenario || '')}</small></td>
+      <td>${m(s, 'within_target_pct', ' %')}</td><td>${m(s, 'response_p50_min', ' min')}</td><td>${m(s, 'unattended', '')}</td>
+      <td>${m(s, 'units', '')}</td><td>${m(s, 'tramos', '')}</td>
+      <td><button class="btn btn-ghost" type="button" data-load-scn="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table>
+    <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.</p>`
+}
+
 function settingsHtml(cfg, meta, engine) {
   const cap = engine === 'cap'
   const n = (id, label, value, attrs = '') => `<label class="field"><span>${label}</span><input type="number" id="${id}" value="${value}" ${attrs}></label>`
   return `<details class="why section-gap" id="sim-settings"><summary>Ajustes finos</summary><div class="why-body">
     ${n('sim-speed', 'Velocidad normal (km/h)', cfg.speed_kmh, 'min="5" max="90"')}
-    ${cap ? `${n('sim-rate', 'Llamadas por hora (supuesto)', cfg.rate_per_h, `min="0.1" max="${meta.queue?.limits?.rate_per_h ?? 120}" step="any"`)}
+    ${engine === 'ops' ? `${n('ops-rate', 'Llamadas hipotéticas por hora', cfg.ops.rate_per_h, 'min="0.1" max="60" step="any"')}
+      ${n('ops-horizon', 'Horizonte (h)', cfg.ops.horizon_h, 'min="1" max="24"')}
+      ${n('ops-service', 'Tiempo en escena (min)', cfg.ops.service_min, 'min="1" max="240"')}
+      ${n('ops-target', 'Objetivo de respuesta (min)', cfg.ops.target_min, 'min="1" max="120"')}
+      ${n('ops-detour', 'Rodeo por tramo cortado cruzado (%)', cfg.ops.detour_per_tramo_pct ?? 60, 'min="0" max="300"')}
+      <p class="src-meta">Las llamadas son sintéticas y se reparten al azar en el área: no provienen de denuncias ni de personas.</p>`
+    : cap ? `${n('sim-rate', 'Llamadas por hora (supuesto)', cfg.rate_per_h, `min="0.1" max="${meta.queue?.limits?.rate_per_h ?? 120}" step="any"`)}
       ${n('sim-capacity', 'Unidades o camas por sede', cfg.capacity, `min="1" max="${meta.queue?.limits?.capacity ?? 50}"`)}
       ${n('sim-svc', 'Atención media (min)', cfg.service_min, 'min="1" max="720"')}
       <label class="field"><span>Cambio de demanda: <b id="sim-demand_pct-v">${signed(cfg.demand_pct, ' %')}</b></span>
@@ -74,11 +109,13 @@ function settingsHtml(cfg, meta, engine) {
 
 export function dataHtml({ last, cfg, meta, engine, scenario }) {
   const head = `<div class="panel-head"><div class="eyebrow">Laboratorio · cifras de la simulación</div>
-    <h2>${engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
+    <h2>${engine === 'ops' ? 'Operativo simulado' : engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
     <p class="sub">Hoy frente a «${esc(scenario)}». Todo es ${kindBadge('estimacion')} exploratoria con supuestos editables.</p></div>`
   const body = !last ? '<p class="src-meta">Aún no hay resultado: elige una zona en el mapa.</p>'
-    : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
+    : last.params.engine === 'operations' ? opsHtml(last)
+      : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
   return `${head}${body}${settingsHtml(cfg, meta, engine)}
+    ${engine === 'ops' ? '<details class="why" id="sim-compare"><summary>Comparar escenarios A / B / C</summary><div class="why-body" id="sim-cmp"></div></details>' : ''}
     <details class="why" id="sim-history"><summary>Simulaciones anteriores</summary><div class="why-body" id="sim-runs"></div></details>
     <details class="why"><summary>Motores del plan maestro</summary><div class="why-body"><dl class="kv">
       ${meta.engines.map((e) => `<dt>${e.id} · ${esc(e.name)}</dt><dd>${e.status !== 'disponible' ? 'planificado'

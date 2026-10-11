@@ -1,5 +1,25 @@
 # Documentación — Mapa Perú Analítico
 
+## Operativo simulado y escenarios A/B/C · 11 de octubre de 2026
+
+Tercer motor del simulador (**Operativo**), pasos 10–13 de [docs/GUIA-SIMULADOR.md](docs/GUIA-SIMULADOR.md):
+
+- **Marcar en el mapa:** unidades hipotéticas (patrullero, serenazgo, ambulancia, bomberos) arrastrables y **tramos
+  cortados** dibujados punto a punto. Máximo 40 unidades y 30 tramos.
+- **Motor** (`peru_intel/simulation/operations.py`): llamadas sintéticas Poisson (tasa y mezcla declaradas; seguridad →
+  patrullero/serenazgo, médica → ambulancia, incendio → bomberos), despacho a la unidad libre compatible más rápida, cola
+  FIFO por tipo, traslado geodésico × rodeo ÷ velocidad (lluvia, congestión) + retardo, **+60 % por tramo cortado
+  cruzado** (sin red vial), tiempo en escena exponencial y regreso a la base. Réplica 0 = cronología reproducible;
+  20 réplicas = intervalos. Salidas: % a tiempo, respuesta p50/p90, sin atender, ocupación por unidad, saturadas (≥ 80 %).
+- **Tiempo virtual** en el mapa (`apps/web/js/sim-ops.js`): reproducir, pausar, ⏮, −15/+15 min, línea de tiempo, ×10/×30/×120.
+- **Escenarios** (`peru_intel/simulation/scenarios.py`, `data/simulation/scenarios/`): guardar crea versiones (fecha,
+  autor, especificación, run_id, métricas); duplicar crea una copia independiente con su origen; comparar lista todos.
+- API local: `POST /api/v1/sim/operations/run`, `GET|POST /api/v1/sim/scenarios`, `GET /api/v1/sim/scenarios/<id>`,
+  `POST /api/v1/sim/scenarios/<id>/duplicate` (403 en la nube).
+- Ética: ejercicio de mesa; no usa denuncias ni personas, no reparte cifras, no genera órdenes ni rutas sobre personas reales.
+- Pruebas: `tests/test_operations.py` (tiempo exacto, cruce de tramos, FIFO, reproducibilidad, avisos, versiones,
+  duplicado, 403) y `tests/e2e/simulation-ops.mjs` (1440 y 360 px; borra los escenarios que crea).
+
 ## Simulador sobre el mapa (rediseño interactivo) · 11 de octubre de 2026
 
 Guía con capturas: **[docs/GUIA-SIMULADOR.md](docs/GUIA-SIMULADOR.md)**. Resumen:

@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timezone
 
 from .. import config
-from . import accessibility, queue
+from . import accessibility, operations, queue
 
 _lock = threading.Lock()  # una simulación a la vez: el visor sigue respondiendo y la CPU no se satura
 STATES = ("en_ejecucion", "finalizado", "fallido")
@@ -42,6 +42,10 @@ def run_queue(body: dict) -> dict:
     if not queue.available():
         raise queue.SimUnavailable("Falta SimPy para el motor de capacidad: pip install -r requirements-simulation.txt")
     return _registered("cap", params, queue.run, body)
+
+
+def run_operations(body: dict) -> dict:
+    return _registered("ops", operations.normalize(body), operations.run, body)
 
 
 def _registered(prefix: str, params: dict, engine, body: dict) -> dict:

@@ -64,6 +64,39 @@ ajustes finos (velocidad, repeticiones, semilla, llamadas por hora, unidades por
 
 ![Ver cifras](img/simulador/09-ver-cifras.png)
 
+## Operativo: marcar unidades y tramos, y jugar el tiempo
+
+### 10 · Coloca unidades
+Pulsa **OPERATIVO** arriba. Elige **Patrullero, Serenazgo, Ambulancia o Bomberos** y haz clic en el mapa para colocar
+cada unidad (letra P, S, A, B). **Arrástrala** para moverla; **doble clic** (o tecla Supr) la quita. Cada cambio recalcula.
+
+![Unidades](img/simulador/10-operativo-unidades.png)
+
+### 11 · Marca tramos cortados
+**╱ TRAMO CORTADO**: haz clic punto a punto sobre la vía y pulsa **Terminar tramo** (o doble clic / Enter; Esc cancela).
+Los trayectos que cruzan un tramo cortado suman un rodeo (60 % por defecto, editable en «Ver cifras»).
+
+![Tramo cortado](img/simulador/11-tramo-cortado.png)
+
+### 12 · Reproduce el tiempo virtual
+Las llamadas hipotéticas aparecen en el mapa (rojo: esperando · ámbar: en atención · gris: cerrada) y las unidades
+se desplazan hacia ellas y vuelven a su base. **▶ / ⏸** reproduce o pausa, **−15 / +15** retrocede o adelanta 15 minutos,
+**⏮** vuelve al inicio, la **línea de tiempo** lleva a cualquier minuto y **×10 · ×30 · ×120** cambia la velocidad.
+El marcador muestra el % atendido a tiempo, la respuesta típica y las unidades saturadas.
+
+![Tiempo virtual](img/simulador/12-tiempo-virtual.png)
+
+### 13 · Escenarios A, B, C…
+**GUARDAR** registra el escenario (cada guardado es una versión nueva con fecha). **DUPLICAR** crea una copia
+independiente (B, C…) para probar otra distribución de unidades, otros tramos u otro «¿qué pasa si…?».
+**COMPARAR** abre la tabla con todos los escenarios: % a tiempo, respuesta típica, sin atender, unidades y tramos;
+**Abrir** recupera cualquiera en el mapa.
+
+![Comparar escenarios](img/simulador/13-comparar-escenarios.png)
+
+> El operativo es un **ejercicio de mesa**: las llamadas son sintéticas (tasa y mezcla declaradas, ubicadas al azar en la
+> zona), no provienen de denuncias ni de personas, y el sistema no emite órdenes ni rutas sobre personas reales.
+
 ## Qué significan los resultados
 
 - Son **estimaciones exploratorias**: distancia en línea recta × factor de rodeo, sin red vial calibrada.
