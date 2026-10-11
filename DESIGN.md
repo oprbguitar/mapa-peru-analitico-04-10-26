@@ -1,5 +1,19 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Simulador sobre el mapa · 11 de octubre de 2026
+
+Pedido del usuario: la simulación debe vivir en el mapa, interactiva y con sensación de juego; el panel solo para datos.
+design-pick (`Simulador`, dashboard) propuso portada tipográfica + índice · hielo/magenta · Work Sans/Manrope · bloque 0 px ·
+escalonado. Se conserva la identidad HUD vigente (pizarra/cian, Space Grotesk/Noto Sans/Space Mono, radio 4 px): cambiarla
+dentro de un modo rompería la continuidad del mapa. Del selector se adopta el **titular tipográfico grande** (marcador
+hoy → hipótesis en mono display) y la **entrada escalonada** de 40 ms de las fichas.
+Direcciones evaluadas: (a) formulario por pasos en el panel — descartada, obliga a mirar fuera del mapa;
+(b) **escena sobre el mapa** con fichas de escenario, asas de zona, cortina y marcador — elegida;
+(c) modo pantalla completa tipo juego con puntuación acumulada — diferida: sin calibración, una «puntuación» se leería
+como validación. Colores: rampa secuencial existente para minutos, `--ok/--danger/--warn` solo para cambio y ocupación
+(rotulados en la leyenda; no es un semáforo oficial). Motion: conteo del número B (700 ms), lluvia animada, fichas
+escalonadas; con `prefers-reduced-motion` todo queda estático. Teclado: asas de zona y cortina con flechas.
+
 ## Refinamiento de rapidez y simplicidad · 11 de octubre de 2026
 
 Mapa limpio como protagonista; comandos secundarios en «Herramientas», familias plegadas y comparador por dos fechas.

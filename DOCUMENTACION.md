@@ -1,5 +1,24 @@
 # Documentación — Mapa Perú Analítico
 
+## Simulador sobre el mapa (rediseño interactivo) · 11 de octubre de 2026
+
+Guía con capturas: **[docs/GUIA-SIMULADOR.md](docs/GUIA-SIMULADOR.md)**. Resumen:
+
+- **Simular** ya no abre un formulario lateral: todo sucede en el mapa. Un **clic** coloca la zona (radio inicial según
+  el zoom) y simula al instante; el **asa del borde** cambia el radio (1–30 km, pasos de 0,5) y el **centro** la mueve.
+- **Fichas de escenario** flotantes (lluvia intensa, hora punta, huaico, sedes cerradas, más llamadas, todo junto)
+  y servicio/motor en la barra superior; cada cambio recalcula solo (respuestas viejas se descartan).
+- Resultado en un **marcador** sobre la zona (hoy → hipótesis, animado) y un **mosaico** de tiempos: cortina
+  arrastrable **hoy ⟷ hipótesis** o vista **qué cambia** (mejora / igual / empeora / sin servicio).
+- La **lluvia del escenario** se dibuja dentro de la zona (hipotética, rotulada; rayado fijo con movimiento reducido).
+- Las **sedes** aparecen solas; tocar una la cierra/reabre en la hipótesis. En **Capacidad** se colorean por ocupación.
+- **Ver cifras** abre el panel con tablas, supuestos, fuentes, ajustes finos e historial (`sim-data.js`).
+- Código: `simulation.js` (coordinación y controles), `sim-zone.js`, `sim-rain.js`, `sim-swipe.js`, `sim-data.js`.
+  El radio libre se valida en `accessibility.normalize` y se redondea a 0,5 km (registro idempotente).
+- Pruebas: `tests/e2e/simulation-lab.mjs` (1280 y 360 px: clic, escenario, cortina, radio por teclado, capacidad, cifras,
+  limpieza al salir, lienzo de lluvia vacío sin lluvia). Capturas de la guía: `scripts/capturas_guia_simulador.mjs`.
+- Estrategia del producto (EOS 4.2.0): `docs/ESTRATEGIA-SIMULACION.md`.
+
 ## Laboratorio de simulación · pestaña «Capacidad» (S3, eventos discretos) · 11 de octubre de 2026
 
 Dentro de **Simular** hay dos pestañas: **Accesibilidad** (la ya existente) y **Capacidad** (nueva). Capacidad usa la
@@ -30,6 +49,8 @@ Código: `peru_intel/simulation/queue.py`. Pruebas: `tests/test_simulation.py` (
 ## Laboratorio de simulación (solo local) · 11 de octubre de 2026
 
 Modo **Simular** (aparece solo al ejecutar en la PC con `INICIAR-MAPA.bat`; en la nube no se muestra y la API responde 403).
+
+> Sustituido por el simulador sobre el mapa (sección anterior); se conserva como registro del primer diseño.
 
 1. Fija el centro del área (**Marcar en el mapa** o **Centro de la vista**) y elige el radio (5, 10, 20 o 30 km).
 2. Elige el servicio: hospitales o establecimientos de salud (RENIPRESS, oficial), bomberos o comisarías (OpenStreetMap).

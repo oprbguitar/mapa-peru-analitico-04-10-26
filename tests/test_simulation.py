@@ -67,8 +67,11 @@ class AccessibilityTest(unittest.TestCase):
             r = acc.run(body())
         self.assertTrue(any("no de población" in a for a in r["assumptions"]))
 
+    def test_free_radius_is_rounded_to_half_km(self):
+        self.assertEqual(acc.normalize(body(area=CENTER | {"radius_km": 7.26}))["area"]["radius_km"], 7.5)
+
     def test_validation_rejects_out_of_range(self):
-        for bad in ({"area": CENTER | {"radius_km": 7}}, {"area": CENTER | {"lat": 10}}, {"service": "x"},
+        for bad in ({"area": CENTER | {"radius_km": 31}}, {"area": CENTER | {"radius_km": 0.5}}, {"area": CENTER | {"lat": 10}}, {"service": "x"},
                     {"iterations": 99999}, {"hypothesis": {"rain": "diluvio"}}, {"base": EXACT | {"delay_min": [9, 4, 2]}}):
             with self.assertRaises(acc.SimError):
                 acc.normalize(body(**bad))

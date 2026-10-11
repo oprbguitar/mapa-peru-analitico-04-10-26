@@ -296,7 +296,7 @@ async function setMode(m) {
     renderLevels()
   }
   for (const b of document.querySelectorAll('#modes [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === m))
-  showPanel()
+  if (m !== 'simular') showPanel()
   if (m === 'satelite') {
     panelView = 'imagery'
     return openImagery(document.getElementById('panel-body'))
@@ -311,7 +311,8 @@ async function setMode(m) {
   }
   if (m === 'simular') {
     panelView = 'sim'
-    return (await import('./simulation.js')).renderSimulation()
+    await (await import('./simulation.js')).renderSimulation()
+    return openSheet('map')   // la simulación ocurre en el mapa; las cifras se abren a pedido
   }
   if (m === 'mapa') {
     panelView = 'overview'
@@ -617,7 +618,7 @@ async function boot() {
     onClick: (e) => {
       if (isDrawingImagery() || ['satelite', 'vuelos', 'calle'].includes(mode)) return
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
-      if (mode === 'simular') return import('./simulation.js').then((s) => s.simPick(e.lngLat))
+      if (mode === 'simular') return import('./simulation.js').then((s) => s.onMapClick(e))
       if (state.live.has('sun')) {
         if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
         showPanel()
@@ -683,6 +684,7 @@ async function boot() {
     toast('Marca el área en el mapa. Para cerrar un polígono, vuelve a Ficha.')
   })
   document.addEventListener('imagery-area-ready', () => openSheet('panel'))
+  document.addEventListener('sim-open-panel', () => showPanel())
   initStory()
   initSun()
   setEnsoRepaint(paintEnso)

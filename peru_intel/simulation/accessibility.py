@@ -36,7 +36,7 @@ SERVICES = {
 }
 RAIN = {"ninguna": 1.0, "moderada": 0.8, "intensa": 0.6}
 THRESHOLDS = (15, 30, 45)
-LIMITS = {"iterations": 2000, "points": 900, "facilities": 400, "seconds": 20.0, "radius_km": (5, 10, 20, 30)}
+LIMITS = {"iterations": 2000, "points": 900, "facilities": 400, "seconds": 20.0, "radius_km": (5, 10, 20, 30), "radius_max_km": 30}
 DEFAULTS = {"speed_kmh": 30.0, "speed_sigma": 0.25, "circuity": 1.4, "availability": 0.97,
             "delay_min": (2.0, 5.0, 12.0), "iterations": 500, "seed": 2026}
 
@@ -60,9 +60,8 @@ def normalize(body: dict) -> dict:
     area = body.get("area") or {}
     lat = _clamp(area.get("lat"), -18.6, 0.2, "latitud")
     lon = _clamp(area.get("lon"), -81.6, -68.4, "longitud")
-    radius = int(_clamp(area.get("radius_km", 10), 1, 30, "radio"))
-    if radius not in LIMITS["radius_km"]:
-        raise SimError("radio permitido: 5, 10, 20 o 30 km")
+    # radio libre (se dibuja arrastrando en el mapa), redondeado a 0,5 km para que el registro sea idempotente
+    radius = round(_clamp(area.get("radius_km", 10), 1, LIMITS["radius_max_km"], "radio") * 2) / 2
     service = str(body.get("service") or "hospital")
     if service not in SERVICES:
         raise SimError(f"servicio no disponible: {service}")
