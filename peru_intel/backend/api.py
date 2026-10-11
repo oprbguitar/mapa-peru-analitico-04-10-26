@@ -31,6 +31,7 @@ from ..map.ruc360_adapter import ADAPTER
 from ..sources import registry
 from .. import simulation
 from ..simulation import accessibility as sim_access
+from ..simulation import queue as sim_queue
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -309,6 +310,14 @@ def route_post(path: str, body: dict):
             return sim_runs.run_accessibility(body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
+    if p == ["sim", "queue", "run"]:
+        _sim_local()
+        try:
+            return sim_runs.run_queue(body)
+        except sim_queue.SimUnavailable as e:
+            raise ApiError(503, str(e))
+        except sim_access.SimError as e:
+            raise ApiError(400, str(e))
     if p == ["meta", "settings"]:
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
                    "external_base_url", "external_api_key", "external_model", "ai_allow_external",
@@ -332,7 +341,9 @@ def _sim_get(p: list[str], q: dict) -> dict:
     if p == ["engines"]:
         return {"local": simulation.is_local(), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
                 "services": {k: v["label"] for k, v in sim_access.SERVICES.items()}, "rain": list(sim_access.RAIN),
-                "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS}
+                "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS,
+                "queue": {"available": sim_queue.available(), "defaults": sim_queue.DEFAULTS, "limits": sim_queue.LIMITS,
+                          "within_min": sim_queue.WITHIN_MIN, "bottleneck_pct": sim_queue.BOTTLENECK_UTIL * 100}}
     _sim_local()
     if p == ["runs"]:
         return {"runs": sim_runs.list_runs(_int(q, "limit", 20))}

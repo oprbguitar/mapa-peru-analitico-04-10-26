@@ -8,6 +8,7 @@ from unittest.mock import patch
 from peru_intel import config, simulation
 from peru_intel.backend import api
 from peru_intel.simulation import accessibility as acc
+from peru_intel.simulation import queue as que
 from peru_intel.simulation import runs
 
 CENTER = {"lat": -12.0, "lon": -77.0, "radius_km": 5}
@@ -73,6 +74,65 @@ class AccessibilityTest(unittest.TestCase):
                 acc.normalize(body(**bad))
 
 
+def qbody(**kw):
+    return body(queue={"rate_per_h": 6, "capacity": 1, "service_min": 20, "horizon_h": 12}, replications=10) | kw
+
+
+@unittest.skipUnless(que.available(), "SimPy no instalado (requirements-simulation.txt)")
+class QueueTest(unittest.TestCase):
+    def test_mm1_matches_closed_form(self):
+        """M/M/1 sin traslado: λ=3/h, μ=5/h → ρ=0,6; Wq=ρ/(μ−λ)=18 min; P(Wq=0)=0,4; p90 de Wq = ln 6 ÷ 2 h ≈ 53,75 min."""
+        import numpy as np
+        rng = np.random.default_rng(11)
+        lam, mu, horizon = 3 / 60, 5 / 60, 200_000.0
+        arr = np.cumsum(rng.exponential(1 / lam, int(lam * horizon * 1.2)))
+        arr = arr[arr < horizon]
+        out = que.simulate(arr, rng.exponential(1 / mu, len(arr)), np.zeros((len(arr), 1)), [1], horizon)
+        w = out["wait"]
+        self.assertAlmostEqual(float(np.nanmean(w)), 18.0, delta=1.5)
+        self.assertAlmostEqual(float((w == 0).mean()), 0.4, delta=0.02)
+        self.assertAlmostEqual(float(np.nanpercentile(w, 90)), math.log(6) / 2 * 60, delta=4)
+        self.assertAlmostEqual(out["busy"][0] / horizon, 0.6, delta=0.02)
+        self.assertEqual(out["unassigned"], 0)
+
+    def test_fifo_assigns_nearest_free_site_and_counts_diversions(self):
+        import numpy as np
+        # dos llamadas simultáneas cerca de la sede 0 (capacidad 1): la segunda se deriva a la sede 1
+        out = que.simulate(np.array([0.0, 0.0]), np.array([10.0, 10.0]), np.array([[1.0, 5.0], [1.0, 5.0]]), [1, 1], 60)
+        self.assertEqual(list(out["served"]), [1, 1])
+        self.assertEqual(list(out["diverted"]), [1, 0])
+        self.assertEqual(list(out["response"]), [1.0, 5.0])
+        # sede cerrada (inf) y sin alternativa: la llamada queda sin asignar
+        out = que.simulate(np.array([0.0]), np.array([10.0]), np.array([[np.inf]]), [1], 60)
+        self.assertEqual(out["unassigned"], 1)
+
+    def test_run_is_reproducible_and_hypothesis_worsens(self):
+        b = qbody(hypothesis={"rain": "intensa", "congestion_pct": 30, "demand_pct": 100})
+        with patch.object(acc, "load_facilities", return_value=TWO):
+            r1, r2 = que.run(b), que.run(b)
+            r3 = que.run(b | {"seed": 8})
+        self.assertEqual(r1["results"], r2["results"])
+        self.assertNotEqual(r1["results"]["A"]["wait_p90_min"], r3["results"]["A"]["wait_p90_min"])
+        a, bb = r1["results"]["A"], r1["results"]["B"]
+        self.assertGreaterEqual(bb["wait_p90_min"]["p50"], a["wait_p90_min"]["p50"])
+        self.assertLess(r1["results"]["diff"]["within_30_pct"], 0)
+        self.assertEqual((r1["kind"], r1["validity"]), ("estimacion", "exploratorio"))
+        self.assertTrue(any("Poisson" in x and "no se deriva" in x for x in r1["assumptions"]))
+        self.assertEqual(len(a["sites"]), 2)
+
+    def test_overload_marks_bottleneck(self):
+        with patch.object(acc, "load_facilities", return_value=ONE):
+            r = que.run(qbody(queue={"rate_per_h": 10, "capacity": 1, "service_min": 30, "horizon_h": 12}))
+        self.assertEqual(r["results"]["A"]["bottlenecks"][0]["id"], "h1")
+        self.assertGreater(r["results"]["A"]["sites"][0]["utilization_pct"], 90)
+
+    def test_validation(self):
+        for bad in ({"queue": {"rate_per_h": 0}}, {"queue": {"capacity": 0}}, {"replications": 999},
+                    {"hypothesis": {"demand_pct": 500}}, {"queue": {"rate_per_h": 120, "horizon_h": 72}, "replications": 200}):
+            with self.assertRaises(acc.SimError):
+                que.normalize(qbody(**bad))
+
+
 class SimApiTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -104,6 +164,30 @@ class SimApiTest(unittest.TestCase):
             self.assertFalse(eng["local"])
             with self.assertRaises(api.ApiError) as e:
                 api.route_post("/api/v1/sim/accessibility/run", body())
+        self.assertEqual(e.exception.status, 403)
+
+    @unittest.skipUnless(que.available(), "SimPy no instalado")
+    def test_queue_run_is_registered(self):
+        os.environ.pop("RENDER", None)
+        os.environ.pop("PI_PUBLIC_ACCESS_PASSWORD", None)
+        with patch.object(acc, "load_facilities", return_value=TWO):
+            first = api.route_post("/api/v1/sim/queue/run", qbody())
+            again = api.route_post("/api/v1/sim/queue/run", qbody())
+        self.assertTrue(first["run_id"].startswith("cap-"))
+        self.assertTrue(again["reused"])
+        self.assertEqual(api.route_get("/api/v1/sim/runs", {})["runs"][0]["engine"], "queue")
+
+    def test_queue_without_simpy_is_503_and_cloud_is_403(self):
+        os.environ.pop("RENDER", None)
+        os.environ.pop("PI_PUBLIC_ACCESS_PASSWORD", None)
+        with patch.object(que, "simpy", None):
+            self.assertFalse(api.route_get("/api/v1/sim/engines", {})["queue"]["available"])
+            with self.assertRaises(api.ApiError) as e:
+                api.route_post("/api/v1/sim/queue/run", qbody())
+        self.assertEqual(e.exception.status, 503)
+        self.assertIn("requirements-simulation.txt", str(e.exception))
+        with patch.dict(os.environ, {"RENDER": "true"}), self.assertRaises(api.ApiError) as e:
+            api.route_post("/api/v1/sim/queue/run", qbody())
         self.assertEqual(e.exception.status, 403)
 
     def test_bad_params_are_400(self):

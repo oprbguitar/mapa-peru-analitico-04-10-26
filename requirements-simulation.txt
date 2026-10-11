@@ -1,0 +1,3 @@
+# Opcional: motor S3 del laboratorio de simulación (eventos discretos, colas y capacidad). Sin esto, la pestaña
+# «Capacidad» explica cómo instalarlo y la API responde 503; el resto del laboratorio funciona igual.
+simpy>=4.1,<5

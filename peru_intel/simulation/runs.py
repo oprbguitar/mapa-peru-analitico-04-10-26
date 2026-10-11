@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timezone
 
 from .. import config
-from . import accessibility
+from . import accessibility, queue
 
 _lock = threading.Lock()  # una simulación a la vez: el visor sigue respondiendo y la CPU no se satura
 STATES = ("en_ejecucion", "finalizado", "fallido")
@@ -26,15 +26,27 @@ def _dir():
 def _summary(rec: dict) -> dict:
     p = rec.get("params") or {}
     r = (rec.get("results") or {})
-    return {"run_id": rec["run_id"], "state": rec["state"], "created_at": rec["created_at"], "service": p.get("service"),
-            "area": p.get("area"), "seed": p.get("seed"), "iterations": p.get("iterations"), "hypothesis": p.get("hypothesis"),
+    return {"run_id": rec["run_id"], "engine": p.get("engine", "accessibility"), "state": rec["state"],
+            "created_at": rec["created_at"], "service": p.get("service"), "area": p.get("area"), "seed": p.get("seed"),
+            "iterations": p.get("iterations"), "replications": p.get("replications"), "hypothesis": p.get("hypothesis"),
             "diff": r.get("diff"), "label": rec.get("label")}
 
 
 def run_accessibility(body: dict) -> dict:
-    params = accessibility.normalize(body)
+    return _registered("acc", accessibility.normalize(body), accessibility.run, body)
+
+
+def run_queue(body: dict) -> dict:
+    """S3: se valida (y se comprueba SimPy) antes de tomar el turno, para no registrar fallos de instalación."""
+    params = queue.normalize(body)
+    if not queue.available():
+        raise queue.SimUnavailable("Falta SimPy para el motor de capacidad: pip install -r requirements-simulation.txt")
+    return _registered("cap", params, queue.run, body)
+
+
+def _registered(prefix: str, params: dict, engine, body: dict) -> dict:
     h = accessibility.params_hash(params)
-    run_id = f"acc-{h}"
+    run_id = f"{prefix}-{h}"
     path = _dir() / f"{run_id}.json"
     if path.exists():
         rec = json.loads(path.read_text(encoding="utf-8"))
@@ -47,7 +59,7 @@ def run_accessibility(body: dict) -> dict:
         rec = {"run_id": run_id, "state": "en_ejecucion", "label": str(body.get("label") or "")[:80],
                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
         try:
-            out = accessibility.run(body)
+            out = engine(body)
         except Exception as e:
             rec |= {"state": "fallido", "error": str(e), "params": params}
             path.write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")

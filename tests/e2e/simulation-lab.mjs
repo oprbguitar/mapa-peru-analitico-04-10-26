@@ -1,4 +1,4 @@
-// Laboratorio de simulación local: A/B con Monte Carlo, mapa coloreado, cierre manual de un servicio y registro.
+// Laboratorio de simulación local: Accesibilidad (A/B Monte Carlo, mapa coloreado) y Capacidad (S3, SimPy) con registro.
 import { createRequire } from 'node:module'
 import assert from 'node:assert/strict'
 const require = createRequire(import.meta.url)
@@ -30,8 +30,31 @@ try {
     assert.ok(kinds.every((k) => ['mejor', 'igual', 'peor', 'sin'].includes(k)), 'vista de cambio usa categorías de diferencia')
     await page.evaluate(() => new Promise((r) => window.__piMap.once('idle', r)))
     if (out) await page.screenshot({ path: `${out}/simulacion-${w}.png` })
+    // S3 · pestaña Capacidad: eventos discretos, utilización por sede coloreada en el mapa
+    await page.locator('[data-sim-tab="cap"]').click()
+    assert.equal(await page.locator('[data-sim-tab="cap"]').getAttribute('aria-selected'), 'true')
+    await page.locator('#sim-rate').fill('12')
+    await page.locator('#sim-rate').dispatchEvent('change')
+    await page.locator('#sim-form details summary').click()
+    await page.locator('#sim-reps').selectOption('10')
+    await page.locator('#sim-form [type="submit"]').click()
+    await page.waitForSelector('#sim-out .sim-sites', { timeout: 30000 })
+    const cap = await page.locator('#sim-out').innerText()
+    assert.match(cap, /Espera p90/)
+    assert.match(cap, /Atendidas ≤ 30 min/)
+    assert.match(cap, /Cuellos de botella en B/)
+    assert.match(cap, /cap-[0-9a-f]{12}/)
+    assert.equal(await page.evaluate(() => window.__piMap.getLayoutProperty('sim-pts', 'visibility')), 'none', 'la rejilla de accesibilidad se oculta')
+    const util = await page.evaluate(() => window.__piMap.getSource('sim-cap').serialize().data.features.map((f) => f.properties.u))
+    assert.ok(util.length > 0 && util.every((u) => ['baja', 'media', 'alta', 'cerrada'].includes(u)), 'sedes coloreadas por utilización')
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'sin desplazamiento horizontal')
+    await page.evaluate(() => new Promise((r) => window.__piMap.once('idle', r)))
+    if (out) await page.screenshot({ path: `${out}/capacidad-${w}.png` })
+    await page.locator('[data-sim-tab="cap"]').press('ArrowLeft')
+    assert.equal(await page.locator('[data-sim-tab="acc"]').getAttribute('aria-selected'), 'true', 'flechas cambian de pestaña')
+    assert.match(await page.locator('#sim-out').innerText(), /acc-[0-9a-f]{12}/, 'cada pestaña conserva su resultado')
     await page.locator('#sim-history summary').click()
-    await page.waitForSelector('#sim-runs [data-run]')
+    await page.waitForSelector('#sim-runs [data-run^="cap-"]')
     await page.locator('[data-mode="mapa"]').click()
     await page.waitForFunction(() => window.__piMap.getLayoutProperty('sim-pts', 'visibility') === 'none', null, { timeout: 5000 })
     assert.deepEqual(errors, [])

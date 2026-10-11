@@ -20,8 +20,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8 PIP_NO_C
     PI_AI_BASE_OLLAMA_LOCAL=http://host.docker.internal:11434
 
 WORKDIR /app
-COPY requirements.txt requirements-forecast.txt requirements-imagery.txt ./
-RUN pip install -r requirements.txt -r requirements-imagery.txt && if [ "$FORECAST" = "1" ]; then pip install -r requirements-forecast.txt; fi
+COPY requirements.txt requirements-forecast.txt requirements-imagery.txt requirements-simulation.txt ./
+RUN pip install -r requirements.txt -r requirements-imagery.txt -r requirements-simulation.txt && if [ "$FORECAST" = "1" ]; then pip install -r requirements-forecast.txt; fi
 
 COPY peru_intel ./peru_intel
 COPY apps ./apps

@@ -351,3 +351,17 @@ body[data-mode="rutas"] #layer-title, body[data-mode="rutas"] #legend { display:
 .sim-key { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0 0; font-size: var(--fs-caption); color: var(--ink-soft); }
 .sim-key span { display: inline-flex; align-items: center; gap: var(--sp-1); }
 .sim-key i { width: 10px; height: 10px; border-radius: 50%; border: var(--border) solid var(--line-strong); }
+
+/* Laboratorio de simulación: pestañas de motor (Accesibilidad · Capacidad) y tablas de capacidad */
+.sim-tabs { display: flex; gap: var(--sp-4); margin-top: var(--sp-3); border-bottom: var(--border) solid var(--line); }
+.sim-tabs button { border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: var(--fs-ui); min-height: 36px;
+  padding: 0 var(--sp-1); margin-bottom: calc(-1 * var(--border)); border-bottom: var(--rule) solid transparent; cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+.sim-tabs button:hover { color: var(--ink); }
+.sim-tabs button[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.sim-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sim-bott { grid-template-columns: auto minmax(0, 1fr); font-size: var(--fs-caption); }
+.sim-bott dd { font-family: var(--font-body); text-align: left; }
+.sim-sites caption { caption-side: top; text-align: left; font-size: var(--fs-caption); color: var(--ink-muted); padding-bottom: var(--sp-1); }
+.sim-sites td:first-child { max-width: 0; width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .sim-tabs button { transition: none; } }

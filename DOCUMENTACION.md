@@ -1,5 +1,32 @@
 # Documentación — Mapa Perú Analítico
 
+## Laboratorio de simulación · pestaña «Capacidad» (S3, eventos discretos) · 11 de octubre de 2026
+
+Dentro de **Simular** hay dos pestañas: **Accesibilidad** (la ya existente) y **Capacidad** (nueva). Capacidad usa la
+misma área, servicio e hipótesis B (lluvia, congestión, sedes fuera, rodeo, cierre manual de sedes) y añade:
+
+- **Llamadas por hora en A** (tasa de Poisson): es un **supuesto del usuario**; nunca se deriva repartiendo cifras
+  distritales. Las llamadas caen uniformemente en el área del círculo (no según población).
+- **Unidades o camas por sede** (igual para todas; la API acepta `capacity_by_id` por sede) y **atención media** (exponencial).
+- **Cambio de demanda** en B (−50 % a +200 %), horizonte (8–72 h), réplicas (10–100) y semilla.
+
+Flujo modelado con SimPy: llegada → cola única FIFO → asignación a la sede operativa **más cercana con unidad libre**
+→ traslado (mismo modelo de `accessibility`: distancia geodésica × rodeo ÷ velocidad + retardo) → atención → liberación.
+La unidad queda ocupada durante traslado + atención; no se modela el regreso. A y B comparten los números aleatorios
+(llegadas por adelgazamiento, ubicaciones, atenciones, velocidades, retardos y disponibilidad de sedes).
+
+Salidas (mediana y percentiles 5–95 entre réplicas, naturaleza `estimacion`, validez «exploratorio»): espera p50/p90,
+respuesta (espera + traslado) p50/p90, % de llamadas atendidas en ≤ 30 min con intervalo pareado B − A, utilización
+mediana por sede, llamadas derivadas (su sede más cercana estaba llena), sedes cuello de botella (utilización ≥ 80 %) y
+llamadas sin asignar si el sistema se satura. El mapa colorea las sedes por utilización (A o B). Se modelan las 25 sedes
+más cercanas al centro; límite de 20 s y 100 000 llamadas esperadas por corrida.
+
+Dependencia **opcional**: `pip install -r requirements-simulation.txt` (SimPy 4). Sin ella la pestaña lo explica, el
+catálogo marca S3 «requiere SimPy» y la API responde 503; Accesibilidad sigue funcionando. La imagen Docker la incluye.
+Validación: caso M/M/1 con solución cerrada (λ = 3/h, μ = 5/h → Wq = 18 min, P(Wq = 0) = 0,4, p90 ≈ 53,75 min, ρ = 0,6).
+API local: `POST /api/v1/sim/queue/run`; las corridas se registran como `cap-<hash>` junto a las de accesibilidad (`acc-<hash>`).
+Código: `peru_intel/simulation/queue.py`. Pruebas: `tests/test_simulation.py` (`QueueTest`) y `tests/e2e/simulation-lab.mjs`.
+
 ## Laboratorio de simulación (solo local) · 11 de octubre de 2026
 
 Modo **Simular** (aparece solo al ejecutar en la PC con `INICIAR-MAPA.bat`; en la nube no se muestra y la API responde 403).
