@@ -38,6 +38,7 @@ try {
   }
   await page.waitForTimeout(5000)
   await page.screenshot({ path: 'output/territorial/imagery-live.png' })
+  if (!process.env.PI_SKIP_OSM) {
   await page.locator('details[data-f="infra"] summary').click()
   await page.evaluate(() => window.__piMap.jumpTo({ center: [-77.05, -12.05], zoom: 12 }))
   await page.locator('input[value="telecom:mobile"]').check()
@@ -46,6 +47,7 @@ try {
   const antennas = await page.waitForFunction(() => window.__piMap.querySourceFeatures('pl-telecom-osm').length > 0, null, { timeout: 70000 }).then(() => true, () => false)
   console.log(antennas ? 'PASS real antenna points alongside satellite' : 'DEGRADED Overpass provider', await page.locator('[data-live-meta="telecom:mobile"]').textContent())
   await page.screenshot({ path: 'output/territorial/imagery-telecom-live.png' })
+  }
   await page.locator('details[data-f="ambiente"] summary').click()
   await page.locator('input[value="wxfx"]').check()
   await page.waitForFunction(() => !!window.__piMap.getLayer('observed-clouds-raster'), null, { timeout: 60000 })

@@ -33,6 +33,9 @@ Reversión: revertir el commit de esta entrega y dejar que Render despliegue; no
   navegador fixture PASS a 360/768/1280/1600, antenas persistentes al cambiar base y dibujo/reproducción WebGL.
 - Proveedores: STAC real 6/3 de octubre; GeoTIFF real 111×113 EPSG:32718 y recorte final 23×23, ambos con adquisición verificada;
   NOAA hora publicada 16:00 UTC y PNG real 48 268 bytes. OSM consulta inicial 13 objetos, posteriormente 500/504 externos.
+- Navegador real: escenas A/B PASS, descarga GeoTIFF PASS, nubes NOAA fechadas PASS y trayectoria ADS-B `e80481` con ocho posiciones PASS.
+  Sin errores JavaScript. La comprobación OSM posterior quedó DEGRADED por el proveedor, separada de las pruebas de render.
+- Corregida carga de nubes con otras teselas pendientes: un estilo inicializado admite la capa aunque no todas sus fuentes hayan terminado de cargar.
 - Seguridad: revisión sin bloqueos; pip-audit núcleo/imágenes/pronósticos sin vulnerabilidades conocidas.
 - Ajustes de recursos: solo una tesela raster procesada a la vez para reservar otro slot a exportación; resolución de metadatos STAC sin duplicar peticiones concurrentes.
 - Publicación: preparada para GitHub main → autoDeploy del servicio Render existente; verificar commit, estado live, versión 0.5.0 y protección HTTP.

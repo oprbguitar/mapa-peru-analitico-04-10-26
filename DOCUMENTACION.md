@@ -59,6 +59,7 @@ actualización de origen horaria y latencia aproximada de 2–3 h. Si el proveed
 Pruebas de esta ampliación: 107 pruebas Python aprobadas, cobertura del 90 % en los módulos Python nuevos/modificados de estas capas;
 no representa cobertura total del proyecto. Pruebas de interfaz a 360/768/1280/1600 px, antenas conservadas al cambiar base y reproducción 3D
 con fixtures de prueba. Consulta real: adquisiciones del 6 y 3 de octubre de 2026, GeoTIFF EPSG:32718 de 111×113 píxeles con etiquetas verificadas.
+Navegador real: capa NOAA del 11 de octubre a las 16:00 UTC y trayectoria ADS-B `e80481` de ocho posiciones comprobadas sin errores JavaScript.
 NOAA y OSM también se verifican con consultas de proveedor. Fotos Mapillary reales quedan pendientes de una clave configurada.
 Overpass devolvió inicialmente 13 objetos reales; consultas posteriores presentaron 500/504 en los servidores públicos.
 La restauración/dibujo se prueba con fixtures independientes de esa disponibilidad y el estado de falla se muestra en la capa.

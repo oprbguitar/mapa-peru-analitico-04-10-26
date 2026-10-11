@@ -13,7 +13,8 @@ function removeLayer() {
   if (map.getSource(SOURCE)) map.removeSource(SOURCE)
 }
 function render() {
-  if (!enabled || !meta?.time || !map.isStyleLoaded()) return
+  // Pending imagery tiles do not prevent adding another layer to an initialized style.
+  if (!enabled || !meta?.time || !map.getStyle()?.layers) return
   removeLayer()
   map.addSource(SOURCE, { type: 'raster', tileSize: 256, maxzoom: 11,
     tiles: [`${location.origin}/api/v1/intel/weather/clouds/tiles/{z}/{x}/{y}.png?time=${encodeURIComponent(meta.time)}`],

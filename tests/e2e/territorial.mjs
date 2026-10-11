@@ -46,6 +46,16 @@ try {
       await page.evaluate(async () => { const m = await import('/js/map.js'); await m.setBase('satelite') })
       await page.waitForFunction(() => window.__piMap.querySourceFeatures('pl-telecom-osm').length > 0)
       check('Antena conservada al cambiar base', true)
+      await page.route('**/api/v1/intel/weather/clouds', route => route.fulfill({ json: { time: '2026-10-11T12:00:00Z', description: 'Fixture NOAA' } }))
+      await page.route('**/api/v1/intel/weather/clouds/tiles/**', route => route.fulfill({ status: 204 }))
+      const cloudReady = await page.evaluate(async () => {
+        const previous = window.__piMap.isStyleLoaded
+        window.__piMap.isStyleLoaded = () => false // Real trigger: another raster still has pending tiles.
+        try { await (await import('/js/wxfx.js')).setWeatherFx(true) }
+        finally { window.__piMap.isStyleLoaded = previous }
+        return !!window.__piMap.getLayer('observed-clouds-raster')
+      })
+      check('Nubes se añaden mientras otras teselas cargan', cloudReady)
       await page.route('**/api/v1/flights/history?*', route => route.fulfill({ json: { items: [{ hex: 'abc123', count: 3 }] } }))
       const now = Math.floor(Date.now() / 1000)
       await page.route('**/api/v1/flights/history/abc123?*', route => route.fulfill({ json: { available: true,
