@@ -9,6 +9,9 @@ body[data-spine="off"] { --spine-space: 0px; }
 body[data-rail="off"] .rail { transform: translateX(calc(-100% - var(--gap) * 2)); opacity: 0; pointer-events: none; }
 body[data-panel-c="off"] .panel { transform: translateX(calc(100% + var(--gap) * 2)); opacity: 0; pointer-events: none; }
 body[data-spine="off"] .spine { transform: translateY(calc(100% + var(--gap) * 2)); opacity: 0; pointer-events: none; }
+@media (max-width: 767px) { /* en móvil manda la hoja elegida en la barra inferior, no el repliegue de escritorio */
+  body[data-sheet="rail"][data-rail] .rail, body[data-sheet="panel"][data-panel-c] .panel { transform: none; opacity: 1; pointer-events: auto; }
+}
 body[data-wide="on"] .topbar { transform: translateY(calc(-100% - var(--gap) * 2)); opacity: 0; pointer-events: none; }
 body[data-wide="on"] .map-hud { top: var(--gap); }
 .rail-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }

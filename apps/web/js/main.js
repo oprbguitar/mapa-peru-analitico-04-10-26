@@ -509,7 +509,7 @@ function bindPlayYears() {
 // ── asistente: acciones que puede ejecutar ─────────────────────────────────
 const LAYER_IDS = { comisarias: 'sede:comisaria', serenazgo: 'sede:serenazgo', fiscalias: 'sede:fiscalia', judicial: 'sede:judicial', salud: 'svc:hospital',
   emergencias: 'emerg', vias: 'vias', vuelos: 'flights', barcos: 'vessels', sismos: 'seismic', clima: 'wxfx', corrientes: 'ocean', camaras: 'cameras',
-  satelites: 'satellites', focos: 'fires' }
+  satelites: 'satellites', focos: 'fires', eventos: 'eonet' }
 
 const assistantActions = {
   selection: () => (lastContext() ? { lugar: lastContext().territory.distrito, ubigeo: lastContext().territory.ubigeo } : null),
@@ -625,7 +625,7 @@ async function boot() {
         return
       }
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return
-      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|fires|satellites|datacenters|rt-)/.test(f.layer.id))
+      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|eonet|fires|satellites|datacenters|rt-)/.test(f.layer.id))
       if (hit || mode === 'ninio') return   // en El Niño el mapa se queda: los clics son para los registros
       if (mode !== 'mapa') setMode('mapa')
       showContext(e.lngLat.lat, e.lngLat.lng)

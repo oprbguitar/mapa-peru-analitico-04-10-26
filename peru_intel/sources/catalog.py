@@ -212,6 +212,18 @@ SOURCES: list[dict] = [
         "license": "Dominio público (EE. UU.)", "update_frequency": "minutos", "geographic_level": "epicentro",
     },
     {
+        "source_id": "nasa_eonet",
+        "name": "Eventos naturales curados (incendios, volcanes, inundaciones, tormentas)",
+        "institution": "NASA EONET (agrega GDACS, Smithsonian GVP y otras fuentes)",
+        "url": "https://eonet.gsfc.nasa.gov/docs/v3",
+        "adapter": "peru_intel.live.eonet",
+        "official": 0, "kind": "vivo_tercero", "type": "api",
+        "license": "Datos abiertos NASA; cada evento conserva su fuente original", "update_frequency": "horas a días",
+        "geographic_level": "punto o área del evento",
+        "notes": "Recuadro del Perú, incluye zonas fronterizas de países vecinos. No es un registro oficial peruano; "
+                 "para emergencias oficiales usar INDECI · SINPAD.",
+    },
+    {
         "source_id": "nasa_firms",
         "name": "Focos de calor satelitales (VIIRS)",
         "institution": "NASA FIRMS",

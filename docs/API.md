@@ -76,6 +76,7 @@ Rutas nuevas siguen autenticación/CSP existentes. Fallos de proveedor: 502 gen�
 | `/api/v1/intel/satellites?group=` | CelesTrak (posiciones se calculan en el cliente) |
 | `/api/v1/intel/seismic` | IGP (primaria) + USGS |
 | `/api/v1/intel/fires` | NASA FIRMS VIIRS (BYOK) |
+| `/api/v1/intel/eonet` | NASA EONET · eventos naturales curados (90 días, recuadro Perú, sin clave, no oficial) |
 | `/api/v1/intel/weather` | `observed` SENAMHI · `models` GFS y ECMWF (Open-Meteo) en capitales — nunca mezclados |
 | `/api/v1/intel/weather/point?lat=&lon=&providers=` | Clima combinado en cualquier punto del mundo: `primary`, `results` por proveedor, `consensus` (calculado) |
 | `/api/v1/intel/weather/providers` | Proveedores, si están configurados, cuota diaria y consumo de hoy |

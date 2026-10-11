@@ -19,7 +19,7 @@ from ..vision import cameras as vcams
 from ..vision import device as vdev
 from ..vision import discovery as vdisc
 from ..vision import events as vevents
-from ..live import adsb, celestrak, firms, seismic, telecom, weather
+from ..live import adsb, celestrak, eonet, firms, seismic, telecom, weather
 from ..live import ais as ais_live
 from ..live.traffic import PROVIDER as TRAFFIC
 from ..live.worker import WORKERS, all_status
@@ -215,6 +215,8 @@ def route_get(path: str, q: dict):
             raise ApiError(400, str(e))
     if p == ["seismic"]:
         return _live("seismic") | {"provenance": registry.provenance("igp_sismos", "usgs_sismos")}
+    if p == ["eonet"]:
+        return _live("eonet")
     if p == ["fires"]:
         return _live("fires")
     if p == ["weather"]:
@@ -598,4 +600,4 @@ def boundaries(level: str) -> bytes | None:
 
 
 # referencias para que el linter no marque imports usados solo por los workers
-_ = (firms, seismic, weather, ais_live)
+_ = (eonet, firms, seismic, weather, ais_live)

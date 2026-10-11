@@ -2,6 +2,6 @@
 
 
 def load_all() -> None:
-    from . import adsb, ais, celestrak, firms, seismic, traffic, weather  # noqa: F401
+    from . import adsb, ais, celestrak, eonet, firms, seismic, traffic, weather  # noqa: F401
     from ..climate import enso  # noqa: F401 — océano (corrientes y TSM)
     from ..weather import grid  # noqa: F401 — rejilla para animar el clima

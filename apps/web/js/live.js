@@ -4,7 +4,7 @@ import { map, mapReady, onStyleReady } from './map.js'
 import { cssVar, dateTime, esc, fmt, getJSON, state, timeAgo, toast } from './util.js'
 import { setLiveMeta } from './rail.js'
 
-const INTERVAL = { flights: 15000, vessels: 20000, seismic: 120000, fires: 600000, weather: 600000 }
+const INTERVAL = { flights: 15000, vessels: 20000, seismic: 120000, eonet: 1800000, fires: 600000, weather: 600000 }
 const timers = {}
 const markers = { weather: [] }
 let satTimer = null
@@ -53,6 +53,12 @@ export function initLive() {
   add('ports', { type: 'circle', paint: { 'circle-radius': 6, 'circle-color': cssVar('--live-port'), 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--surface-2') } })
   add('datacenters', { type: 'circle', paint: { 'circle-radius': 4, 'circle-color': cssVar('--live-dc'), 'circle-stroke-width': 1.5, 'circle-stroke-color': cssVar('--surface-2') } })
   add('fires', { type: 'circle', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 2, 10, 5], 'circle-color': cssVar('--live-fire'), 'circle-opacity': 0.85 } })
+  add('eonet', { type: 'circle', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 10, 9],
+    'circle-color': ['match', ['get', 'category'], 'wildfires', cssVar('--live-fire'), 'volcanoes', cssVar('--live-volcano'),
+      'floods', cssVar('--live-flood'), 'severeStorms', cssVar('--live-storm'), cssVar('--live-event')],
+    'circle-opacity': ['case', ['get', 'open'], 0.9, 0.4],
+    'circle-stroke-width': ['case', ['get', 'open'], 2, 1], 'circle-stroke-color': cssVar('--surface-2') } })
   add('seismic', { type: 'circle', paint: {
     'circle-radius': ['step', ['get', 'mag'], 3, 3, 5, 4, 8, 5, 12],
     'circle-color': cssVar('--live-quake'), 'circle-opacity': ['interpolate', ['linear'], ['get', 'age_d'], 0, 0.85, 30, 0.25],
@@ -114,6 +120,7 @@ export async function refresh(id) {
     if (id === 'flights') feats = d.data.items.map((a) => pt(a.lon, a.lat, a))
     if (id === 'vessels') feats = d.data.items.map((b) => pt(b.lon, b.lat, { ...b, heading: b.heading ?? 0 }))
     if (id === 'seismic') feats = d.data.items.filter((q) => now - q.time <= win).map((q) => pt(q.lon, q.lat, { ...q, age_d: (now - q.time) / 86400 }))
+    if (id === 'eonet') feats = d.data.items.map((x) => pt(x.lon, x.lat, x))
     if (id === 'fires') feats = d.data.items.filter((f) => now - f.time <= Math.min(win, 7 * 86400)).map((f) => pt(f.lon, f.lat, f))
     map.getSource(id).setData(fc(feats))
     const stale = st.status === 'desactualizado' ? ' · desact.' : ''
@@ -124,7 +131,7 @@ export async function refresh(id) {
   }
 }
 
-const label = (id) => ({ flights: 'Vuelos', vessels: 'Embarcaciones', seismic: 'Sismos', fires: 'Focos de calor', weather: 'Clima', ports: 'Puertos', satellites: 'Satélites', traffic: 'Tráfico', datacenters: 'Centros de datos' })[id] || id
+const label = (id) => ({ flights: 'Vuelos', vessels: 'Embarcaciones', seismic: 'Sismos', eonet: 'Eventos naturales', fires: 'Focos de calor', weather: 'Clima', ports: 'Puertos', satellites: 'Satélites', traffic: 'Tráfico', datacenters: 'Centros de datos' })[id] || id
 
 async function ports() {
   const d = await getJSON('/api/v1/intel/ports')
@@ -235,6 +242,12 @@ async function onClick(id, f, lngLat) {
       <div>${esc(p.place || '')}</div><div class="pop-row"><span>Profundidad</span><b>${fmt(p.depth_km)} km</b></div>
       <div class="pop-row"><span>Fecha</span><b>${esc(dateTime(p.time))}</b></div>${p.intensity ? `<div class="pop-row"><span>Intensidad</span><b>${esc(p.intensity)}</b></div>` : ''}
       ${p.report && p.report !== 'null' ? `<a href="${esc(p.report)}" target="_blank" rel="noopener">Reporte acelerométrico (PDF)</a>` : ''}`
+  if (id === 'eonet') html = `<div class="pop-title">${esc(p.category_label)} · ${p.open ? 'abierto' : 'cerrado'}</div>${tag('vivo_tercero', `NASA EONET · reportado por ${p.reported_by || '—'}`)}
+      <div>${esc(p.title)}</div><div class="pop-row"><span>Última observación</span><b>${esc(dateTime(p.time))}</b></div>
+      ${p.magnitude != null && p.magnitude !== 'null' ? `<div class="pop-row"><span>Magnitud</span><b>${fmt(p.magnitude)} ${esc(p.magnitude_unit || '')}</b></div>` : ''}
+      <div class="pop-row"><span>Ubicación</span><b>${esc(p.anchor)}</b></div>
+      ${p.report_url ? `<a href="${esc(p.report_url)}" target="_blank" rel="noopener">Reporte de la fuente original</a>` : ''}
+      <div class="note">Evento curado por terceros; no es un registro oficial peruano. Para emergencias oficiales activa «Emergencias (INDECI)».</div>`
   if (id === 'fires') html = `<div class="pop-title">Foco de calor</div>${tag('vivo_tercero', 'NASA FIRMS · VIIRS')}
       <div class="pop-row"><span>Detección</span><b>${esc(dateTime(p.time))}</b></div><div class="pop-row"><span>Potencia radiativa</span><b>${fmt(p.frp)} MW</b></div>
       <div class="pop-row"><span>Confianza</span><b>${esc(p.confidence)}</b></div><div class="note">Anomalía térmica satelital; no es un incendio confirmado.</div>`
@@ -263,7 +276,7 @@ export function refreshWindowed() {
 export async function statusStrip() {
   try {
     const s = await getJSON('/api/v1/meta/status')
-    const names = { flights: 'Vuelos', vessels: 'AIS', seismic: 'Sismos', fires: 'FIRMS', weather_models: 'Modelos', weather_obs: 'SENAMHI' }
+    const names = { flights: 'Vuelos', vessels: 'AIS', seismic: 'Sismos', eonet: 'EONET', fires: 'FIRMS', weather_models: 'Modelos', weather_obs: 'SENAMHI' }
     document.getElementById('live-strip').innerHTML = s.live.filter((l) => state.live.has(l.layer) ||
       (l.layer.startsWith('weather_') && state.live.has('weather'))).map((l) =>
       `<span class="live-dot" data-status="${esc(l.status)}" title="${esc(`${names[l.layer] || l.layer}: ${l.status}${l.updated ? ' · ' + timeAgo(l.updated) : ''}${l.error ? ' · ' + l.error : ''}`)}">${esc(names[l.layer] || l.layer)}</span>`).join('')

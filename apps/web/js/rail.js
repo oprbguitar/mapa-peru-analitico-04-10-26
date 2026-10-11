@@ -32,6 +32,7 @@ const FAMILIES = [
   { id: 'riesgos', label: 'Emergencias y riesgos', live: [
     { id: 'emerg', label: 'Emergencias (90 días)', hint: 'INDECI · SINPAD', kind: 'oficial' },
     { id: 'vias', label: 'Vías nacionales afectadas', hint: 'MTC · Provías Nacional', kind: 'oficial' },
+    { id: 'eonet', label: 'Eventos naturales (90 días)', hint: 'NASA EONET · incendios, volcanes, inundaciones · sin clave', kind: 'vivo_tercero' },
   ] },
   { id: 'movilidad', label: 'Movilidad', live: [
     { id: 'traffic', label: 'Tráfico', hint: 'TomTom · clave propia', kind: 'vivo_tercero' },
