@@ -7,6 +7,25 @@ from peru_intel.imagery import service
 
 
 class ImageryTests(unittest.TestCase):
+    def test_catalog_cache_reuses_snapshot_and_returns_copies(self):
+        from types import SimpleNamespace
+        service._catalog_cache.clear()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'snapshot.json'
+            path.write_text('{"features": []}')
+            snapshot = SimpleNamespace(path=path, sha256='abc')
+            with patch('peru_intel.sources.harvester.fetch', return_value=snapshot) as fetch:
+                first = service._json('https://example.test/catalog')
+                first['features'].append('changed')
+                second = service._json('https://example.test/catalog')
+                self.assertEqual(second['features'], [])
+                self.assertEqual(fetch.call_count, 1)
+                self.assertEqual(first['_source_snapshot']['downloaded_at'], second['_source_snapshot']['downloaded_at'])
+                with patch.object(service.time, 'monotonic', return_value=service.time.monotonic() + service.CATALOG_CACHE_SECONDS + 1):
+                    service._json('https://example.test/catalog')
+                self.assertEqual(fetch.call_count, 2)
+        service._catalog_cache.clear()
+
     def test_bbox_validation(self):
         for bbox in ('nan,-12,-77,-11', '-180,-90,180,90', '-77,-12,-78,-11'):
             with self.assertRaises(ValueError):
@@ -22,11 +41,14 @@ class ImageryTests(unittest.TestCase):
         feature = {'id': 'S2B_18LTM_20261009_1_L2A', 'bbox': [-77.5,-12.5,-76.5,-11.5],
                    'properties': {'datetime': '2026-10-09T15:36:30Z', 'created': '2026-10-10', 'eo:cloud_cover': 4.5},
                    'assets': {'visual': {'href': 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/test/TCI.tif', 'gsd': 10}}}
-        with patch.object(service, '_json', return_value={'features': [feature]}) as request:
+        snapshot = {'downloaded_at': '2026-10-11T10:00:00Z', 'sha256': 'snapshot-hash'}
+        with patch.object(service, '_json', return_value={'features': [feature], '_source_snapshot': snapshot}) as request:
             data = service.search_imagery('-77.1,-12.1,-77,-12', start='2026-10-01', end='2026-10-11')
         self.assertEqual(data['items'][0]['acquired_at'], '2026-10-09T15:36:30Z')
         self.assertEqual(data['items'][0]['resolution_m'], 10)
         self.assertIn('bbox', request.call_args.args[1])
+        self.assertEqual(data['provenance']['downloaded_at'], snapshot['downloaded_at'])
+        self.assertEqual(data['provenance']['sha256'], snapshot['sha256'])
 
     def test_untrusted_asset_rejected(self):
         with self.assertRaises(ValueError):
@@ -86,5 +108,17 @@ class ImageryTests(unittest.TestCase):
                 png = service.render_tile('fixture', 0, 0, 0)
                 self.assertTrue(png.startswith(b'\x89PNG'))
                 self.assertEqual(service.render_tile('fixture', 0, 0, 0), png)
+                import math
+                zoom = 12
+                x = int((-77.05 + 180) / 360 * 2**zoom)
+                y = int((1 - math.asinh(math.tan(math.radians(-12.05))) / math.pi) / 2 * 2**zoom)
+                with MemoryFile(service.render_tile('fixture', zoom, x, y)) as file:
+                    with file.open() as result:
+                        self.assertEqual(result.shape, (256, 256))
+                        self.assertTrue(np.any(result.read(1) == 80))
+                        self.assertTrue(np.any(result.read(4) == 255))
+                with MemoryFile(service.render_tile('fixture', 3, 0, 0)) as file:
+                    with file.open() as result:
+                        self.assertFalse(np.any(result.read()))
         with self.assertRaises(ValueError):
             service.render_tile('bad', 0, 1, 0)

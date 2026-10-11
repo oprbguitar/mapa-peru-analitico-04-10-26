@@ -206,8 +206,14 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
 .tool-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-3); }
 #panel-body .field { margin-block: var(--sp-2); }
 #panel-body .field input, #panel-body .field select { width: 100%; min-width: 0; min-height: var(--tap); }
-#img-results > div { padding-block: var(--sp-3); border-bottom: var(--border) solid var(--line); overflow-wrap: anywhere; }
-#img-results button { min-height: var(--tap); margin-top: var(--sp-2); }
+.imagery-options { border-top: var(--border) solid var(--line); padding-top: var(--sp-2); }
+.imagery-options summary { cursor: pointer; min-height: var(--tap); display: flex; align-items: center; color: var(--ink-soft); }
+.imagery-options summary:focus-visible { outline: var(--border) solid var(--accent); }
+#img-date-a, #img-date-b { overflow-wrap: anywhere; }
+body[data-mode="satelite"] #panel-body { gap: var(--sp-2); }
+body[data-mode="satelite"] #panel-body p,
+body[data-mode="satelite"] #panel-body .field { margin: 0; }
+body[data-mode="satelite"] #panel-body .tool-row { margin-block: var(--sp-2); }
 #panel-body img { max-width: 100%; height: auto; }
 #panel-body button { min-height: var(--tap); }
 @media (min-width: 768px) and (max-width: 1279px) {
@@ -267,6 +273,9 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
 }
 
 /* El Niño · todos los registros del período a la vez */
+.top-actions .tool-menu > summary { display: flex; }
+.top-actions .tool-menu-body .btn { display: flex; width: auto; font-size: var(--fs-label); justify-content: flex-start; padding: 0 var(--sp-3); }
+.tool-menu-body #open-assistant::before { content: none; }
 [data-type="mar"] { --ev: var(--enso-warm); } [data-type="lluvia"] { --ev: var(--fx-rain); } [data-type="inundacion"] { --ev: var(--info); }
 [data-type="huaico"] { --ev: var(--kind-estimacion); } [data-type="rio"] { --ev: var(--pal-esp-2); } [data-type="emergencia"] { --ev: var(--danger); }
 [data-type="fin"] { --ev: var(--enso-neutral); } [data-type="pronostico"] { --ev: var(--kind-proyeccion); }

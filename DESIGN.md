@@ -1,5 +1,15 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Refinamiento de rapidez y simplicidad · 11 de octubre de 2026
+
+Mapa limpio como protagonista; comandos secundarios en «Herramientas», familias plegadas y comparador por dos fechas.
+Selector: command bar + tabla maestra, acero/verde, Space Grotesk/Noto Sans/Space Mono, radio 4–6 px.
+Se conserva pizarra/cian y canvas/inspector existente: cambiar identidad no resuelve el tiempo de arranque ni la confusión.
+Alternativas evaluadas: tablero separado, visor con controles siempre expuestos y mapa con divulgación progresiva (elegido).
+Tokens existentes de color, espacio, forma y tipografía; sin nuevas escalas. Giro suave solicitado, detenido al interactuar,
+ocultar pestaña o activar movimiento reducido. Geolocalización voluntaria del navegador sin almacenamiento ni envío analítico.
+El mapa no espera estadísticas; límites detallados y consultas temáticas se solicitan solo al usarlos.
+
 ## Ampliación territorial · 11 de octubre de 2026
 
 Selector: command bar + tabla maestra · pizarra/cian · Space Grotesk/Noto Sans/Space Mono · radio funcional 4–6 px · continuidad espacial.

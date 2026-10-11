@@ -6,6 +6,8 @@ import math
 import re
 import hashlib
 import threading
+import time
+import copy
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
@@ -18,6 +20,9 @@ _snapshot_lock = threading.Lock()
 _raster_slots = threading.BoundedSemaphore(2)
 _tile_slots = threading.BoundedSemaphore(1)
 _item_lock = threading.Lock()
+_catalog_cache = {}
+CATALOG_CACHE_SECONDS = 120
+CATALOG_CACHE_ENTRIES = 128
 
 
 def _json(url, payload=None):
@@ -31,8 +36,17 @@ def _json(url, payload=None):
     filename = 'stac-' + hashlib.sha256(url.encode()).hexdigest()[:20] + '.json'
     # SourceHarvester temporary names are process-scoped; serialize snapshots.
     with _snapshot_lock:
+        cached = _catalog_cache.get(url)
+        if cached and time.monotonic() - cached[0] < CATALOG_CACHE_SECONDS:
+            return copy.deepcopy(cached[1])
         snapshot = fetch('earth_search_sentinel2', url, filename, timeout=35, retries=1)
-        return json.loads(snapshot.path.read_bytes())
+        result = json.loads(snapshot.path.read_bytes())
+        result['_source_snapshot'] = {'downloaded_at': datetime.now(timezone.utc).isoformat(), 'sha256': snapshot.sha256}
+        if len(_catalog_cache) >= CATALOG_CACHE_ENTRIES:
+            oldest = min(_catalog_cache, key=lambda key: _catalog_cache[key][0])
+            del _catalog_cache[oldest]
+        _catalog_cache[url] = (time.monotonic(), result)
+        return copy.deepcopy(result)
 
 
 def validate_aoi(bbox=None, geometry=None):
@@ -101,7 +115,8 @@ def search_imagery(bbox=None, geometry=None, start=None, end=None, cloud=100, li
     return {'available': True, 'items': items, 'bbox': extent, 'geometry': polygon,
             'truncated': len(items) >= payload['limit'], 'provenance': {
                 'publisher': 'Copernicus Sentinel-2 / Element 84 Earth Search', 'url': f'{STAC}/collections/{COLLECTION}',
-                'kind': 'vivo_tercero', 'downloaded_at': datetime.now(timezone.utc).isoformat(),
+                'kind': 'vivo_tercero', 'downloaded_at': data.get('_source_snapshot', {}).get('downloaded_at', datetime.now(timezone.utc).isoformat()),
+                'sha256': data.get('_source_snapshot', {}).get('sha256'),
                 'transformation': 'Metadatos STAC sin interpolar; nubosidad de escena completa, no del recorte.',
                 'license': 'Copernicus Sentinel data: free, full and open access'}}
 
@@ -171,7 +186,8 @@ def render_tile(item_id, z, x, y):
     if cache.exists():
         return cache.read_bytes()
     rio = _rasterio()
-    from rasterio.warp import reproject, Resampling
+    from rasterio.warp import reproject, Resampling, transform_bounds
+    from rasterio.windows import from_bounds as window_from_bounds, Window, intersect
     from rasterio.transform import from_bounds
     import numpy as np
     half = 20037508.342789244
@@ -180,10 +196,28 @@ def render_tile(item_id, z, x, y):
     pixels = np.zeros((4, 256, 256), dtype='uint8')
     # Keep one raster slot free for interactive exports, even while many map tiles wait.
     with _tile_slots, _raster_slots, rio.Env(GDAL_HTTP_TIMEOUT='30', GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR', CPL_VSIL_CURL_ALLOWED_EXTENSIONS='.tif', GDAL_CACHEMAX=32_000_000):
+        if cache.exists():
+            return cache.read_bytes()
         with rio.open(visual_asset(item)) as source:
-            for band in range(3):
-                reproject(rio.band(source, band+1), pixels[band], src_transform=source.transform, src_crs=source.crs,
-                          dst_transform=transform, dst_crs='EPSG:3857', src_nodata=0, dst_nodata=0, resampling=Resampling.bilinear)
+            # Read only the intersecting window at display resolution. A small
+            # out_shape explicitly selects COG overviews, avoiding full-resolution
+            # remote reads at low zoom. The georeferenced export remains native.
+            tile_bounds = (-half+x*size, half-(y+1)*size, -half+(x+1)*size, half-y*size)
+            bounds = transform_bounds('EPSG:3857', source.crs, *tile_bounds)
+            window = window_from_bounds(*bounds, transform=source.transform)
+            raster_window = Window(0, 0, source.width, source.height)
+            if intersect(window, raster_window):
+                clipped = window.intersection(raster_window)
+                col, row = math.floor(clipped.col_off), math.floor(clipped.row_off)
+                window = Window(col, row, math.ceil(clipped.col_off + clipped.width) - col,
+                                math.ceil(clipped.row_off + clipped.height) - row)
+                scale = max(1, max(window.width, window.height) / 512)
+                width, height = max(1, math.ceil(window.width / scale)), max(1, math.ceil(window.height / scale))
+                rgb = source.read(indexes=[1, 2, 3], window=window, out_shape=(3, height, width), resampling=Resampling.bilinear)
+                src_transform = source.window_transform(window) * rio.Affine.scale(window.width / width, window.height / height)
+                reproject(rgb, pixels[:3], src_transform=src_transform, src_crs=source.crs,
+                          dst_transform=transform, dst_crs='EPSG:3857', src_nodata=0, dst_nodata=0,
+                          resampling=Resampling.bilinear, warp_mem_limit=32)
     pixels[3] = np.where(np.any(pixels[:3] != 0, axis=0), 255, 0)
     with rio.io.MemoryFile() as output:
         with output.open(driver='PNG', height=256, width=256, count=4, dtype='uint8') as target:

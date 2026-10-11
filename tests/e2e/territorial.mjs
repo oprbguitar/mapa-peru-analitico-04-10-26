@@ -15,15 +15,14 @@ try {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(base)
-    await page.waitForFunction(() => window.__piMap?.isStyleLoaded(), null, { timeout: 60000 })
-    await page.waitForSelector('#layer-title h2', { timeout: 60000 })
+    await page.waitForFunction(() => window.__piMap?.getStyle()?.layers?.length, null, { timeout: 60000 })
     await page.locator('[data-mode="satelite"]').click()
     await page.waitForSelector('#img-search')
     check(`${width}px Satélite disponible`, await page.locator('#img-search').isVisible())
     check(`${width}px sin desbordamiento`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     await page.screenshot({ path: `${output}/satellite-${width}.png` })
     await page.locator('[data-mode="vuelos"]').click()
-    await page.waitForSelector('#panel-body select')
+    await page.waitForFunction(() => document.querySelector('#panel-body')?.textContent.includes('Reconstrucción'))
     check(`${width}px Vuelos 3D disponible`, /Reconstrucción/.test(await page.locator('#panel-body').textContent()))
     await page.locator('[data-mode="calle"]').click()
     await page.waitForFunction(() => document.querySelector('#panel-body')?.textContent.includes('Mapillary'))
@@ -33,6 +32,7 @@ try {
       page.on('request', request => { if (request.url().includes('/layers/telecom')) console.log('OSM request', request.url()) })
       await page.locator('[data-mode="mapa"]').click()
       await page.evaluate(() => window.__piMap.jumpTo({ center: [-77.05, -12.05], zoom: 12 }))
+      if (await page.locator('[data-expand="rail"]').isVisible()) await page.locator('[data-expand="rail"]').click()
       await page.locator('details[data-f="infra"] summary').click()
       // Deterministic OSM fixture proves map rendering and style restoration independently of Overpass uptime.
       await page.route('**/api/v1/intel/layers/telecom?*', route => route.fulfill({ json: { available: true,

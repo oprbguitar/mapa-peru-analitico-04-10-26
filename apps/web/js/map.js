@@ -44,7 +44,7 @@ const abs = (u) => (u.startsWith('/') ? location.origin + u : u)
 
 async function fetchStyle(name) {
   try {
-    const r = await fetch(`/ofm/styles/${name}`, { cache: 'no-store' })
+    const r = await fetch(`/ofm/styles/${name}`, { signal: AbortSignal.timeout(8000) })
     if (!r.ok) throw new Error()
     const s = await r.json()
     for (const l of s.layers) {  // etiquetas en español cuando OSM tiene name:es
@@ -95,6 +95,7 @@ export async function initMap({ onSelect, onClick }) {
   map.on('click', (e) => onClick?.(e))
   hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8, maxWidth: '280px' })
   markReady(map)
+  startLocalOverview()
   return map
 }
 
@@ -108,7 +109,7 @@ function addOwnLayers() {
     paint: { 'hillshade-exaggeration': 0.6, 'hillshade-shadow-color': '#000000', 'hillshade-highlight-color': '#ffffff',
       'hillshade-accent-color': cssVar('--surface-3') } }, firstSymbol)
   for (const [level, src] of Object.entries(LEVEL_SRC)) {
-    if (!map.getSource(src)) map.addSource(src, { type: 'geojson', data: `/geo/${src}.geojson`, promoteId: 'u' })
+    if (!map.getSource(src)) map.addSource(src, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, promoteId: 'u' })
     if (map.getLayer(`${src}-fill`)) continue
     map.addLayer({ id: `${src}-fill`, type: 'fill', source: src, layout: { visibility: 'none' },
       paint: { 'fill-color': cssVar('--seq-none'), 'fill-opacity': 0.78 } }, firstSymbol)
@@ -121,7 +122,7 @@ function addOwnLayers() {
       paint: { 'line-color': cssVar('--accent'),
         'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, ['boolean', ['feature-state', 'hover'], false], 1.5, 0] } })
   }
-  if (!map.getLayer('dep-context')) map.addLayer({ id: 'dep-context', type: 'line', source: 'departamentos',
+  if (!map.getLayer('dep-context')) map.addLayer({ id: 'dep-context', type: 'line', source: 'departamentos', layout: { visibility: 'none' },
     paint: { 'line-color': cssVar('--accent'), 'line-width': 0.8, 'line-opacity': 0.5 } }, firstSymbol)
   applySky()
 }
@@ -241,11 +242,18 @@ export function unhover() {
 }
 
 let rowIndex = new Map()
+const loadedBoundaries = new Set()
 
 export function showLevel(level) {
   for (const [lv, src] of Object.entries(LEVEL_SRC)) {
     const vis = lv === level && !state.hideChoropleth ? 'visible' : 'none'
-    for (const suffix of ['fill', 'line', 'focus']) map.setLayoutProperty(`${src}-${suffix}`, 'visibility', vis)
+    const focused = selected?.source === src
+    if ((vis === 'visible' || focused) && !loadedBoundaries.has(src)) {
+      map.getSource(src).setData(`/geo/${src}.geojson`)
+      loadedBoundaries.add(src)
+    }
+    for (const suffix of ['fill', 'line']) map.setLayoutProperty(`${src}-${suffix}`, 'visibility', vis)
+    map.setLayoutProperty(`${src}-focus`, 'visibility', focused ? 'visible' : vis)
     map.setLayoutProperty(`${src}-hot`, 'visibility', vis === 'visible' && state.hotspots ? 'visible' : 'none')
   }
 }
@@ -327,10 +335,11 @@ export function setChoroplethOpacity(v) {
 export function setSelected(ubigeo) {
   if (selected) map.setFeatureState(selected, { selected: false })
   selected = null
-  if (!ubigeo) return
+  if (!ubigeo) { showLevel(state.level); return }
   const src = { 2: 'departamentos', 4: 'provincias', 6: 'distritos' }[ubigeo.length]
   selected = { source: src, id: ubigeo }
   map.setFeatureState(selected, { selected: true })
+  showLevel(state.level)
 }
 
 export function fitBBox(bbox) {
@@ -390,3 +399,35 @@ export function setLines(id, features) {
 
 export const flyTo = (lon, lat, zoom = 12) =>
   map.flyTo({ center: [lon, lat], zoom, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900, essential: true })
+
+/** Cámara de bienvenida: posición del navegador y giro; ninguna ubicación se envía al servidor. */
+function startLocalOverview() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+  let active = !reduced.matches
+  let interacted = false
+  let frame = 0
+  let last = 0
+  const stop = () => { interacted = true; active = false; cancelAnimationFrame(frame) }
+  for (const event of ['pointerdown', 'mousedown', 'touchstart', 'wheel', 'keydown']) {
+    document.addEventListener(event, stop, { once: true, passive: true })
+  }
+  reduced.addEventListener('change', stop)
+  document.addEventListener('visibilitychange', () => {
+    cancelAnimationFrame(frame)
+    if (active && !document.hidden) { last = 0; frame = requestAnimationFrame(turn) }
+  })
+  const turn = (now) => {
+    if (!active) return
+    if (!document.hidden && !map.isMoving() && last && now - last >= 100) {
+      map.setBearing(map.getBearing() + Math.min(now - last, 150) * 0.0015)
+      last = now
+    } else if (!last || document.hidden || map.isMoving()) last = now
+    frame = requestAnimationFrame(turn)
+  }
+  if (active) frame = requestAnimationFrame(turn)
+  navigator.geolocation?.getCurrentPosition(({ coords }) => {
+    if (interacted) return // No cambiar la vista después de una interacción.
+    map.flyTo({ center: [coords.longitude, coords.latitude], zoom: 10, pitch: 35,
+      duration: reduced.matches ? 0 : 900, essential: false })
+  }, () => {}, { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 })
+}

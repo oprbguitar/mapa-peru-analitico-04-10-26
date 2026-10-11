@@ -1,5 +1,25 @@
 # Documentación — Mapa Perú Analítico
 
+## Inicio limpio y comparador simplificado · 11 de octubre de 2026
+
+- El mapa se prepara sin esperar estadísticas: denuncias, historial y límites territoriales detallados se cargan al activar una capa.
+- El inicio no marca denuncias. Capas, Ficha y Tiempo comienzan plegados en el primer uso de esta interfaz; luego recuerdan su estado.
+  Las acciones secundarias están en **Herramientas (⋯)**. El indicador de proveedores solo muestra capas activadas.
+- El navegador solicita ubicación; si se permite, centra la vista allí. Si se deniega, mantiene Perú.
+  El giro suave se detiene al interactuar, pausa en pestañas ocultas y respeta movimiento reducido.
+- En **Satélite**, selecciona una zona y pulsa **Buscar imágenes**. Se muestra automáticamente la adquisición más reciente;
+  elige otra fecha en B para comparar. Filtros, polígono y descarga están en **Fechas, filtros y descarga**.
+  Una selección excesiva pide acercar el mapa; no se presenta como ausencia de imágenes.
+- Al elegir un territorio en el buscador, el mapa vuela al instante; la ficha se completa después.
+- Salir de **Satélite** devuelve el mapa limpio (sin escenas ni área) y restaura la base anterior; entrar activa la base satelital.
+- Marcar la zona lanza la búsqueda sola. Con la vista nacional, se busca en un recuadro central de ~0,3° y se acerca el mapa.
+- El catálogo conserva su fecha y huella de procedencia en una caché de 120 segundos. Las teselas leen únicamente la ventana
+  necesaria y sus niveles reducidos; la descarga GeoTIFF conserva la resolución original.
+
+Comprobación local: mapa preparado en 0,56–1,07 segundos a 360/768/1280/1600 px con caché de mapa base existente;
+no es una promesa para redes lentas ni tiempo de descarga completo de las imágenes satelitales. Consulta real STAC de Lima:
+22 adquisiciones en aproximadamente 1,4 segundos, repetida en 16 ms. Tesela fría de proveedor: 7,11 segundos.
+
 ## Actualización 0.5.0 · 11 de octubre de 2026
 
 La vista territorial incorpora los modos **Satélite**, **Vuelos 3D** y **Calle**, y mantiene las capas de antenas y cobertura en Infraestructura.
@@ -113,6 +133,7 @@ la vista. Versión 0.4.0 · 8 de octubre de 2026.
 1. Doble clic en **`INICIAR-MAPA.bat`**.
 2. Ejecuta Python directamente, sin Docker ni WSL. Solo instala dependencias si faltan (`duckdb`, `openpyxl`, `h3`, `numpy`); no importa StatsForecast ni descarga fuentes durante el arranque.
 3. Se abre el navegador en `http://127.0.0.1:8360/`. Cierra la ventana negra para detener el servidor.
+   La comprobación inicial espera hasta cinco segundos para reconocer correctamente un puerto libre en Windows.
 
 Si faltan datos, el mapa arranca igualmente e informa cómo cargarlos con `python -m peru_intel ingest all --download`.
 Las actualizaciones se ejecutan explícitamente, fuera del inicio habitual. El lanzador comprueba la identidad

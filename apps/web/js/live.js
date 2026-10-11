@@ -264,7 +264,8 @@ export async function statusStrip() {
   try {
     const s = await getJSON('/api/v1/meta/status')
     const names = { flights: 'Vuelos', vessels: 'AIS', seismic: 'Sismos', fires: 'FIRMS', weather_models: 'Modelos', weather_obs: 'SENAMHI' }
-    document.getElementById('live-strip').innerHTML = s.live.map((l) =>
+    document.getElementById('live-strip').innerHTML = s.live.filter((l) => state.live.has(l.layer) ||
+      (l.layer.startsWith('weather_') && state.live.has('weather'))).map((l) =>
       `<span class="live-dot" data-status="${esc(l.status)}" title="${esc(`${names[l.layer] || l.layer}: ${l.status}${l.updated ? ' · ' + timeAgo(l.updated) : ''}${l.error ? ' · ' + l.error : ''}`)}">${esc(names[l.layer] || l.layer)}</span>`).join('')
     return s
   } catch {

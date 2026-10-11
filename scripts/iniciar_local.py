@@ -30,7 +30,8 @@ def main() -> int:
         print('[X] Se necesita Python 3.11 o superior.')
         return 1
     try:
-        with urllib.request.urlopen(URL + 'api/v1/health', timeout=2) as response:
+        # Windows puede tardar más de dos segundos en rechazar un puerto libre.
+        with urllib.request.urlopen(URL + 'api/v1/health', timeout=5) as response:
             if not is_mapa(json.load(response)):
                 print('[X] El puerto 8360 está ocupado por otro servicio. No se detuvo ningún proceso.')
                 return 1

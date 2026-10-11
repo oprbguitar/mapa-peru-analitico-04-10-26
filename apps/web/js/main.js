@@ -22,7 +22,7 @@ import { esc, getJSON, setState, state, toast } from './util.js'
 import { initVision, openCameras, pickHandler as visionPick, refreshLayer as refreshCameras } from './vision.js'
 import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { setFxMode, setWeatherFx } from './wxfx.js'
-import { initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
+import { clearImagery, initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
 const LIVE_WINDOW = { ahora: 'año en curso · vivo: ahora (sismos y focos 24 h)', '24h': 'vivo: últimas 24 h', '7d': 'vivo: últimos 7 días',
@@ -32,6 +32,7 @@ let loadSeq = 0
 let mode = 'mapa'
 let panelView = 'overview'   // overview · region · context · observatory · patterns · routes · enso · weather
 let choroplethBeforeMedia = false
+let baseBeforeSatellite = null
 let playTimer = null
 
 let ensoChoro = false   // en El Niño los niveles cuentan registros históricos, nunca denuncias
@@ -57,12 +58,14 @@ function renderLevels() {
   const ok = levelsFor()
   if (!ok.includes(state.level)) state.level = ok[0]
   const el = document.getElementById('level-switch')
+  el.hidden = state.hideChoropleth && mode !== 'ninio'
   el.innerHTML = LEVELS.map(([id, label]) => `<button type="button" role="radio" data-lv="${id}" aria-checked="${state.level === id}"
     ${ok.includes(id) ? '' : `disabled title="Esta fuente no publica datos a nivel ${label.toLowerCase()}: no se reparten cifras"`}>${label}</button>`).join('')
 }
 
 function statPeriod() {
   const ext = state.extent
+  if (!ext) return {}
   const p = state.preset
   if (p === 'year') return { year: state.year, months: state.year === ext.last_year ? `1-${ext.last_month}` : '1-12' }
   if (p === 'ahora') return { year: ext.last_year, months: `1-${ext.last_month}` }
@@ -89,7 +92,36 @@ function choroplethURL() {
   return `/api/v1/intel/crime/choropleth?${q}`
 }
 
+let timelineReady
+let metadataReady
+function ensureTimeline() {
+  if (timelineReady) return timelineReady
+  timelineReady = initTimeline({
+    onPreset: (p) => {
+      state.preset = p
+      state.measure = null
+      syncPresets()
+      loadChoropleth()
+      refreshWindowed()
+    },
+    onYear: (y) => {
+      state.preset = 'year'
+      state.year = y
+      syncPresets()
+      loadChoropleth()
+    },
+  })
+  return timelineReady
+}
+
 async function loadChoropleth() {
+  if (state.hideChoropleth) return
+  if (!state.extent) {
+    document.getElementById('layer-title').innerHTML = '<p class="loading">Preparando fuentes</p>'
+    await metadataReady
+    if (!state.extent || state.hideChoropleth) return
+  }
+  ensureTimeline()
   const seq = ++loadSeq
   renderLevels()
   document.getElementById('layer-title').innerHTML = '<p class="loading">Calculando</p>'
@@ -100,7 +132,7 @@ async function loadChoropleth() {
     toast(e.message)
     return
   }
-  if (seq !== loadSeq) return
+  if (seq !== loadSeq || state.hideChoropleth) return
   if (!c.available) {
     document.getElementById('layer-title').innerHTML = `<h2>Sin datos</h2><p>${esc(c.reason)}</p>`
     renderLegend(null)
@@ -108,6 +140,10 @@ async function loadChoropleth() {
   }
   // con una modalidad elegida, el mapa muestra por defecto su % dentro del total del territorio
   if (!state.measure || !c.measures[state.measure]) state.measure = state.preset === '5a' && c.measures.change_pct ? 'change_pct' : c.measures.share_pct ? 'share_pct' : c.default_measure
+  if (c.dataset === 'devida' && c.indicators) {
+    meta = { ...meta, devida: c.indicators }
+    renderRail(meta)
+  }
   state.choropleth = c
   state.periodYear = c.period?.year
   state.periodMonths = c.period?.months
@@ -224,8 +260,24 @@ function paintGi(d) {
   document.getElementById('layer-title').innerHTML = `<h2>${esc(c.title)}</h2><p>Getis-Ord Gi* · evolución frente a ${d.compare_year}</p>`
 }
 
+function renderCleanPanel() {
+  document.getElementById('panel-body').innerHTML = `<h2>Mapa limpio</h2>
+    <p class="note">Busca un distrito, provincia o lugar arriba, o haz clic en el mapa para ver su ficha.
+    Las capas (denuncias, clima, vuelos, antenas) se activan solo desde <b>Capas</b>.</p>`
+  document.getElementById('layer-title').innerHTML = ''
+}
+
 async function setMode(m) {
   hideImagery()
+  if (mode === 'satelite' && m !== 'satelite') {
+    clearImagery()
+    if (baseBeforeSatellite && view.base === 'satelite') setBase(baseBeforeSatellite).catch(() => {})
+    baseBeforeSatellite = null
+  }
+  if (m === 'satelite' && mode !== 'satelite' && view.base !== 'satelite') {
+    baseBeforeSatellite = view.base
+    setBase('satelite').catch(() => {})
+  }
   if (mode === 'vuelos') (await import('./flight-replay.js')).hideFlightReplay()
   if (mode === 'calle') (await import('./street-imagery.js')).hideStreetImagery()
   const mediaModes = ['ninio', 'satelite', 'vuelos', 'calle']
@@ -258,6 +310,7 @@ async function setMode(m) {
   }
   if (m === 'mapa') {
     panelView = 'overview'
+    if (state.hideChoropleth) return renderCleanPanel()
     return loadChoropleth()
   }
   if (m === 'patrones') {
@@ -295,8 +348,11 @@ function bindSearch() {
     list.hidden = true
     input.value = li.firstChild.textContent
     const [lon, lat] = li.dataset.ll.split(',').map(Number)
-    if (li.dataset.kind === 'territorio' && li.dataset.u) goTo(li.dataset.u)
-    else {
+    if (li.dataset.kind === 'territorio' && li.dataset.u) {
+      // vuela de inmediato al centroide; la ficha se completa después sin bloquear la vista
+      flyTo(lon, lat, { 2: 7, 4: 9 }[li.dataset.u.length] || 12)
+      goTo(li.dataset.u)
+    } else {
       flyTo(lon, lat, 15)
       showContext(lat, lon)
     }
@@ -347,6 +403,7 @@ async function onView(kind, value) {
   else if (kind === 'choro') {
     state.hideChoropleth = !state.hideChoropleth
     showLevel(state.level)
+    if (!state.hideChoropleth) loadChoropleth()
   } else if (kind === 'exag') setExaggeration(value)
   else if (kind === 'choroOpacity') setChoroplethOpacity(value)
   else if (kind === 'wxo') setOverlay(value)
@@ -531,47 +588,23 @@ const assistantActions = {
 }
 
 async function boot() {
+  state.hideChoropleth = true
+  choroplethBeforeMedia = true
   renderKindKey()
   initChrome()
   initDialogs()
   bindTheme()
   bindSearch()
   document.getElementById('open-admin').addEventListener('click', openAdmin)
-  document.getElementById('modes').addEventListener('click', (e) => {
+  document.getElementById('modes').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-mode]')
-    if (b && state.extent) setMode(b.dataset.mode)
+    if (!b) return
+    await mapStartup
+    if (!['mapa', 'satelite', 'vuelos', 'calle'].includes(b.dataset.mode)) await metadataReady
+    setMode(b.dataset.mode)
   })
   initAssistant(assistantActions)
-  const fam = await getJSON('/api/v1/intel/crime/families')
-  state.extent = fam.sidpol
-  const dev = await getJSON('/api/v1/intel/crime/choropleth?dataset=devida').catch(() => ({}))
-  meta = { ...meta, indicators: fam.indicators, modalities: fam.sidpol?.modalities || [], devida: dev.indicators || [] }
-  await liveMeta()
-  renderRail(meta)
-  bindRail({
-    onThematic: (off) => {
-      renderRail(meta)
-      showLevel(state.level)
-      if (!off) return loadChoropleth()
-      renderLegend(null)
-      document.getElementById('layer-title').innerHTML = ''
-    },
-    onLive,
-    onView,
-  })
-  bindRailView(onView)
-  const thShow = (id) => {
-    showThematic(id)
-    renderRail(meta)
-    showLevel(state.level)
-    loadChoropleth()
-  }
-  document.getElementById('families').addEventListener('th-show', (e) => thShow(e.detail))
-  document.getElementById('layer-title').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-th-show]')
-    if (b) thShow(b.dataset.thShow)
-  })
-  await initMap({
+  const mapStartup = initMap({
     onSelect: (ub) => {   // el clic sobre un territorio solo lo resalta; la ficha la arma el Informador 360
       setState({ selected: ub })
       setSelected(ub)
@@ -598,10 +631,43 @@ async function boot() {
       showContext(e.lngLat.lat, e.lngLat.lng)
     },
   })
+  mapStartup.then(initImagery).catch((error) => console.error(error))
+  metadataReady = getJSON('/api/v1/intel/crime/families').then((fam) => {
+    state.extent = fam.sidpol
+    meta = { ...meta, indicators: fam.indicators, modalities: fam.sidpol?.modalities || [], devida: [] }
+    renderRail(meta)
+    renderLevels()
+    return fam
+  }).catch((error) => { toast(`Fuentes estadísticas: ${error.message}`); return null })
+  liveMeta().catch(() => {})
+  renderRail(meta)
+  bindRail({
+    onThematic: (off) => {
+      renderRail(meta)
+      showLevel(state.level)
+      if (!off) return loadChoropleth()
+      renderLegend(null)
+      document.getElementById('layer-title').innerHTML = ''
+    },
+    onLive,
+    onView,
+  })
+  bindRailView(onView)
+  const thShow = (id) => {
+    showThematic(id)
+    renderRail(meta)
+    showLevel(state.level)
+    loadChoropleth()
+  }
+  document.getElementById('families').addEventListener('th-show', (e) => thShow(e.detail))
+  document.getElementById('layer-title').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-th-show]')
+    if (b) thShow(b.dataset.thShow)
+  })
+  await mapStartup
   initLive()
   initPlaces()
   initTelecom()
-  initImagery()
   document.addEventListener('imagery-drawing', () => {
     openSheet('map')
     toast('Marca el área en el mapa. Para cerrar un polígono, vuelve a Ficha.')
@@ -642,24 +708,11 @@ async function boot() {
     if (panelView !== 'context') panelView = 'overview'
     loadChoropleth()
   })
-  await initTimeline({
-    onPreset: (p) => {
-      state.preset = p
-      state.measure = null
-      syncPresets()
-      loadChoropleth()
-      refreshWindowed()
-    },
-    onYear: (y) => {
-      state.preset = 'year'
-      state.year = y
-      syncPresets()
-      loadChoropleth()
-    },
-  })
+
   for (const t of document.querySelectorAll('.tab')) t.addEventListener('click', () => openSheet(t.dataset.sheet))
   openSheet('map')
-  await loadChoropleth()
+  renderLevels()
+  renderLegend(null)
   setInterval(liveMeta, 30000)
   const es = new EventSource('/api/v1/stream')
   es.addEventListener('layer', () => liveMeta())

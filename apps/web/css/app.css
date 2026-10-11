@@ -71,6 +71,13 @@ select option { background: var(--surface-2); color: var(--ink); }
 .live-dot[data-status="sin_configurar"]::before { background: transparent; border-style: dashed; }
 @keyframes pulse { 50% { opacity: .45; } }
 .top-actions { display: flex; gap: var(--sp-1); margin-left: auto; }
+.tool-menu { position: relative; }
+.tool-menu > summary { display: flex; align-items: center; list-style: none; }
+.tool-menu > summary::-webkit-details-marker { display: none; }
+.tool-menu-body { position: absolute; right: 0; top: 100%; display: grid; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface-2); border: var(--border) solid var(--line-strong); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 50; }
+.tool-menu-body .btn { text-align: left; white-space: nowrap; }
+#level-switch[hidden] { display: none; }
+.layer-title:empty, .live-strip:empty { display: none; }
 
 /* ── riel (izquierda) y ficha (derecha) ──────────────────── */
 .stage { display: contents; }

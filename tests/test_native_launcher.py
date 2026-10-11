@@ -5,6 +5,30 @@ from scripts import iniciar_local
 
 
 class NativeLauncherTests(unittest.TestCase):
+    def test_windows_refused_port_starts_native_server(self):
+        error = OSError(10061, 'Connection refused')
+        with patch.object(iniciar_local.urllib.request, 'urlopen',
+                          side_effect=iniciar_local.urllib.error.URLError(error)), \
+                patch.object(iniciar_local, 'missing_dependencies', return_value=[]), \
+                patch('peru_intel.__main__.main', return_value=0) as cli:
+            self.assertEqual(iniciar_local.main(), 0)
+            cli.assert_called_once_with(['serve', '--port', '8360', '--open'])
+
+    def test_timeout_does_not_start_another_server(self):
+        with patch.object(iniciar_local.urllib.request, 'urlopen',
+                          side_effect=iniciar_local.urllib.error.URLError(TimeoutError())), \
+                patch.object(iniciar_local, 'missing_dependencies') as dependencies:
+            self.assertEqual(iniciar_local.main(), 1)
+            dependencies.assert_not_called()
+
+    def test_health_probe_allows_windows_connection_refusal_delay(self):
+        from io import BytesIO
+        response = BytesIO('{"app":"Mapa Perú Analítico","ok":true}'.encode('utf-8'))
+        with patch.object(iniciar_local.urllib.request, 'urlopen', return_value=response) as probe, \
+                patch.object(iniciar_local.webbrowser, 'open'):
+            self.assertEqual(iniciar_local.main(), 0)
+            self.assertGreaterEqual(probe.call_args.kwargs['timeout'], 5)
+
     def test_dependency_check_does_not_import_heavy_modules(self):
         with patch.object(iniciar_local.importlib.util, 'find_spec', return_value=object()) as probe:
             self.assertEqual(iniciar_local.missing_dependencies(), [])

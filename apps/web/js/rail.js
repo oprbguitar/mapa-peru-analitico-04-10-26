@@ -16,7 +16,7 @@ const THEMATIC = [
 
 const FAMILIES = [
   { id: 'vista', label: 'Vista y relieve', view: true },
-  { id: 'seguridad', label: 'Seguridad', open: true, thematic: true, live: [
+  { id: 'seguridad', label: 'Seguridad', thematic: true, live: [
     { id: 'sede:comisaria', label: 'Comisarías', hint: 'Dependencias PNP · ubicación aproximada (OSM)', kind: 'vivo_tercero', dot: '--inst-comisaria' },
     { id: 'sede:serenazgo', label: 'Serenazgo', hint: 'Sedes municipales · OSM', kind: 'vivo_tercero', dot: '--inst-serenazgo' },
     { id: 'sede:fiscalia', label: 'Ministerio Público', hint: 'Fiscalías y medicina legal · OSM', kind: 'vivo_tercero', dot: '--inst-fiscalia' },
@@ -128,7 +128,7 @@ export function renderRail(meta = {}) {
   if (meta.modalities) modalities = meta.modalities
   if (meta.devida) devidaInds = meta.devida
   const key = state.hideChoropleth ? null : thematicKey()
-  sel ??= [thematicKey()]
+  sel ??= state.hideChoropleth ? [] : [thematicKey()]
   const wasOpen = new Set([...document.querySelectorAll('#families details.family[open]')].map((d) => d.dataset.f))
   const firstRender = !document.querySelector('#families details')
   const html = FAMILIES.map((f) => {
