@@ -32,7 +32,7 @@ comprometen esa secuencia.
 | 1 | Inicio, cuentas, roles, proyectos; integrar el PIN de `admin.js` como segundo control | L | Muy alto: convierte el visor en aplicación de organización | **Solo local** | ⬜ |
 | 2 | Catálogo de módulos + OAR (colas acotadas, *leases*, cancelación, checkpoints, telemetría) | L | Muy alto: permite crecer sin congelar el mapa | **Solo local** | ⬜ (los `Worker` bajo demanda de `peru_intel/live/worker.py` son el germen: demanda, backoff, caché) |
 | 3 | Modo Estrategia 360: escenarios, dibujo, ramas A/B/C, guardado, import/export | L | Muy alto: pasa de visor a herramienta | Local (exportar escenario como archivo para verlo en web) | ⬜ |
-| 4 | Laboratorio de simulación (what-if, Monte Carlo, SimPy) + JEV desacoplado | L | Muy alto: demostración de «jugar con los datos» | **Solo local** | ⬜ |
+| 4 | Laboratorio de simulación (what-if, Monte Carlo, SimPy) + JEV desacoplado | L | Muy alto: demostración de «jugar con los datos» | **Solo local** | 🟡 S1+S2+S9 (accesibilidad A/B) entregados el 11/10; S3 (SimPy) y JEV pendientes |
 | 5 | Cámaras continuas (go2rtc → WebRTC/MSE) con JPEG como respaldo | M | Alto si hay grabador disponible | **Solo local** | 🟡 registro y mosaico JPEG existen (`vision.js`, `vision/device.py`) |
 | 6 | Imágenes: auditar Sentinel-2 A/B, intérprete local por teselas | M–L | Alto | Consulta en web · interpretación **solo local** | 🟡 comparador A/B verificado |
 | 7 | Agentes, movilidad (SUMO), sensores, drones | XL | Medio | **Solo local** | ⬜ |
@@ -99,8 +99,18 @@ Comparación de `GOdEyes/server/providers` con `peru_intel/live`, `peru_intel/we
   la marcaba replegada; en móvil ahora manda la hoja elegida en la barra inferior.
 - Pruebas: `tests/test_eonet.py` (unitaria) y `tests/e2e/natural-events.mjs` (1280 y 360 px).
 
+- **Laboratorio de simulación (fase 4, adelantada a pedido del usuario)** — modo **Simular**, visible solo en local.
+  Accesibilidad a hospitales, establecimientos de salud, bomberos o comisarías en un área de 5/10/20/30 km.
+  Escenario A (base) frente a B (lluvia, congestión, servicios fuera, rodeo por cortes, cierre manual de sedes),
+  Monte Carlo con semilla y números aleatorios comunes, percentiles 5–50–95, convergencia, supuestos y validez
+  («exploratorio», naturaleza `estimacion`). Cada corrida queda en `data/simulation/runs/<run_id>.json` (idempotente).
+  En Render la API responde 403 y la pestaña no aparece. Pruebas: `tests/test_simulation.py` (incluye un caso
+  con solución cerrada) y `tests/e2e/simulation-lab.mjs` (1280 y 360 px).
+
 ## 6. Siguiente paso recomendado
 
-1. Fase 0c (línea base de rendimiento) y 0b (completar la matriz) — local, costo S–M.
-2. Fase 1 (cuentas y permisos) — solo local; es la dependencia de todo lo demás del plan.
-3. En paralelo, piezas S para el visor: tsunamis PTWC y rejilla de viento modelo.
+1. Simulación, siguiente pieza: S3 eventos discretos con SimPy (llamadas → despacho → traslado → atención) usando
+   las mismas áreas y sedes, para modelar capacidad y demanda simultánea; luego guardar escenarios (fase 3).
+2. Fase 0c (línea base de rendimiento) y 0b (completar la matriz) — local, costo S–M.
+3. Fase 1 (cuentas y permisos) — solo local; es la dependencia de todo lo demás del plan.
+4. En paralelo, piezas S para el visor: tsunamis PTWC y rejilla de viento modelo.

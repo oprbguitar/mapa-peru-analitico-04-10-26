@@ -1,5 +1,22 @@
 # Documentación — Mapa Perú Analítico
 
+## Laboratorio de simulación (solo local) · 11 de octubre de 2026
+
+Modo **Simular** (aparece solo al ejecutar en la PC con `INICIAR-MAPA.bat`; en la nube no se muestra y la API responde 403).
+
+1. Fija el centro del área (**Marcar en el mapa** o **Centro de la vista**) y elige el radio (5, 10, 20 o 30 km).
+2. Elige el servicio: hospitales o establecimientos de salud (RENIPRESS, oficial), bomberos o comisarías (OpenStreetMap).
+3. Define la hipótesis B: lluvia, congestión, porcentaje de servicios fuera de operación y rodeo por cortes de vía.
+   Tras una corrida, haz clic en una sede del mapa para cerrarla en B y vuelve a simular.
+4. **Simular A y B** devuelve tiempo mediano y área a ≤ 15/30/45 min con percentiles 5–95, la diferencia B − A y su
+   intervalo, y colorea el mapa (A, B o cambio). **Repetir con otra semilla** comprueba la estabilidad.
+
+Modelo: distancia geodésica × rodeo ÷ velocidad + retardo de despacho; velocidad, disponibilidad y retardo inciertos
+(Monte Carlo, semilla reproducible, mismos números aleatorios en A y B). Es una **estimación exploratoria**: sin red
+vial calibrada ni capacidad de las sedes. Los porcentajes son de área, no de población (no se reparten cifras distritales).
+API local: `GET /api/v1/sim/engines`, `POST /api/v1/sim/accessibility/run`, `GET /api/v1/sim/runs[/<run_id>]`.
+Registro: `data/simulation/runs/` (no se versiona). Código: `peru_intel/simulation/`, `apps/web/js/simulation.js`.
+
 ## Inicio limpio y comparador simplificado · 11 de octubre de 2026
 
 - El mapa se prepara sin esperar estadísticas: denuncias, historial y límites territoriales detallados se cargan al activar una capa.

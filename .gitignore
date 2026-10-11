@@ -27,6 +27,7 @@ data/vision/
 *.part
 data/tiles/
 data/cache/
+data/simulation/
 .coverage*
 htmlcov/
 *.tar

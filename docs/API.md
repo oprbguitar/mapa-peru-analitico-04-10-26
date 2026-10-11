@@ -114,3 +114,12 @@ Las respuestas OSIPTEL incluyen año, checksum, licencia y transformación. OSM 
 
 Errores del gateway: `AI_DISABLED · INVALID_REQUEST · INVALID_MODE · CAPABILITY_UNSUPPORTED · PRIVACY_DENIED · RESOURCE_DENIED ·
 BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · CANCELLED · TOOL_DENIED`.
+
+## Simulación (solo instalación local)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/sim/engines` | Catálogo S1–S12 con estado, servicios, valores por defecto, límites y `local` (false en la nube). |
+| POST | `/api/v1/sim/accessibility/run` | `{area:{lat,lon,radius_km}, service, base?, hypothesis?, iterations?, seed?}` → resultados A/B, puntos, supuestos, `provenance`, `run_id`. 403 en la nube, 400 si los parámetros están fuera de rango. |
+| GET | `/api/v1/sim/runs?limit=` | Últimas ejecuciones registradas. |
+| GET | `/api/v1/sim/runs/<run_id>` | Ejecución completa (parámetros, semilla, versión del motor, resultados). |

@@ -29,6 +29,9 @@ from ..weather import overlays as wx_overlays
 from ..weather import providers as wx_providers
 from ..map.ruc360_adapter import ADAPTER
 from ..sources import registry
+from .. import simulation
+from ..simulation import accessibility as sim_access
+from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
 
@@ -77,6 +80,8 @@ def route_get(path: str, q: dict):
         return _settings_public()
     if p[:1] in (["imagery"], ["flights"], ["street"]):
         return _territorial_get(p, q)
+    if p[:1] == ["sim"]:
+        return _sim_get(p[1:], q)
     if p == ["intel", "weather", "clouds"]:
         from ..weather import clouds
         return _provider_call(clouds.manifest)
@@ -298,6 +303,12 @@ def route_post(path: str, body: dict):
         return agents.ask_enso(str(body.get("question") or "")[:500])
     if p[:2] == ["intel", "vision"]:
         return _vision_post(p[2:], body)
+    if p == ["sim", "accessibility", "run"]:
+        _sim_local()
+        try:
+            return sim_runs.run_accessibility(body)
+        except sim_access.SimError as e:
+            raise ApiError(400, str(e))
     if p == ["meta", "settings"]:
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
                    "external_base_url", "external_api_key", "external_model", "ai_allow_external",
@@ -312,6 +323,28 @@ def route_post(path: str, body: dict):
 
 
 # ── auxiliares ──────────────────────────────────────────────────────────────
+def _sim_local():
+    if not simulation.is_local():
+        raise ApiError(403, "El laboratorio de simulación solo funciona en la instalación local (INICIAR-MAPA.bat)")
+
+
+def _sim_get(p: list[str], q: dict) -> dict:
+    if p == ["engines"]:
+        return {"local": simulation.is_local(), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
+                "services": {k: v["label"] for k, v in sim_access.SERVICES.items()}, "rain": list(sim_access.RAIN),
+                "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS}
+    _sim_local()
+    if p == ["runs"]:
+        return {"runs": sim_runs.list_runs(_int(q, "limit", 20))}
+    if len(p) == 2 and p[0] == "runs":
+        rec = sim_runs.get_run(p[1])
+        if not rec:
+            raise ApiError(404, "ejecución no encontrada")
+        return rec
+    raise ApiError(404, "ruta no encontrada")
+
+
+
 KINDS = {
     "oficial": "Dato oficial",
     "vivo_tercero": "Dato en vivo de tercero",

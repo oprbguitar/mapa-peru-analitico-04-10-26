@@ -17,3 +17,4 @@ data/vision
 data/catalog/*.sqlite*
 data/normalized/_*
 *.tar
+data/simulation

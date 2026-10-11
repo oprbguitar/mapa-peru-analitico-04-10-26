@@ -280,6 +280,7 @@ async function setMode(m) {
   }
   if (mode === 'vuelos') (await import('./flight-replay.js')).hideFlightReplay()
   if (mode === 'calle') (await import('./street-imagery.js')).hideStreetImagery()
+  if (mode === 'simular' && m !== 'simular') (await import('./simulation.js')).hideSimulation()
   const mediaModes = ['ninio', 'satelite', 'vuelos', 'calle']
   if (mediaModes.includes(m) !== mediaModes.includes(mode)) {
     if (mediaModes.includes(m)) choroplethBeforeMedia = state.hideChoropleth
@@ -307,6 +308,10 @@ async function setMode(m) {
   if (m === 'calle') {
     panelView = 'street'
     return (await import('./street-imagery.js')).openStreetImagery(document.getElementById('panel-body'))
+  }
+  if (m === 'simular') {
+    panelView = 'sim'
+    return (await import('./simulation.js')).renderSimulation()
   }
   if (m === 'mapa') {
     panelView = 'overview'
@@ -600,7 +605,7 @@ async function boot() {
     const b = e.target.closest('[data-mode]')
     if (!b) return
     await mapStartup
-    if (!['mapa', 'satelite', 'vuelos', 'calle'].includes(b.dataset.mode)) await metadataReady
+    if (!['mapa', 'satelite', 'vuelos', 'calle', 'simular'].includes(b.dataset.mode)) await metadataReady
     setMode(b.dataset.mode)
   })
   initAssistant(assistantActions)
@@ -612,6 +617,7 @@ async function boot() {
     onClick: (e) => {
       if (isDrawingImagery() || ['satelite', 'vuelos', 'calle'].includes(mode)) return
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
+      if (mode === 'simular') return import('./simulation.js').then((s) => s.simPick(e.lngLat))
       if (state.live.has('sun')) {
         if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
         showPanel()
@@ -632,6 +638,10 @@ async function boot() {
     },
   })
   mapStartup.then(initImagery).catch((error) => console.error(error))
+  // el laboratorio de simulación solo existe en la instalación local
+  mapStartup.then(() => getJSON('/api/v1/sim/engines')).then((s) => {
+    if (s.local) document.querySelector('[data-mode="simular"]').hidden = false
+  }).catch(() => {})
   metadataReady = getJSON('/api/v1/intel/crime/families').then((fam) => {
     state.extent = fam.sidpol
     meta = { ...meta, indicators: fam.indicators, modalities: fam.sidpol?.modalities || [], devida: [] }
