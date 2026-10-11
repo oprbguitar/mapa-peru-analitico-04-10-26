@@ -178,7 +178,8 @@ export function mountFlightReplay(map, container) {
       slider.min = String(points[0].t); slider.max = String(points.at(-1).t)
       slider.disabled = false; play.disabled = false
       restoreLayer(); setTime(points[0].t)
-      map.easeTo({ center: [points[0].lon, points[0].lat], pitch: 60,
+      // At street zoom the camera is below cruise altitude and the aircraft falls outside the frustum.
+      map.easeTo({ center: [points[0].lon, points[0].lat], pitch: 60, zoom: Math.min(map.getZoom(), 8),
         duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 500 })
     } catch (error) { if (error.name !== 'AbortError') status.textContent = error.message }
   }
