@@ -19,6 +19,26 @@ Regla de integración: **Route 360 → (GET) → esta API**. Esta plataforma nun
 
 ## Mapa
 
+### Capas territoriales fechadas (0.5.0)
+
+| GET | Parámetros | Respuesta y límites |
+|---|---|---|
+| `/api/v1/imagery/search` | `bbox=w,s,e,n` o `geometry` Polygon JSON, `start/end=AAAA-MM-DD`, `cloud=0..100`, `limit=1..50` | Adquisiciones Sentinel-2, fecha UTC, resolución publicada, nube de escena, enlaces STAC; área ≤4 grados² |
+| `/api/v1/imagery/tiles/{id}/{z}/{x}/{y}.png` | ID de adquisición STAC | PNG RGB reproyectado EPSG:3857; caché inmutable por escena |
+| `/api/v1/imagery/crop` | `id`, `bbox` o `geometry` | Binario GeoTIFF con CRS, transformación y etiquetas de adquisición/fuente; área ≤0,08 grados², ≤40 M valores de banda |
+| `/api/v1/flights/history` | `start/end` segundos Unix | Hasta 200 aeronaves recibidas localmente; intervalo ≤7 días |
+| `/api/v1/flights/history/{icao}` | ICAO hexadecimal 6 caracteres, `start/end` | Hasta 10 000 muestras: `received_at`, altitud barométrica convertida, `gap_before`; no archivo global |
+| `/api/v1/street/images` | `bbox=w,s,e,n` | Hasta 100 fotos Mapillary con `captured_at`; área ≤0,25° por lado; `key_required` sin clave |
+| `/api/v1/street/image/{id}` | ID numérico Mapillary | Miniatura proxy ≤5 MB; CDN permitido, sin redirecciones ni secreto en URL |
+| `/api/v1/intel/weather/clouds` | — | Hora/historial publicado NOAA GetCapabilities, resolución aproximada y procedencia |
+| `/api/v1/intel/weather/clouds/tiles/{z}/{x}/{y}.png` | `time` publicado | Mosaico infrarrojo georreferenciado; no máscara exclusiva de nubes |
+
+`/api/v1/intel/layers/mobile-coverage` admite `status=covered|uncovered|all` además de los filtros existentes.
+`uncovered` exige ceros explícitos; faltantes no prueban ausencia. `/layers/telecom` conserva atribución OSM,
+tecnologías/operador solo cuando constan, revisión OSM y proximidad geométrica al centro de la vista.
+POST `/meta/settings` admite `mapillary_token`; GET solo informa si está configurado. En Render usa `PI_MAPILLARY_TOKEN` secreto para persistirlo.
+Rutas nuevas siguen autenticación/CSP existentes. Fallos de proveedor: 502 genérico; parámetros inválidos: 400.
+
 | Ruta | Descripción |
 |---|---|
 | `/geo/{departamentos\|provincias\|distritos}.geojson` | Límites (`u` = UBIGEO, `n` nombre, `d` departamento, `p` provincia, `c` [lat, lon]) |

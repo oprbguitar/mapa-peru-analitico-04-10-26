@@ -2,7 +2,6 @@
 import { esc, kindBadge, KIND_LABEL, setState, state } from './util.js'
 import { BASES, view } from './map.js'
 import { currentOverlay, overlayOptions } from './weather.js'
-import { FX, fxMode } from './wxfx.js'
 
 const THEMATIC = [
   { id: 'sidpol', label: 'Denuncias policiales', hint: 'SIDPOL · distrito', kind: 'oficial', patch: { dataset: 'sidpol' } },
@@ -40,7 +39,7 @@ const FAMILIES = [
     { id: 'vessels', label: 'Embarcaciones', hint: 'AIS · aisstream.io · clave propia', kind: 'vivo_tercero' },
   ] },
   { id: 'ambiente', label: 'Ambiente', live: [
-    { id: 'wxfx', label: 'Clima animado', hint: 'Sol, lluvia, tormenta, viento · elige qué ver', kind: 'proyeccion' },
+    { id: 'wxfx', label: 'Nubes satelitales reales', hint: 'NOAA · infrarrojo observado · hora publicada', kind: 'vivo_tercero' },
     { id: 'sun', label: 'Análisis solar', hint: 'Acerca a nivel de casa y haz clic · sol, sombras y ventanas · sin API', kind: 'calculado' },
     { id: 'wxpoint', label: 'Clima en un punto', hint: 'Clic en el mapa · Open-Meteo, MET Norway y más, combinados', kind: 'proyeccion' },
     { id: 'wxlayer', label: 'Capas meteorológicas', hint: 'SENAMHI (oficial) · NASA GIBS (satélite)', kind: 'oficial' },
@@ -158,6 +157,8 @@ export function renderRail(meta = {}) {
               ${technologies.map((v) => `<option value="${v}" ${technology === v ? 'selected' : ''}>${v.toUpperCase()}</option>`).join('')}</select>
             <label class="sr-only" for="sel-cov-scope">Medida OSIPTEL</label><select id="sel-cov-scope">
               <option value="cg" ${scope === 'cg' ? 'selected' : ''}>CG</option><option value="cgcar" ${scope === 'cgcar' ? 'selected' : ''}>CG+CAR</option></select>
+            <label class="sr-only" for="sel-cov-status">Estado declarado</label><select id="sel-cov-status">
+              ${[['covered', 'Con cobertura declarada'], ['uncovered', 'Cero declarado'], ['all', 'Todos los registros']].map(([v, label]) => `<option value="${v}" ${(state.mobileStatus || 'covered') === v ? 'selected' : ''}>${label}</option>`).join('')}</select>
             <p class="note">Datos declarados por operadoras, corte 2025. Cada punto es un centro poblado, no una antena ni una medición independiente. <a href="https://www.datosabiertos.gob.pe/dataset/porcentaje-de-cobertura-m%C3%B3vil-por-centro-poblado-empresa-operadora-y-tecnolog%C3%ADa" target="_blank" rel="noopener noreferrer">Fuente OSIPTEL</a>.</p></div>`
         }
         if (l.id === 'wxlayer' && state.live.has('wxlayer')) {
@@ -166,8 +167,7 @@ export function renderRail(meta = {}) {
             <input type="range" id="rng-wxo" min="0.2" max="1" step="0.05" value="${currentOverlay().opacity}"></label></div>`
         }
         if (l.id === 'wxfx' && state.live.has('wxfx')) {
-          sub = `<div class="sub-control"><label class="sr-only" for="sel-fx">Fenómeno a ver</label><select id="sel-fx">${Object.entries(FX)
-            .map(([k, v]) => `<option value="${k}" ${fxMode() === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`
+          sub = '<p class="note">Imagen infrarroja NOAA: nubes y temperatura de superficie. La hora observada aparece en el estado de la capa; no es un simulador.</p>'
         }
         if (l.id === 'ocean' && state.live.has('ocean')) {
           sub = `<div class="sub-control"><div class="seg" role="group" aria-label="Color de las corrientes">
@@ -232,6 +232,9 @@ export function bindRail({ onThematic, onLive, onView }) {
     } else if (t.id === 'sel-devida') {
       setState({ devidaInd: t.value })
       onThematic()
+    } else if (t.id === 'sel-cov-status') {
+      setState({ mobileStatus: t.value })
+      onLive('telecom:coverage', true, { operator: state.mobileOperator || 'all', technology: state.mobileTechnology || '4g', scope: state.mobileScope || 'cg', status: t.value })
     } else if (t.id === 'sel-cov-op') {
       const patch = { mobileOperator: t.value }
       if (t.value === 'bitel' && state.mobileTechnology === '2g') patch.mobileTechnology = '3g'

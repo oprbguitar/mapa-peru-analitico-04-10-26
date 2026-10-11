@@ -48,6 +48,9 @@ TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7}
 WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
 SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jpg$")
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
+IMAGE_TILE_RX = re.compile(r"^/api/v1/imagery/tiles/([A-Za-z0-9_]{1,80})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
+CLOUD_TILE_RX = re.compile(r"^/api/v1/intel/weather/clouds/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
+STREET_IMAGE_RX = re.compile(r"^/api/v1/street/image/(\d{1,30})$")
 
 
 def _public_origin(host: str, port: int, scheme: str) -> str:
@@ -166,6 +169,28 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/v1/stream":
                 return self._sse()
+            query = parse_qs(url.query)
+            if path == "/api/v1/imagery/crop":
+                from ..imagery import service
+                image_id = api._one(query, "id", "")
+                data = api._provider_call(service.crop_geotiff, image_id, api._one(query, "bbox"), api._one(query, "geometry"))
+                return self._send(200, data, "image/tiff", compress=False,
+                                  extra_headers={"Content-Disposition": 'attachment; filename="sentinel2-recorte.tif"'})
+            m = IMAGE_TILE_RX.fullmatch(path)
+            if m:
+                from ..imagery import service
+                data = api._provider_call(service.render_tile, m[1], int(m[2]), int(m[3]), int(m[4]))
+                return self._send(200, data, "image/png", "max-age=86400", compress=False)
+            m = CLOUD_TILE_RX.fullmatch(path)
+            if m:
+                from ..weather import clouds
+                data = api._provider_call(clouds.tile, *map(int, m.groups()), api._one(query, "time"))
+                return self._send(200, data, "image/png", "max-age=600", compress=False)
+            m = STREET_IMAGE_RX.fullmatch(path)
+            if m:
+                from ..live import street_imagery
+                data, ctype = api._provider_call(street_imagery.thumbnail, m[1])
+                return self._send(200, data, ctype, "max-age=300", compress=False)
             m = TILE_RX.match(path)
             if m:
                 data = api.TRAFFIC.tile(*map(int, m.groups()))

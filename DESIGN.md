@@ -1,5 +1,14 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Ampliación territorial · 11 de octubre de 2026
+
+Selector: command bar + tabla maestra · pizarra/cian · Space Grotesk/Noto Sans/Space Mono · radio funcional 4–6 px · continuidad espacial.
+Se conserva el mapa HUD y sus tokens: una tabla separada como protagonista impediría comparar imágenes y capas en el territorio.
+Los nuevos modos usan comandos, listas fechadas y un inspector contextual sobre el mismo mapa. Se evaluaron un visor separado,
+un panel temporal sobre el mapa (elegido) y una galería de imágenes; la galería dificulta correlacionar antenas y vuelos.
+Sin colores ni tipografías adicionales. Las fechas y las limitaciones permanecen visibles. Los controles reutilizan `.field`,
+`.btn`, `.seg`, `.note` y la escala existente; movimiento solo para el vuelo solicitado por el usuario y cámara espacial.
+
 ## 1. Intención
 - **Modo de superficie:** explore (mapa analítico) con componentes de operate (capas en vivo, claves).
 - **Usuario principal:** analista territorial / planificador de seguridad ciudadana (Pierre y su equipo).

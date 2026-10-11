@@ -1,5 +1,19 @@
 # Hoja de ruta por fases — estado real al 2026-10-04
 
+## Entrega territorial 0.5.0 — 11 de octubre de 2026
+
+| Capacidad | Estado verificado | Límite operativo |
+|---|---|---|
+| Sentinel-2 por área rectangular/poligonal | Implementado; STAC y GeoTIFF reales verificados | Últimas escenas disponibles, no imagen en tiempo real; escena puede cubrir parcialmente el área |
+| Comparador histórico | Superposición A/B y deslizador de opacidad | Comparación visual, sin clasificación automática de cambios |
+| Antenas OSM | Render y restauración al cambiar base verificados; consulta real inicial de 13 objetos | Overpass presentó fallos 500/504 posteriores; disponibilidad externa variable |
+| OSIPTEL | Filtros por operador/tecnología/medida y positivos/cero declarado | Corte 2025; no estima señal real; faltantes no equivalen a ausencia |
+| Vuelos 3D | Histórico local, vacíos explícitos, reproducción y controles | Siete días recibidos por el servidor; retención efímera en Render Free |
+| Mapillary | Proxy, capa, visor y estado sin clave implementados/pruebas | Fotografías reales pendientes de clave Mapillary configurada |
+| Nubes NOAA | Mosaico infrarrojo observado con hora publicada verificado | Nubes y superficie, no máscara exclusiva; proveedor y latencia de origen |
+
+Evidencia de aceptación/publicación: `docs/eos/PLAN-territorial-2026-10-11.md`.
+
 Leyenda: ✅ hecho y verificado · 🟡 parcial / requiere configuración · ⬜ pendiente
 
 | Fase | Contenido | Estado | Evidencia / lo que falta |

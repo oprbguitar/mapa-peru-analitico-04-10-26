@@ -34,6 +34,7 @@ async function openSources() {
 
 const FIELDS = [
   ['Proveedores en vivo (opcionales)', [
+    ['mapillary_token', 'Token Mapillary (imágenes de calle)', 'password', 'Token de una aplicación Mapillary; permanece en el servidor'],
     ['aisstream_key', 'Clave aisstream.io (embarcaciones AIS)', 'password', 'Gratuita en aisstream.io'],
     ['tomtom_key', 'Clave TomTom (tráfico)', 'password', 'Sujeta a términos y cuotas de TomTom'],
     ['firms_key', 'MAP_KEY NASA FIRMS (focos de calor)', 'password', 'Gratuita en firms.modaps.eosdis.nasa.gov'],

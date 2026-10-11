@@ -12,9 +12,13 @@ SUPPORTED_TECHNOLOGIES = {"bitel": ("3g", "4g", "5g"), "claro": tuple(TECHNOLOGI
                          "entel": tuple(TECHNOLOGIES), "integratel": tuple(TECHNOLOGIES)}
 
 
-def coverage(operator: str, technology: str, scope: str, bounds: tuple[float, float, float, float], *, limit: int = 4000) -> dict:
+def coverage(operator: str, technology: str, scope: str, bounds: tuple[float, float, float, float], *, limit: int = 4000, status: str = "covered") -> dict:
     """Returns declared coverage points only for settlement centers in a requested map extent."""
     op, tech, metric = operator.lower(), technology.lower(), scope.lower()
+    if status not in {"covered", "uncovered", "all"}:
+        raise ValueError("estado debe ser covered, uncovered o all")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 10000:
+        raise ValueError("límite debe estar entre 1 y 10000")
     if op != "all" and op not in OPERATORS:
         raise ValueError("operadora debe ser all, Bitel, Claro, Entel o Integratel")
     if tech not in TECHNOLOGIES:
@@ -40,11 +44,15 @@ def coverage(operator: str, technology: str, scope: str, bounds: tuple[float, fl
     else:
         expr = f"{op}_{tech}_{suffix}"
         selected_operator = OPERATORS[op]
+    # NULL is unknown, never proof of a declared absence of coverage.
+    zero_condition = " AND ".join(f"{name}_{tech}_{suffix} = 0" for name in operators)
+    condition = {"covered": f"{expr} > 0", "uncovered": zero_condition,
+                 "all": f"({expr} > 0 OR ({zero_condition}))"}[status]
     rows = warehouse.query(
         f"""SELECT ubigeo, departamento, provincia, distrito, centro_poblado, clasificacion,
                    lat, lon, {expr} AS cobertura
             FROM osiptel_cobertura_movil
-            WHERE lon BETWEEN ? AND ? AND lat BETWEEN ? AND ? AND {expr} > 0
+            WHERE lon BETWEEN ? AND ? AND lat BETWEEN ? AND ? AND ({condition})
             ORDER BY ubigeo LIMIT ?""",
         [west, east, south, north, limit + 1],
     )
@@ -53,10 +61,11 @@ def coverage(operator: str, technology: str, scope: str, bounds: tuple[float, fl
                 "provenance": registry.provenance("osiptel_cobertura_movil")}
     return {
         "available": True,
-        "items": [row | {"operadora": selected_operator, "tecnologia": TECHNOLOGIES[tech], "medida": SCOPES[metric]}
+        "items": [row | {"operadora": selected_operator, "tecnologia": TECHNOLOGIES[tech], "medida": SCOPES[metric],
+                         "estado_cobertura": "cero_declarado" if row["cobertura"] == 0 else "cobertura_declarada"}
                   for row in rows[:limit]],
         "truncated": len(rows) > limit,
-        "filters": {"operadora": selected_operator, "tecnologia": TECHNOLOGIES[tech], "medida": SCOPES[metric]},
+        "filters": {"operadora": selected_operator, "tecnologia": TECHNOLOGIES[tech], "medida": SCOPES[metric], "status": status},
         "provenance": registry.provenance("osiptel_cobertura_movil"),
-        "disclaimer": "Punto = centro poblado con cobertura móvil declarada por una operadora; no representa la ubicación de una antena ni calidad medida.",
+        "disclaimer": "Punto = centro poblado con cobertura móvil declarada. Un cero corresponde solo a la tecnología, medida y operadoras seleccionadas; no acredita ausencia de otras redes ni calidad medida. NULL es dato no publicado.",
     }

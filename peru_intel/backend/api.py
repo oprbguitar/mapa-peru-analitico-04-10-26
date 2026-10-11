@@ -75,6 +75,11 @@ def route_get(path: str, q: dict):
                 "layers": ADAPTER.get_available_layers(), "data": _data_status()}
     if p == ["meta", "settings"]:
         return _settings_public()
+    if p[:1] in (["imagery"], ["flights"], ["street"]):
+        return _territorial_get(p, q)
+    if p == ["intel", "weather", "clouds"]:
+        from ..weather import clouds
+        return _provider_call(clouds.manifest)
     if p == ["map", "base"]:
         return ADAPTER.load_base_map()
     if p[:2] == ["map", "resolve"]:
@@ -159,7 +164,7 @@ def route_get(path: str, q: dict):
         try:
             bounds = _bbox_values(q)
             return connectivity.coverage(_one(q, "operator", "all"), _one(q, "technology", "4g"),
-                                         _one(q, "scope", "cg"), bounds)
+                                         _one(q, "scope", "cg"), bounds, status=_one(q, "status", "covered"))
         except ValueError as e:
             raise ApiError(400, str(e))
     if p == ["layers", "telecom"]:
@@ -294,7 +299,7 @@ def route_post(path: str, body: dict):
     if p == ["meta", "settings"]:
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
                    "external_base_url", "external_api_key", "external_model", "ai_allow_external",
-                   "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order", "go2rtc_url"}
+                   "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order", "go2rtc_url", "mapillary_token"}
         vals = {k: str(v).strip() for k, v in body.items() if k in allowed and v is not None}
         if not vals:
             raise ApiError(400, "sin ajustes válidos")
@@ -315,9 +320,37 @@ KINDS = {
 }
 
 
+def _provider_call(fn, *args, **kwargs):
+    """Distinguish invalid requests from unavailable upstream providers."""
+    import urllib.error
+    try:
+        return fn(*args, **kwargs)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise ApiError(400, str(exc)) from exc
+    except (urllib.error.URLError, TimeoutError, OSError, RuntimeError) as exc:
+        raise ApiError(502, "La fuente no respondió. Reintenta o reduce el área seleccionada.") from exc
+
+
+def _territorial_get(p, q):
+    if p == ["imagery", "search"]:
+        from ..imagery import service
+        return _provider_call(service.search_imagery, _one(q, "bbox"), _one(q, "geometry"),
+                              _one(q, "start"), _one(q, "end"), _one(q, "cloud", 100), _int(q, "limit", 24))
+    if p[:2] == ["flights", "history"]:
+        from ..live import flight_history
+        if len(p) == 2:
+            return _provider_call(flight_history.list_tracks, _one(q, "start"), _one(q, "end"))
+        if len(p) == 3:
+            return _provider_call(flight_history.history, p[2], _one(q, "start"), _one(q, "end"))
+    if p == ["street", "images"]:
+        from ..live import street_imagery
+        return _provider_call(street_imagery.search, _one(q, "bbox"))
+    raise ApiError(404, "ruta territorial no encontrada")
+
+
 def _settings_public() -> dict:
     keys = ["aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "external_api_key",
-            "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key"]
+            "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "mapillary_token"]
     plain = ["ollama_url", "ollama_model", "external_base_url", "external_model", "ai_allow_external", "weather_order", "go2rtc_url"]
     return {"secrets": {k: bool(config.setting(k)) for k in keys}, "values": {k: config.setting(k) for k in plain},
             "stored_in": "data/config.local.json (ignorado por git; nunca se envía al navegador)"}

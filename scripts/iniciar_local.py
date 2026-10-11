@@ -16,7 +16,7 @@ URL = 'http://127.0.0.1:8360/'
 
 
 def missing_dependencies() -> list[str]:
-    return [name for name in ('duckdb', 'openpyxl', 'h3', 'numpy')
+    return [name for name in ('duckdb', 'openpyxl', 'h3', 'numpy', 'rasterio')
             if importlib.util.find_spec(name) is None]
 
 

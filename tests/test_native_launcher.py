@@ -8,11 +8,15 @@ class NativeLauncherTests(unittest.TestCase):
     def test_dependency_check_does_not_import_heavy_modules(self):
         with patch.object(iniciar_local.importlib.util, 'find_spec', return_value=object()) as probe:
             self.assertEqual(iniciar_local.missing_dependencies(), [])
-            self.assertEqual(probe.call_count, 4)
+            self.assertEqual(probe.call_count, 5)
 
     def test_reports_missing_dependencies(self):
-        with patch.object(iniciar_local.importlib.util, 'find_spec', side_effect=[None, object(), None, object()]):
+        with patch.object(iniciar_local.importlib.util, 'find_spec', side_effect=[None, object(), None, object(), object()]):
             self.assertEqual(iniciar_local.missing_dependencies(), ['duckdb', 'h3'])
+
+    def test_satellite_dependency_is_installed_when_missing(self):
+        with patch.object(iniciar_local.importlib.util, 'find_spec', side_effect=[object(), object(), object(), object(), None]):
+            self.assertEqual(iniciar_local.missing_dependencies(), ['rasterio'])
 
     def test_only_reuses_matching_application(self):
         self.assertTrue(iniciar_local.is_mapa({'app': 'Mapa Perú Analítico', 'ok': True}))

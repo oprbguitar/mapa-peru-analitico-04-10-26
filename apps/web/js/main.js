@@ -22,6 +22,7 @@ import { esc, getJSON, setState, state, toast } from './util.js'
 import { initVision, openCameras, pickHandler as visionPick, refreshLayer as refreshCameras } from './vision.js'
 import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { setFxMode, setWeatherFx } from './wxfx.js'
+import { initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
 const LIVE_WINDOW = { ahora: 'año en curso · vivo: ahora (sismos y focos 24 h)', '24h': 'vivo: últimas 24 h', '7d': 'vivo: últimos 7 días',
@@ -30,6 +31,7 @@ let meta = { live: {} }
 let loadSeq = 0
 let mode = 'mapa'
 let panelView = 'overview'   // overview · region · context · observatory · patterns · routes · enso · weather
+let choroplethBeforeMedia = false
 let playTimer = null
 
 let ensoChoro = false   // en El Niño los niveles cuentan registros históricos, nunca denuncias
@@ -223,20 +225,37 @@ function paintGi(d) {
 }
 
 async function setMode(m) {
-  if ((m === 'ninio') !== (mode === 'ninio')) {   // en El Niño el mar y el relieve importan más que el coloreado de denuncias
-    state.hideChoropleth = m === 'ninio'
+  hideImagery()
+  if (mode === 'vuelos') (await import('./flight-replay.js')).hideFlightReplay()
+  if (mode === 'calle') (await import('./street-imagery.js')).hideStreetImagery()
+  const mediaModes = ['ninio', 'satelite', 'vuelos', 'calle']
+  if (mediaModes.includes(m) !== mediaModes.includes(mode)) {
+    if (mediaModes.includes(m)) choroplethBeforeMedia = state.hideChoropleth
+    state.hideChoropleth = mediaModes.includes(m) ? true : choroplethBeforeMedia
     showLevel(state.level)
   }
   mode = m
   document.body.dataset.mode = m
   if (m !== 'ninio') closeStory()
   ensoChoro = false
-  if (m === 'ninio') {
+  if (mediaModes.includes(m)) {
     renderLegend(null)
     renderLevels()
   }
   for (const b of document.querySelectorAll('#modes [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === m))
   showPanel()
+  if (m === 'satelite') {
+    panelView = 'imagery'
+    return openImagery(document.getElementById('panel-body'))
+  }
+  if (m === 'vuelos') {
+    panelView = 'flights'
+    return (await import('./flight-replay.js')).openFlightReplay(document.getElementById('panel-body'))
+  }
+  if (m === 'calle') {
+    panelView = 'street'
+    return (await import('./street-imagery.js')).openStreetImagery(document.getElementById('panel-body'))
+  }
   if (m === 'mapa') {
     panelView = 'overview'
     return loadChoropleth()
@@ -367,8 +386,7 @@ async function onLive(id, on, filters = {}) {
     else if (id === 'vias') setLiveMeta('vias', (await toggleVias(on)) || '')
     else if (id === 'wxfx') {
       const m = await setWeatherFx(on)
-      setLiveMeta('wxfx', on ? (m?.loading ? 'cargando' : `${m?.n || 0} celdas`) : '')
-      if (m?.loading) setTimeout(() => state.live.has('wxfx') && onLive('wxfx', true), 5000)
+      setLiveMeta('wxfx', on ? (m?.error || m?.time || 'sin observación publicada') : '')
     } else if (id === 'ocean') {
       const s = await setOcean(on, state.oceanColor)
       setLiveMeta('ocean', on ? (s?.loading ? 'cargando' : `${s?.n || 0} celdas`) : '')
@@ -559,6 +577,7 @@ async function boot() {
       setSelected(ub)
     },
     onClick: (e) => {
+      if (isDrawingImagery() || ['satelite', 'vuelos', 'calle'].includes(mode)) return
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
       if (state.live.has('sun')) {
         if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
@@ -582,6 +601,12 @@ async function boot() {
   initLive()
   initPlaces()
   initTelecom()
+  initImagery()
+  document.addEventListener('imagery-drawing', () => {
+    openSheet('map')
+    toast('Marca el área en el mapa. Para cerrar un polígono, vuelve a Ficha.')
+  })
+  document.addEventListener('imagery-area-ready', () => openSheet('panel'))
   initStory()
   initSun()
   setEnsoRepaint(paintEnso)

@@ -5,3 +5,5 @@ openpyxl>=3.1
 h3>=4.0
 # Motor de patrones (importado por la API); no requiere StatsForecast.
 numpy>=1.26
+# Teselas satelitales RGB y exportación georreferenciada.
+-r requirements-imagery.txt

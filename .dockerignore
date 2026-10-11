@@ -7,6 +7,9 @@
 output
 data/raw
 data/live
+data/cache
+.coverage*
+htmlcov
 data/config.local.json
 data/cameras.local.json
 data/ai_gateway.json

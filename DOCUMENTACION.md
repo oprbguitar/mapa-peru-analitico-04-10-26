@@ -1,5 +1,75 @@
 # Documentación — Mapa Perú Analítico
 
+## Actualización 0.5.0 · 11 de octubre de 2026
+
+La vista territorial incorpora los modos **Satélite**, **Vuelos 3D** y **Calle**, y mantiene las capas de antenas y cobertura en Infraestructura.
+
+### Satélite reciente e histórico
+
+1. Abre **Satélite** y acerca el mapa al área de interés en el Perú.
+2. Dibuja un rectángulo con dos clics o un polígono con tres o más vértices y «Cerrar polígono».
+   En móvil el dibujo abre la pestaña Mapa; vuelve a Ficha para cerrar el polígono. «Área visible» usa el rectángulo de la vista.
+3. Consulta las adquisiciones más recientes o filtra Desde/Hasta y nubosidad máxima. Cada resultado muestra fecha/hora UTC,
+   resolución publicada y nubosidad de **la escena completa**, no del área seleccionada.
+4. Selecciona una escena **A** y otra **B**. El deslizador cambia la opacidad de B sobre A; ambas fechas permanecen visibles.
+   También puedes buscar otro período conservando A. Es comparación visual: no cuantifica ni atribuye causas de deforestación,
+   expansión urbana, minería o inundaciones automáticamente.
+5. **GeoTIFF A/B** descarga RGB georreferenciado con CRS, transformación, fecha de adquisición, enlace STAC y polígono en sus etiquetas.
+   Una escena puede cubrir solo parte del área; no se presenta como un mosaico completo. Consulta hasta 4 grados cuadrados;
+   exportación hasta 0,08 grados cuadrados y 40 millones de valores de banda. Reduce el área si se supera el límite.
+
+Fuente: Copernicus Sentinel-2 L2A, catálogo público Element 84 Earth Search y COG RGB públicos de AWS.
+El mapa base «Sentinel-2 2024» sigue siendo un mosaico separado: no sirve para acreditar una adquisición reciente.
+El backend genera teselas PNG y recortes con Rasterio/GDAL; máximo dos operaciones raster simultáneas, caché de teselas en
+`data/cache/imagery`, metadatos originales mediante SourceHarvester en `data/raw` (inmutables y fuera de Git).
+El lanzador nativo comprueba Rasterio y lo instala junto con las dependencias del núcleo si falta; la imagen de producción también lo incluye.
+
+### Antenas y telecomunicaciones
+
+Activa **Antenas móviles**, **Antenas de telecomunicaciones** o **Torres de comunicación** en Infraestructura.
+Desde una vista nacional se acerca automáticamente al centro para consultar OSM sin pedir todo el país.
+La capa se actualiza al mover el mapa y se restaura al cambiar el mapa base. Una falla de Overpass conserva la consulta anterior y lo indica.
+Cada objeto muestra operador, tecnología y altura solo cuando constan; revisión OSM, hora de consulta y distancia geométrica
+al centro de la vista. OSM es comunitario e incompleto: no acredita cobertura ni intensidad de señal.
+
+La cobertura OSIPTEL mantiene su corte 2025 y sus puntos por centro poblado. El filtro **Cero declarado** exige cero explícito
+para los campos seleccionados; los valores faltantes nunca se convierten en cero. No encontrar un objeto OSM tampoco demuestra una zona sin cobertura.
+La estimación de señal real requerirá mediciones, parámetros de radio, relieve y otros datos adicionales.
+
+### Vuelos 3D y fotografías de calle
+
+- **Vuelos 3D:** elige un intervalo UTC de hasta siete días, busca vuelos guardados y selecciona una aeronave. Usa Reproducir/Pausar,
+  velocidad o el deslizador temporal. Son posiciones recibidas por **este servidor** al activar Vuelos en las capas en vivo;
+  no es un archivo universal de vuelos anteriores. Hay muestreo por desplazamiento o cada 120 segundos y retención de siete días.
+  Los vacíos de más de cinco minutos no se unen. La altitud es barométrica en pies convertida a metros; no es altura exacta sobre terreno.
+  Altitud cero heredada es ambigua y se muestra como desconocida. El desplazamiento entre muestras se rotula interpolación visual.
+- **Calle:** configura el token de una aplicación Mapillary en **Claves**, acerca la vista (máximo 0,25 grados por lado) y busca imágenes.
+  Selecciona un punto o fotografía para ver su fecha de captura UTC y atribución. La clave permanece en el backend y todas las fotos pasan
+  por un proxy limitado; no sale al navegador. Sin clave o sin cobertura, se muestra el estado explícito. No se incluye una clave preconfigurada.
+
+### Nubes observadas
+
+**Nubes satelitales reales** reemplaza el simulador meteorológico. Usa el mosaico global infrarrojo NOAA nowCOAST que también utiliza
+GOdEyes. Solo acepta horas publicadas en GetCapabilities y muestra la hora en la capa; no infiere una adquisición desde la fecha del sistema.
+Incluye nubes **y temperatura de superficie**: no es una máscara exclusiva de nubes ni una imagen óptica color real. Resolución aproximada 3 km,
+actualización de origen horaria y latencia aproximada de 2–3 h. Si el proveedor falla, no se sustituye por partículas simuladas.
+
+### Verificación y operación
+
+Pruebas de esta ampliación: 107 pruebas Python aprobadas, cobertura del 90 % en los módulos Python nuevos/modificados de estas capas;
+no representa cobertura total del proyecto. Pruebas de interfaz a 360/768/1280/1600 px, antenas conservadas al cambiar base y reproducción 3D
+con fixtures de prueba. Consulta real: adquisiciones del 6 y 3 de octubre de 2026, GeoTIFF EPSG:32718 de 111×113 píxeles con etiquetas verificadas.
+NOAA y OSM también se verifican con consultas de proveedor. Fotos Mapillary reales quedan pendientes de una clave configurada.
+Overpass devolvió inicialmente 13 objetos reales; consultas posteriores presentaron 500/504 en los servidores públicos.
+La restauración/dibujo se prueba con fixtures independientes de esa disponibilidad y el estado de falla se muestra en la capa.
+`pip-audit` sobre dependencias núcleo e imágenes: sin vulnerabilidades conocidas en la consulta realizada.
+
+Render Free conserva el código desplegado pero su filesystem es efímero: reinicios/despliegues pueden eliminar históricos ADS-B, ajustes BYOK,
+metadatos descargados y cachés. Para conservar claves Mapillary en ese servicio usa la variable secreta `PI_MAPILLARY_TOKEN` en Render;
+el diálogo Claves guarda un archivo local efímero en esa modalidad. No se modificó la autenticación pública existente.
+
+Contratos y evidencia adicional: [API](docs/API.md) y [plan de integración](docs/eos/PLAN-territorial-2026-10-11.md).
+
 Plataforma **standalone y local-first** de inteligencia geoespacial y situacional del Perú. Reúne en un solo
 mapa seguridad ciudadana, movilidad, ambiente, infraestructura y espacio, con la procedencia de cada cifra a
 la vista. Versión 0.4.0 · 8 de octubre de 2026.

@@ -200,6 +200,22 @@ body.picking #map .maplibregl-canvas { cursor: crosshair; }
 .modes button:hover { background: var(--accent-dim); }
 .modes button:active { background: var(--line); }
 .modes button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.modes { max-width: 100%; overflow-x: auto; }
+.modes button { white-space: nowrap; min-height: var(--tap); }
+.topbar { z-index: 20; }
+.tool-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-3); }
+#panel-body .field { margin-block: var(--sp-2); }
+#panel-body .field input, #panel-body .field select { width: 100%; min-width: 0; min-height: var(--tap); }
+#img-results > div { padding-block: var(--sp-3); border-bottom: var(--border) solid var(--line); overflow-wrap: anywhere; }
+#img-results button { min-height: var(--tap); margin-top: var(--sp-2); }
+#panel-body img { max-width: 100%; height: auto; }
+#panel-body button { min-height: var(--tap); }
+@media (min-width: 768px) and (max-width: 1279px) {
+  .topbar { flex-wrap: wrap; }
+  .modes { order: 3; flex: 1 1 100%; }
+  :root { --topbar-h: calc(var(--tap) * 2 + var(--sp-5)); }
+  .topbar { height: auto; }
+}
 
 /* ── asistente de voz ────────────────────────────────────── */
 .assistant { position: fixed; z-index: 15; top: calc(var(--topbar-h) + var(--gap) * 2); right: calc(var(--panel-space) + var(--gap));

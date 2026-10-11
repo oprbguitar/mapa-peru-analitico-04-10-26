@@ -400,4 +400,18 @@ SOURCES: list[dict] = [
     },
 ]
 
+SOURCES = [*SOURCES,
+    {"source_id": "earth_search_sentinel2", "name": "Escenas Sentinel-2 L2A con fecha de adquisición", "institution": "Copernicus / Element 84 Earth Search",
+     "url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a", "adapter": "peru_intel.imagery.service",
+     "official": 0, "kind": "vivo_tercero", "type": "STAC / COG", "license": "Copernicus Sentinel: acceso libre y abierto",
+     "update_frequency": "por adquisición", "geographic_level": "escena / píxel", "notes": "Nubosidad publicada para la escena completa; no para el recorte. Comparación visual sin inferencia automática de cambios."},
+    {"source_id": "noaa_clouds", "name": "NOAA nowCOAST mosaico global infrarrojo", "institution": "NOAA / NWS",
+     "url": "https://nowcoast.noaa.gov/geoserver/observations/satellite/ows", "adapter": "peru_intel.weather.clouds",
+     "official": 0, "kind": "vivo_tercero", "type": "WMS", "license": "NOAA datos públicos; atribución NOAA/NWS",
+     "update_frequency": "horaria", "geographic_level": "raster global", "notes": "Imagen de nubes y superficie, no una máscara exclusiva de nubes. Hora comprobada en GetCapabilities."},
+    {"source_id": "mapillary_images", "name": "Imágenes geolocalizadas Mapillary", "institution": "Mapillary / colaboradores",
+     "url": "https://www.mapillary.com/", "adapter": "peru_intel.live.street_imagery", "official": 0, "kind": "vivo_tercero",
+     "type": "API", "license": "Términos Mapillary; atribución al proveedor y colaboradores", "requires_key": "mapillary_token",
+     "update_frequency": "por contribución", "geographic_level": "punto", "notes": "Fecha captured_at por fotografía; cobertura comunitaria incompleta."},
+]
 BY_ID = {s["source_id"]: s for s in SOURCES}
