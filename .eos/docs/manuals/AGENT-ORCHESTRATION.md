@@ -854,7 +854,7 @@ ORC-5505. Una skill no concede permisos ni crea automatizaciones; describe traba
 ORC-5506. Las skills con scripts los incluyen en el repositorio con pruebas y revisión, nunca descargados en ejecución.
 ORC-5507. Las skills se prueban con peticiones representativas para verificar que el host las carga en los casos correctos.
 ORC-5508. Una skill que se activa en casos equivocados se corrige ajustando su descripción con ejemplos y contraejemplos.
-ORC-5509. Las seis skills canónicas cubren INIT, ADOPT, AUDIT, MIGRATE, RELEASE e INCIDENT; no se crean comandos duplicados.
+ORC-5509. Las seis skills de modo cubren INIT, ADOPT, AUDIT, MIGRATE, RELEASE e INCIDENT; la skill transversal STRATEGY ordena la admisión y los checkpoints de INIT/ADOPT; no se crean comandos duplicados.
 ORC-5510. Quiero skills que un host cargue justo cuando hacen falta y que guíen el trabajo sin ambigüedad.
 
 ## 56. Diseño de definiciones de agentes

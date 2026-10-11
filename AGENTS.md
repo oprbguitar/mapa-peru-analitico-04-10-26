@@ -24,7 +24,7 @@ node "C:\Users\oprbg\Documents\Claude\AI-Design-Harness\bin\design-lint.mjs" .
 ```
 
 <!-- EOS:BEGIN -->
-## EOS 4.1.0 — Pierre R. Boss (oprbguitar)
+## EOS 4.2.0 — Pierre R. Boss (oprbguitar)
 
 Este proyecto adopta el Engineering Operating System de Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.
 Las instrucciones locales anteriores a este bloque y las del host prevalecen; EOS no eleva permisos.

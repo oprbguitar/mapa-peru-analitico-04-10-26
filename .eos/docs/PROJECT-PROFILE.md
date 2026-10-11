@@ -5,7 +5,7 @@
 | Campo | Valor confirmado o decisión de esta edición |
 |---|---|
 | Producto | Biblioteca de instrucciones de ingeniería EOS |
-| Edición | 4.1.0: doce especificaciones mayores (pisos congelados), núcleo EOS-CORE y CLI `eos.mjs` endurecido (run sin shell, gate con confianza por revisión, router de política, evaluación dev/holdout/adversarial) |
+| Edición | 4.2.0: doce especificaciones mayores (pisos congelados), núcleo EOS-CORE, CLI `eos.mjs` endurecido y séptima skill EOS para estrategia recurrente de producto/operación |
 | Propietario editorial | Pierre R. Boss / oprbguitar |
 | Repositorio | `oprbguitar/dev-funcy-agents-03-10-26` |
 | Modo de este trabajo | ADOPT: conservar y ampliar una constitución existente |

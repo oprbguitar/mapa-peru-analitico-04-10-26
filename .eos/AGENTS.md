@@ -36,7 +36,7 @@ Any coding agent, autonomous agent, Claude/Codex-style tool, local model, or hum
 
 ---
 
-## Operación de esta edición — EOS 4.1.0
+## Operación de esta edición — EOS 4.2.0
 
 **Autoría y dirección: Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.**
 

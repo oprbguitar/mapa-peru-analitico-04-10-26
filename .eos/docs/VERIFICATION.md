@@ -2,7 +2,10 @@
 
 **Autoría y dirección: Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.**
 
-Edición verificada: 4.1.0 (2026-10-04).
+Edición documentada: 4.2.0 (2026-10-09).
+
+En esta actualización documental, la validación estructural de la biblioteca pasó.
+No se ejecutaron las suites de pruebas ni se midió cobertura de los scripts.
 
 ## Herramientas y scope
 

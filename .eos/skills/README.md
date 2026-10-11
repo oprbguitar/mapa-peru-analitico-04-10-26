@@ -18,6 +18,7 @@ Combinar modos exige explicar la transición y conservar límites previos.
 
 | Situación | Skill | Entrega central |
 |---|---|---|
+| Alinear estrategia, capacidad operativa y preguntas de admisión | [STRATEGY](eos-strategy/SKILL.md) | Hipótesis, prioridades, funciones implicadas y puertas recurrentes |
 | Producto nuevo | [INIT](eos-init/SKILL.md) | Perfil e implementación autorizada |
 | Sistema existente | [ADOPT](eos-adopt/SKILL.md) | Baseline y mejora sin regresión |
 | Revisión solicitada | [AUDIT](eos-audit/SKILL.md) | Hallazgos sin cambiar el destino |
@@ -67,6 +68,12 @@ No pedir otra aprobación por rutina ni ampliar permisos por inferencia.
 6. Revisa evidencia, privacidad y consistencia documental.
 7. Ejecuta acciones externas únicamente con autorización explícita aplicable.
 8. Cierra con resultado, archivos, pruebas, riesgos y pendientes.
+
+Para INIT y ADOPT, ejecuta además la secuencia estratégica de [EOS STRATEGY](eos-strategy/SKILL.md):
+primero al admitir el trabajo y de nuevo en las puertas de estrategia a ingeniería,
+ingeniería a entrega y entrega a aprendizaje. La estrategia cubre mercado y producto,
+marketing, personas/HR, gestión y economía con alcance proporcional. La evaluación
+recurrente no significa reabrir preguntas ya respondidas ni activar funciones diferidas.
 
 ## Artefactos y aceptación
 

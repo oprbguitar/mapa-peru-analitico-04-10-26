@@ -46,23 +46,31 @@ Si faltan, revisa secuencialmente y declara independencia limitada.
    Registra tecnología desplegada, recursos y criticidad reales.
    Marca vacíos sin rellenarlos con una arquitectura idealizada.
 
-4. Captura baseline de funciones, pruebas y rendimiento relevante.
+4. Aplica [EOS STRATEGY](../eos-strategy/SKILL.md) al cambio solicitado.
+   Conserva las decisiones de negocio vigentes; pregunta por vacíos que puedan
+   cambiar objetivo, usuarios, mercado, operación o aceptación. Evalúa marketing,
+   capacidad de personas/HR, gestión y economía sin ampliar el parche por rutina.
+
+5. Captura baseline de funciones, pruebas y rendimiento relevante.
    Reproduce el fallo antes de modificar.
    No repitas acciones financieras o comunicaciones en producción.
 
-5. Registra brechas en [FINDING](../../templates/FINDING.md).
+6. Registra brechas en [FINDING](../../templates/FINDING.md).
    Ordena por impacto, evidencia y dependencia.
    No conviertas preferencias tecnológicas en defectos.
 
-6. Define [TASK-PACKET](../../templates/TASK-PACKET.md).
+7. Define [TASK-PACKET](../../templates/TASK-PACKET.md).
    Limita archivos y cambios al objetivo del usuario.
    Registra decisiones nuevas en [ADR](../../templates/ADR.md).
 
-7. Añade caracterización y pruebas negativas relevantes.
+8. Añade caracterización y pruebas negativas relevantes.
    Corrige progresivamente en rama cuando corresponda.
    Mantén interfaces y datos hasta justificar cambios incompatibles.
 
-8. Revisa regresión, seguridad y documentación.
+9. Revalida la estrategia al cambiar el alcance, antes de una entrega material
+   y después de recibir evidencia nueva; conserva lo no afectado.
+
+10. Revisa regresión, seguridad y documentación.
    Sigue [ENGINEERING-QUALITY](../../docs/manuals/ENGINEERING-QUALITY.md)
    y [UPDATES-RELIABILITY](../../docs/manuals/UPDATES-RELIABILITY.md).
    Separa resultados comprobados de operación pendiente.

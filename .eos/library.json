@@ -1,8 +1,8 @@
 {
-  "version": "4.1.0",
+  "version": "4.2.0",
   "owner": "Pierre R. Boss (oprbguitar)",
   "repository": "oprbguitar/dev-funcy-agents-03-10-26",
-  "edition_date": "2026-10-04",
+  "edition_date": "2026-10-09",
   "timezone": "America/Lima",
   "language": "es-PE",
   "authorship": "Autoría y dirección de Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.",
@@ -83,6 +83,7 @@
     "skills/eos-init/SKILL.md",
     "skills/eos-migrate/SKILL.md",
     "skills/eos-release/SKILL.md",
+    "skills/eos-strategy/SKILL.md",
     "templates/ADR.md",
     "templates/AGENT-RESULT.md",
     "templates/CAPABILITY-MATRIX.md",
@@ -246,7 +247,7 @@
     },
     {
       "path": "docs/VERIFICATION.md",
-      "pattern": "Edición verificada: {version}"
+      "pattern": "Edición documentada: {version}"
     }
   ]
 }

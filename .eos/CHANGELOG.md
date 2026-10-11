@@ -2,6 +2,15 @@
 
 **Autoría y dirección: Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.**
 
+## 4.2.0 — 2026-10-09
+
+### Estrategia recurrente antes y después de ingeniería
+
+- Añade `skills/eos-strategy/SKILL.md` con admisión por preguntas, dos fases (CEO/manager y producto/ingeniería), coordinación de prioridades y revisión de marketing, personas/HR, operación, economía y jurisdicción.
+- Integra la estrategia en INIT y ADOPT y establece puertas recurrentes de estrategia a backlog, entrega y aprendizaje, evitando preguntar de nuevo decisiones ya resueltas.
+- Adapta patrones de entrevista, lenguaje común, feedback, especialidades con entregables y coordinación de los repositorios públicos citados en la skill; no copia agentes ni los instala.
+- Mantiene decisión humana sobre contratación, gasto, publicación, obligaciones y compromisos externos; registra el responsable real incluso en una operación unipersonal.
+
 ## 4.1.0 — 2026-10-04
 
 ### Endurecimiento tras revisión adversarial

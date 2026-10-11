@@ -38,31 +38,39 @@ No inventes equipos ni permisos.
 1. Comprueba entorno, instrucciones y archivos existentes.
    Conserva trabajo ajeno y detecta dependencias reales.
 
-2. Completa [PROJECT-PROFILE](../../templates/PROJECT-PROFILE.md).
+2. Aplica [EOS STRATEGY](../eos-strategy/SKILL.md) antes de decidir el producto.
+   Completa la entrevista con respuestas ya disponibles; pregunta solo por vacíos
+   materiales y evalúa producto, marketing, capacidad de personas, gestión,
+   economía y jurisdicción con estados explícitos.
+
+3. Completa [PROJECT-PROFILE](../../templates/PROJECT-PROFILE.md).
    Registra hipótesis y datos pendientes sin inventar métricas.
 
-3. Completa [CAPABILITY-MATRIX](../../templates/CAPABILITY-MATRIX.md).
+4. Completa [CAPABILITY-MATRIX](../../templates/CAPABILITY-MATRIX.md).
    Mantén capacidades especializadas dormidas hasta justificar activación.
    Pagos, sincronización y almacenamiento avanzado son condicionales.
 
-4. Define límites y arquitectura mínima mantenible.
+5. Define límites y arquitectura mínima mantenible.
    Registra decisiones en [ADR](../../templates/ADR.md).
    Evalúa alternativas con evidencia; no impongas Docker ni microservicios.
 
-5. Conserva AI Integration Port conceptualmente disponible.
+6. Conserva AI Integration Port conceptualmente disponible.
    Sigue [AI-GATEWAY](../../docs/manuals/AI-GATEWAY.md).
    IA dormida no descarga modelos, abre cuentas ni inicia gasto.
    Evalúa RAM, VRAM, privacidad y licencias antes de activarla.
 
-6. Crea [TASK-PACKET](../../templates/TASK-PACKET.md).
+7. Crea [TASK-PACKET](../../templates/TASK-PACKET.md).
    Asigna archivos, pruebas, dependencias y operaciones autorizadas.
    Para frontend aplica la dirección visual exigida por el destino.
 
-7. Escribe pruebas de comportamiento antes de implementación pertinente.
+8. Escribe pruebas de comportamiento antes de implementación pertinente.
    Construye incrementos pequeños; valida entradas y errores.
    Revisa calidad y seguridad después de cambios.
 
-8. Verifica flujos críticos, configuración y recursos reales.
+9. Revalida estrategia en las puertas estrategia→ingeniería, ingeniería→entrega
+   y entrega→aprendizaje; actualiza solo las decisiones afectadas.
+
+10. Verifica flujos críticos, configuración y recursos reales.
    Usa [ENGINEERING-QUALITY](../../docs/manuals/ENGINEERING-QUALITY.md).
    Documenta uso y operación en la estructura existente.
 

@@ -1,6 +1,6 @@
 {
   "name": "eos-agents",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "Pierre R. Boss (oprbguitar) EOS: sistema de agentes y skills para orquestar ingeniería con evidencia, permisos acotados y transferencia verificable. Desarrollo documental asistido por IA.",
   "author": {
     "name": "Pierre R. Boss (oprbguitar)"

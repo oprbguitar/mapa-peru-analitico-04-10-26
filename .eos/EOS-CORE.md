@@ -25,6 +25,8 @@ Este archivo es el único contexto normativo que todo agente carga al iniciar un
 
 RELEASE e INCIDENT son flujos dentro de estos modos, no permisos nuevos. Cada modo tiene su [skill](skills/README.md).
 
+Para INIT y ADOPT que creen o cambien una capacidad de producto, aplica [EOS STRATEGY](skills/eos-strategy/SKILL.md) antes de convertir la petición en plan técnico: registra respuestas conocidas, pregunta solo vacíos materiales y revisa mercado, marketing, personas/HR, gestión y economía según pertinencia. Repite la evaluación en los cambios de estrategia a backlog, entrega y aprendizaje. Un parche local que no altera objetivos ni operación no debe cargar con una entrevista estratégica ajena a su alcance.
+
 ## 4. Autonomía
 
 - **A0 Lectura:** inspeccionar, medir, explicar.
@@ -90,4 +92,4 @@ Carga una fila solo cuando la tarea toca su tema. Lee la sección indicada, no e
 
 Una entrega termina cuando se puede verificar, operar y mantener.
 
-**Pierre R. Boss (oprbguitar)** — núcleo EOS 4.1.0. Desarrollo documental asistido por IA.
+**Pierre R. Boss (oprbguitar)** — núcleo EOS 4.2.0. Desarrollo documental asistido por IA.

@@ -1,6 +1,6 @@
 # Pierre R. Boss — Engineering Operating System
 
-**EOS · Edición de especificaciones de ingeniería 4.1.0 · 4 de octubre de 2026 · Perú**
+**EOS · Edición de especificaciones de ingeniería 4.2.0 · 9 de octubre de 2026 · Perú**
 
 > Quiero software que pueda entender, verificar, proteger, mantener y entregar. Quiero que cada decisión tenga una razón, cada permiso un límite y cada resultado una prueba. La IA debe ampliar mi capacidad de trabajo sin quitarme el control del sistema.
 >
@@ -12,6 +12,76 @@ La biblioteca convierte cuatro conversaciones anteriores en procedimientos verif
 
 **Autoría y dirección: Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.** La firma es editorial; su alcance está explicado en [AUTHORSHIP.md](AUTHORSHIP.md).
 
+## EOS en un minuto
+
+EOS es un sistema de trabajo para dirigir desarrollo de software con agentes de IA y personas. Reúne las reglas comunes, guías especializadas, skills que ordenan cada tarea, roles que se pueden activar cuando existen y herramientas para seleccionar contexto y comprobar la biblioteca.
+
+EOS **no** es un runtime que opere por su cuenta, un equipo ficticio que toma decisiones ni una obligación de adoptar cada capacidad descrita. El usuario responsable conserva las decisiones de producto y las autorizaciones. Los manuales describen políticas y diseños; solo la evidencia de un proyecto concreto demuestra qué se construyó y está funcionando.
+
+| Capa | Para qué sirve | Dónde empezar |
+|---|---|---|
+| Reglas comunes | Autoridad, modos, niveles de autonomía y evidencia | [EOS-CORE](EOS-CORE.md) y [AGENTS.md](AGENTS.md) |
+| Manuales | Contratos de ingeniería, seguridad, datos, calidad y operación | [docs/manuals](docs/manuals/) y la [guía de navegación](docs/CODEX-NAVIGATION-GUIDE.md) |
+| Skills | Ordenan INIT, ADOPT, AUDIT, MIGRATE, RELEASE, INCIDENT y la estrategia transversal | [skills](skills/README.md) |
+| Roles | Especialistas con activadores y entregables definidos | [catálogo de agentes](agents/README.md) |
+| Herramientas | Valida la biblioteca y selecciona el contexto pertinente | [scripts](scripts/) y [VERIFICATION](docs/VERIFICATION.md) |
+
+## Cómo se desarrolla un producto: dos fases conectadas
+
+La skill nueva [EOS STRATEGY](skills/eos-strategy/SKILL.md) enlaza la mirada de producto y operación con la ingeniería. El GIF siguiente recorre el ciclo. Si el lector tiene activada la preferencia del sistema para reducir movimiento, se presenta la versión estática.
+
+<picture>
+  <source srcset="docs/assets/eos-strategy-flow.png" media="(prefers-reduced-motion: reduce)">
+  <img src="docs/assets/eos-strategy-flow.gif" alt="Diagrama animado del flujo EOS: la fase CEO y manager define problema, cliente, prioridad, alcance y capacidad; la fase de producto e ingeniería diseña, construye, verifica y entrega; medir y aprender devuelve la evidencia a la estrategia." width="100%">
+</picture>
+
+[Ver el diagrama sin animación](docs/assets/eos-strategy-flow.png).
+
+| Fase | Qué decide o realiza | Entrega que permite avanzar |
+|---|---|---|
+| **1. CEO/manager: estrategia y dirección** | Define el problema, usuario/cliente, valor, mercado, prioridad, primera entrega útil y capacidad real. Evalúa marketing, personas/HR, operación, economía y jurisdicción. | Hipótesis, objetivo observable, límites, responsable y áreas marcadas como `EN ALCANCE`, `DIFERIDA`, `NO APLICA` o `PENDIENTE`. |
+| **2. Producto/ingeniería: construir, integrar y aprender** | Inspecciona el sistema, traduce la prioridad a tareas pequeñas, implementa dentro del alcance autorizado, verifica comportamiento y prepara su operación. | Cambio reproducible, evidencia de aceptación, responsable operativo y decisión informada sobre el siguiente paso. |
+
+La segunda fase devuelve mediciones y feedback a la primera. Se vuelve a evaluar cuando cambian el alcance, el mercado, los datos, la capacidad o la evidencia. No se repite el cuestionario completo si la decisión ya está contestada.
+
+### Qué preguntas hace al iniciar un desarrollo
+
+Antes de proponer arquitectura o escribir código, EOS revisa lo que ya conoce y organiza la admisión alrededor de estas preguntas:
+
+1. ¿Qué problema concreto resolvemos, para quién y cómo lo resuelve hoy?
+2. ¿Quién usará, comprará, pagará y operará la solución? ¿En qué país o mercado?
+3. ¿Qué resultado observable demostrará que valió la pena?
+4. ¿Cuál es la primera entrega útil y qué queda fuera de esta iteración?
+5. ¿Qué evidencia tenemos sobre demanda, alternativas, diferenciación y canal de llegada? ¿Marketing entra ahora o se difiere?
+6. ¿Quién construye, decide, mantiene y atiende el producto? ¿Qué límite real de tiempo o habilidades cambia el plan? ¿Hay una brecha de capacidad o HR?
+7. ¿Qué presupuesto, fechas, datos, integraciones, permisos u obligaciones podrían cambiar la solución?
+
+El agente investiga primero los hechos disponibles en el repositorio y presenta las respuestas conocidas. Pregunta solo por decisiones pendientes que cambien el alcance, el riesgo, el costo o la aceptación; si faltan datos secundarios, los deja como pendientes con responsable y continúa lo independiente. Un cambio pequeño que no altera producto ni operación no necesita una entrevista estratégica extensa.
+
+### Marketing, personas y gestión sin fingir una empresa grande
+
+Las áreas se revisan en cada admisión, pero se activan solo cuando aportan al objetivo. Esto permite aplicar la misma skill a una persona fundadora, un equipo existente o un producto internacional sin inventar departamentos ni copiar una estructura empresarial ajena.
+
+| Área | Se profundiza cuando… | Se registra |
+|---|---|---|
+| Marketing y crecimiento | Hay que validar usuarios, posicionar una oferta, conseguir adopción o planear lanzamiento. | Segmento, propuesta de valor, canal candidato, experimento y señal de éxito; o motivo para diferirlo. |
+| Personas / HR | La capacidad, conocimientos, colaboración, soporte o incorporación de alguien condicionan el plan. | Responsable real, brecha y alternativa: reducir alcance, capacitar, automatizar o proponer apoyo. No inicia contrataciones. |
+| Manager / operaciones | Hay decisiones recurrentes, dependencias, operación diaria o respuesta a fallos. | Prioridad de la sesión, dueño, bloqueo, proceso/checklist, cadencia de revisión y condición de escalamiento. |
+| Economía y jurisdicción | Costos, pagos, datos personales, contratos o expansión a otros países afectan la decisión. | Supuestos y fuentes; obligaciones por verificar con responsable competente. No se presentan como cumplimiento confirmado. |
+
+**Ejemplo:** si una sola persona crea una herramienta para un proceso interno en Perú, EOS identifica a esa persona como responsable, comprueba tiempo y habilidades disponibles, delimita una primera versión y registra marketing o contratación como diferidos si no hacen falta. Si luego se ofrece a clientes de otro país, se reabren el mercado, datos, operación y obligaciones que cambian con esa expansión.
+
+### Cómo se ve en una petición
+
+```text
+Aplica EOS 4.2.0 en MODE=INIT para esta herramienta.
+Objetivo: reducir el tiempo para completar el proceso descrito.
+Primero inspecciona el repositorio y resume qué sabes de usuarios, alcance y restricciones.
+Haz las preguntas estratégicas pendientes que sí cambiarían la solución.
+Evalúa marketing, personas/HR, operaciones y economía; deja explícito qué se difiere.
+Propón la primera entrega útil, criterios de aceptación y verificación antes de implementarla.
+```
+
 ## Sistema de agentes listo para clonar
 
 El repositorio funciona como sistema de orquestación en Claude Code, Codex u otros hosts. No requiere instalar dependencias: los agentes y skills son Markdown, y el validador e instalador usan solo Node.js 24.
@@ -22,7 +92,7 @@ git clone https://github.com/oprbguitar/dev-funcy-agents-03-10-26.git
 
 | Host | Cómo usarlo | Qué obtienes |
 |---|---|---|
-| Claude Code (dentro del repo) | Abre el clon; [CLAUDE.md](CLAUDE.md) importa [AGENTS.md](AGENTS.md) | Reglas EOS, 13 subagentes y 6 skills |
+| Claude Code (dentro del repo) | Abre el clon; [CLAUDE.md](CLAUDE.md) importa [AGENTS.md](AGENTS.md) | Reglas EOS, 13 subagentes y 7 skills |
 | Claude Code (como plugin) | `/plugin marketplace add oprbguitar/dev-funcy-agents-03-10-26` y luego instala `eos-agents` | Subagentes `eos-*` y skills en cualquier proyecto |
 | Claude Code (copia local) | `node scripts/install-agents.mjs --host claude --target <proyecto>` | `.claude/agents/`, `.claude/skills/`, `.eos/` y bloque en `AGENTS.md`/`CLAUDE.md` |
 | Codex | `node scripts/install-agents.mjs --host codex --target <proyecto>` | Bloque EOS en `AGENTS.md`, skills en `.agents/skills/`, roles en `.agents/eos-agents/` |
@@ -60,153 +130,7 @@ dev-funcy-agents-03-10-26/
 │  ├─ plugin.json                Plugin eos-agents para Claude Code
 │  └─ marketplace.json           Marketplace para `/plugin marketplace add`
 ├─ agents/                       13 definiciones de subagentes + README
-├─ skills/                       6 skills de modo: INIT, ADOPT, AUDIT, MIGRATE, RELEASE, INCIDENT
-├─ docs/
-│  ├─ manuals/                   12 módulos mayores de especificación
-│  ├─ sources/                   4 conversaciones fuente (bytes intactos + SHA-256) y trazabilidad
-│  ├─ CODEX-NAVIGATION-GUIDE.md  Orden de lectura y qué prevalece
-│  ├─ PROJECT-PROFILE.md         Perfil real de esta biblioteca
-│  ├─ VERIFICATION.md            Qué verifica y qué no el validador
-│  └─ DEPTH-REPORT.md            Medidas por módulo
-├─ prompts/                      Prompts de arranque y tareas tipo
-├─ templates/                    Registros reutilizables (ADR, EXEC-PLAN, INCIDENT-RECORD, …)
-├─ scripts/
-│  ├─ validate-library.mjs       Validador sin dependencias
-│  ├─ install-agents.mjs         Instalador para Claude Code / Codex
-│  └─ eos.mjs                    CLI: context, index, gate (con confianza), run, runs, eval-context
-├─ eos.gate.json                 Comandos que ejecuta `eos.mjs gate` en esta biblioteca
-├─ evals/context/cases.json      45 casos: dev (15, ajuste), holdout (20, nunca ajustado) y adversarial (10)
-└─ tests/                        Pruebas del validador (25), del instalador (17) y del CLI (24)
-```
-
-## Guía por host, paso a paso
-
-### Claude Code dentro de este repositorio
-
-1. Clona el repositorio y ábrelo en el Code tab.
-2. [CLAUDE.md](CLAUDE.md) importa [AGENTS.md](AGENTS.md); Claude lee las reglas EOS al iniciar.
-3. Pide un modo, por ejemplo: «Aplica EOS en MODE=AUDIT y entrégame hallazgos por severidad».
-4. Los 13 subagentes de [agents/](agents/README.md) y las 6 skills quedan disponibles para el orquestador.
-
-### Claude Code como plugin en cualquier proyecto
-
-```bash
-# en Claude Code
-/plugin marketplace add oprbguitar/dev-funcy-agents-03-10-26
-/plugin install eos-agents
-```
-
-Tras instalarlo, los subagentes `eos-*` aparecen en la lista de agentes del host y las skills se cargan cuando la tarea las necesita.
-
-### Claude Code o Codex como copia local
-
-```bash
-# simula primero y revisa qué se crearía
-node scripts/install-agents.mjs --host all --target ../mi-proyecto --dry-run
-
-# instala de verdad (claude | codex | all)
-node scripts/install-agents.mjs --host codex --target ../mi-proyecto
-```
-
-El instalador copia una instantánea de la biblioteca en `.eos/`, coloca agentes y skills en el lugar que cada host espera (`.claude/` para Claude Code, `.agents/` para Codex), reescribe los enlaces internos para que apunten a `.eos/`, añade un bloque EOS delimitado al final del `AGENTS.md` del destino y registra lo creado en `.eos/install-manifest.json`. **Nunca sobrescribe un archivo existente**: lo reporta como omitido. Ejecutarlo dos veces es seguro (idempotente).
-
-### Ahorro de tokens en el proyecto instalado
-
-El CLI viaja en `.eos/scripts/eos.mjs`. No usa modelos, red ni dependencias.
-
-```bash
-# qué secciones de constitución y manuales cargar para esta tarea (solo la lista)
-node .eos/scripts/eos.mjs context "corregir login y sesiones" --mode AUDIT --list
-
-# el paquete completo dentro de un presupuesto, a un archivo
-node .eos/scripts/eos.mjs context "corregir login y sesiones" --mode AUDIT --budget 6000 --out .eos/context.md
-
-# verificación con solo fallos resumidos (lee eos.gate.json del proyecto)
-node .eos/scripts/eos.mjs gate --json
-```
-
-`eos.gate.json` del proyecto destino define sus comandos, por ejemplo `{"commands":[{"name":"tests","run":"npm test"},{"name":"lint","run":"npm run lint"}]}`. Se ejecutan con la shell del sistema, por eso `gate` **no ejecuta nada sin revisión**: `gate --plan` muestra comandos, SHA-256 y estado; `gate --trust` registra tu aprobación en `~/.eos/trusted-gates.json` (fuera del repositorio, para que un repo no pueda autoaprobarse; `EOS_HOME` o `EOS_TRUST_STORE` cambian la ruta). La confianza cubre el archivo **y la revisión del repositorio** (árbol de HEAD, cambios sin commit y archivos nuevos no ignorados): si alguien cambia `package.json`, un script o un test, vuelve a `BLOCKED` aunque `npm test` siga igual. En un repositorio propio que editas a menudo, `gate --trust-commands` confía solo en los comandos, y el plan lo muestra como alcance reducido. Confiar no es aislar: un repositorio ajeno debe ejecutarse en un contenedor o una máquina desechable. Comandos de descarga y ejecución, borrado masivo, `git push`, `npm publish` o `gh pr merge` nunca se pueden confiar.
-
-### Actualizar una instalación existente
-
-```bash
-# desde la copia nueva de EOS: muestra nuevos, actualizados, conflictos y retirados sin escribir
-node scripts/install-agents.mjs --host all --target ../mi-proyecto --update --dry-run
-node scripts/install-agents.mjs --host all --target ../mi-proyecto --update
-```
-
-Se reemplaza solo lo que EOS instaló y nadie modificó (según el SHA-256 de `.eos/install-manifest.json`). La actualización es transaccional: primero planifica, luego respalda en `.eos/.update-backup/`, escribe, verifica cada hash y, ante cualquier error, restaura todo; el manifiesto se escribe al final. El instalador añade a `.gitignore` un bloque EOS para paquetes de contexto, respaldos y `.eos-new`. Una edición local se conserva y la versión nueva queda junto a ella como `<archivo>.eos-new`. En instalaciones 3.x sin hashes, `.eos/` se trata como propiedad de EOS (se informa cada archivo y la versión anterior queda en el respaldo) y lo demás como conflicto. El bloque EOS de `AGENTS.md` se renueva entre sus marcadores. Los archivos retirados solo se informan.
-
-### Medir tokens y costo reales
-
-```bash
-node .eos/scripts/eos.mjs run --agent eos-planner --task "plan OAuth" -- claude -p "Planifica OAuth según EOS" --output-format json
-node .eos/scripts/eos.mjs runs
-```
-
-`run` ejecuta el comando **sin shell**: cada argumento llega literal, así que `;`, `&`, `|`, `# Pierre R. Boss — Engineering Operating System
-
-**EOS · Edición de especificaciones de ingeniería 4.1.0 · 4 de octubre de 2026 · Perú**
-
-> Quiero software que pueda entender, verificar, proteger, mantener y entregar. Quiero que cada decisión tenga una razón, cada permiso un límite y cada resultado una prueba. La IA debe ampliar mi capacidad de trabajo sin quitarme el control del sistema.
->
-> — Pierre R. Boss / oprbguitar, declaración editorial de esta edición
-
-EOS es mi biblioteca de instrucciones para dirigir trabajo de ingeniería con Claude, Codex, modelos locales y otros entornos de agentes. Reúne arquitectura, desarrollo, revisión, seguridad activa, IA conectable, datos, pagos, almacenamiento, operación, UX, cumplimiento, propiedad intelectual y transferencia del producto.
-
-La biblioteca convierte cuatro conversaciones anteriores en procedimientos verificables. Conserva la constitución existente y desarrolla sus reglas con responsables, contratos, registros, escenarios de fallo y criterios de aceptación. Está escrita para dirigir mis proyectos con decisiones explícitas sobre autoridad, invariantes, concurrencia, recursos, recuperación y evidencia. Cada módulo mayor desarrolla una especificación extensa que puedo aplicar por sección y revisar contra el sistema concreto.
-
-**Autoría y dirección: Pierre R. Boss (oprbguitar). Desarrollo documental asistido por IA.** La firma es editorial; su alcance está explicado en [AUTHORSHIP.md](AUTHORSHIP.md).
-
-## Sistema de agentes listo para clonar
-
-El repositorio funciona como sistema de orquestación en Claude Code, Codex u otros hosts. No requiere instalar dependencias: los agentes y skills son Markdown, y el validador e instalador usan solo Node.js 24.
-
-```bash
-git clone https://github.com/oprbguitar/dev-funcy-agents-03-10-26.git
-```
-
-| Host | Cómo usarlo | Qué obtienes |
-|---|---|---|
-| Claude Code (dentro del repo) | Abre el clon; [CLAUDE.md](CLAUDE.md) importa [AGENTS.md](AGENTS.md) | Reglas EOS, 13 subagentes y 6 skills |
-| Claude Code (como plugin) | `/plugin marketplace add oprbguitar/dev-funcy-agents-03-10-26` y luego instala `eos-agents` | Subagentes `eos-*` y skills en cualquier proyecto |
-| Claude Code (copia local) | `node scripts/install-agents.mjs --host claude --target <proyecto>` | `.claude/agents/`, `.claude/skills/`, `.eos/` y bloque en `AGENTS.md`/`CLAUDE.md` |
-| Codex | `node scripts/install-agents.mjs --host codex --target <proyecto>` | Bloque EOS en `AGENTS.md`, skills en `.agents/skills/`, roles en `.agents/eos-agents/` |
-| Otro host o modelo local | Entrega `AGENTS.md`, la skill del modo y el archivo del rol | Las mismas reglas por lectura manual |
-
-El instalador acepta `--dry-run` para revisar el efecto antes de escribir, nunca sobrescribe archivos existentes y registra lo creado en `.eos/install-manifest.json`. Revisa las herramientas de cada agente antes de habilitarlo en un proyecto con datos sensibles.
-
-| Agente | Para qué |
-|---|---|
-| [eos-orchestrator](agents/eos-orchestrator.md) | Coordina admisión, plan, delegación, integración, verificación y publicación autorizada |
-| [eos-planner](agents/eos-planner.md) | Planes ejecutables con hitos verificables y ownership de archivos |
-| [eos-architect](agents/eos-architect.md) | Contratos, tres alternativas y ADR |
-| [eos-tdd-guide](agents/eos-tdd-guide.md) | Pruebas primero y caracterización de sistemas existentes |
-| [eos-implementer](agents/eos-implementer.md) | Cambios acotados con verificación |
-| [eos-code-reviewer](agents/eos-code-reviewer.md) / [eos-security-reviewer](agents/eos-security-reviewer.md) | Revisión en solo lectura con severidad y evidencia |
-| [eos-qa-verifier](agents/eos-qa-verifier.md) | Ejecuta verificaciones y reporta estados exactos |
-| [eos-docs-writer](agents/eos-docs-writer.md) | Documentación sincronizada y firmada |
-| [eos-migration-archaeologist](agents/eos-migration-archaeologist.md) | Inventario y reglas ocultas de sistemas heredados |
-| [eos-incident-commander](agents/eos-incident-commander.md) | Respuesta a incidentes y postmortem |
-| [eos-release-manager](agents/eos-release-manager.md) | Releases reproducibles y transferencia |
-| [eos-compliance-analyst](agents/eos-compliance-analyst.md) | Aplicabilidad normativa, licencias y promesas comerciales |
-
-El diseño toma patrones verificables de los principales sistemas de agentes —procedimientos por rol y artefactos intermedios, grafos de estado con puntos de control, transferencias con guardrails, sandboxes paralelos, subagentes definidos en archivo, instrucciones por directorio y planes ejecutables— sin depender de ninguno. El detalle está en [AGENT-ORCHESTRATION](docs/manuals/AGENT-ORCHESTRATION.md), Parte II.
-
-## Mapa del repositorio
-
-```text
-dev-funcy-agents-03-10-26/
-├─ AGENTS.md                      Reglas de arranque para cualquier host (fuente única)
-├─ CLAUDE.md                      Importa AGENTS.md para Claude Code
-├─ EOS-CORE.md                    Núcleo obligatorio (~2k tokens) y tabla de carga bajo demanda
-├─ EOS_MASTER_SYSTEM_INSTRUCTION.md   Constitución maestra (secciones 0–95), solo por secciones
-├─ library.json                  Manifiesto: documentos, fuentes, agentes y pisos por módulo
-├─ .claude-plugin/
-│  ├─ plugin.json                Plugin eos-agents para Claude Code
-│  └─ marketplace.json           Marketplace para `/plugin marketplace add`
-├─ agents/                       13 definiciones de subagentes + README
-├─ skills/                       6 skills de modo: INIT, ADOPT, AUDIT, MIGRATE, RELEASE, INCIDENT
+├─ skills/                       7 skills: seis modos y STRATEGY para dirección recurrente
 ├─ docs/
 │  ├─ manuals/                   12 módulos mayores de especificación
 │  ├─ sources/                   4 conversaciones fuente (bytes intactos + SHA-256) y trazabilidad
@@ -232,7 +156,7 @@ dev-funcy-agents-03-10-26/
 1. Clona el repositorio y ábrelo en el Code tab.
 2. [CLAUDE.md](CLAUDE.md) importa [AGENTS.md](AGENTS.md); Claude lee las reglas EOS al iniciar.
 3. Pide un modo, por ejemplo: «Aplica EOS en MODE=AUDIT y entrégame hallazgos por severidad».
-4. Los 13 subagentes de [agents/](agents/README.md) y las 6 skills quedan disponibles para el orquestador.
+4. Los 13 subagentes de [agents/](agents/README.md) y las 7 skills quedan disponibles para el orquestador.
 
 ### Claude Code como plugin en cualquier proyecto
 
@@ -324,6 +248,7 @@ Los números miden alcance, no calidad técnica; la revisión de dominio sigue s
 | Lo que necesitas | Entrada | Resultado esperado |
 |---|---|---|
 | Entender el marco completo | [Constitución maestra](EOS_MASTER_SYSTEM_INSTRUCTION.md) y [mapa de lectura](docs/CODEX-NAVIGATION-GUIDE.md) | Saber qué reglas aplican y qué partes están dormidas |
+| Alinear producto, estrategia y capacidad | [STRATEGY](skills/eos-strategy/SKILL.md) | Preguntas de admisión, prioridades y checkpoints recurrentes |
 | Crear un producto | [INIT](skills/eos-init/SKILL.md) | Perfil, decisiones, implementación autorizada y pruebas |
 | Adoptar software existente | [ADOPT](skills/eos-adopt/SKILL.md) | Baseline, reglas reales, brechas y mejora progresiva |
 | Revisar sin cambiar el sistema | [AUDIT](skills/eos-audit/SKILL.md) | Hallazgos respaldados por evidencia y limitaciones |
@@ -365,7 +290,7 @@ La constitución sirve de entrada y autoridad común. Las skills, prompts y plan
 Ejemplo de petición adaptada:
 
 ```text
-Aplica EOS 4.1.0 en MODE=ADOPT a este repositorio.
+Aplica EOS 4.2.0 en MODE=ADOPT a este repositorio.
 Objetivo: documentar y corregir el fallo de sesión que describo.
 Alcance: autenticación web y pruebas relacionadas.
 No cambies pagos, base de datos ni infraestructura.
