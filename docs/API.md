@@ -119,6 +119,8 @@ BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · 
 
 | Método | Ruta | Descripción |
 |---|---|---|
+| GET | `/api/v1/intel/coverage/radar?bbox=o,s,e,n` | Comisarías territoriales a la vista con `inflexion_km` (mitad de la distancia a la vecina, máx. 25 km); `truncated` si hay más de 600. `kind: calculado`. |
+| POST | `/api/v1/local/shutdown` | Cierra el servidor del mapa. Solo instalación local, solo desde 127.0.0.1 y mismo origen. |
 | GET | `/api/v1/intel/ops/catalog` | Tipos de recurso (modo, sede de salida, personas, alistamiento, velocidad o factor), incidencias, instituciones de costo, perfil horario de tráfico (supuesto), tarifario de **ejemplo** (no oficial), conteo de apoyos y límites. |
 | GET | `/api/v1/intel/ops/facilities?bbox=o,s,e,n&cat=&limit=` | Apoyos dentro del recuadro: comisaría, serenazgo, fiscalía, judicial (OSM), hospital y salud (RENIPRESS), bomberos (OSM), aeropuerto, puerto, base_militar, base_naval, mercado (OSM). Con `provenance`. |
 | GET | `/api/v1/intel/ops/nearest?lat=&lon=&cat=&n=3&max_km=400` | Apoyos más cercanos por categoría con distancia en línea recta. |

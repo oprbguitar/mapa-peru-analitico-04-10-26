@@ -18,7 +18,8 @@ import { initPlaces, toggleEmergencias, toggleSede, toggleServicio, toggleVias }
 import { bindRail, bindRailView, renderKindKey, renderRail, setLiveMeta, showThematic, thematicChips } from './rail.js'
 import { pickHandler as routePick, plan as planRoute, renderRoutes, setEndpoint } from './routes.js'
 import { draw, initTimeline, setNote, syncPresets } from './timeline.js'
-import { esc, getJSON, setState, state, toast } from './util.js'
+import { esc, getJSON, postJSON, setState, state, toast } from './util.js'
+import { bindRadarButton, isRadarOn, radarClick } from './comisaria-radar.js'
 import { initVision, openCameras, pickHandler as visionPick, refreshLayer as refreshCameras } from './vision.js'
 import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { setFxMode, setWeatherFx } from './wxfx.js'
@@ -344,6 +345,22 @@ async function setMode(m) {
   }
 }
 
+// ── cerrar el mapa (solo instalación local): detiene el servidor para que no quede cargando de fondo ──
+function bindCloseMap() {
+  const btn = document.getElementById('close-map')
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname)) return
+  btn.hidden = false
+  btn.addEventListener('click', async () => {
+    if (!confirm('¿Cerrar el mapa? Se detiene el servidor en esta PC. Para volver a abrirlo usa INICIAR-MAPA.bat.')) return
+    try {
+      await postJSON('/api/v1/local/shutdown', {})
+      document.body.innerHTML = `<main class="closed-screen"><h1>Mapa cerrado</h1>
+        <p>El servidor se detuvo y el puerto 8360 quedó libre. Ya puedes cerrar esta pestaña.</p>
+        <p>Para abrirlo otra vez: doble clic en <b>INICIAR-MAPA.bat</b>.</p></main>`
+    } catch (e) { toast(`No se pudo cerrar: ${e.message}`) }
+  })
+}
+
 // ── búsqueda ────────────────────────────────────────────────────────────────
 function bindSearch() {
   const input = document.getElementById('search')
@@ -616,6 +633,8 @@ async function boot() {
   bindTheme()
   bindSearch()
   document.getElementById('open-admin').addEventListener('click', openAdmin)
+  bindCloseMap()
+  bindRadarButton(document.getElementById('btn-radar'))
   document.getElementById('modes').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-mode]')
     if (!b) return
@@ -634,6 +653,7 @@ async function boot() {
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
       if (mode === 'simular') return import('./simulation.js').then((s) => s.onMapClick(e))
       if (mode === 'operativos') return import('./joint-ops.js').then((s) => s.onMapClick(e))
+      if (isRadarOn() && mode !== 'simular') { if (!e.originalEvent?.target?.closest?.('.maplibregl-marker')) radarClick(e.lngLat); return }
       if (state.live.has('sun')) {
         if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
         showPanel()

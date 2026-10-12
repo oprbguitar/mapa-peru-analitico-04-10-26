@@ -11,7 +11,7 @@ EOS ──(gobierno de desarrollo y auditoría)───────────
 
 ## Arranque rápido
 
-**Doble clic en `INICIAR-MAPA.bat`** → abre `http://127.0.0.1:8360/`.
+**Doble clic en `INICIAR-MAPA.bat`** → abre `http://127.0.0.1:8360/`. Para cerrarlo: **⏻ Cerrar mapa** (menú ⋯) o `CERRAR-MAPA.bat`.
 
 O manualmente:
 

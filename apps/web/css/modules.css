@@ -861,3 +861,45 @@ body[data-rail="off"] .ex-legend { left: calc(var(--gap) * 3 + var(--edge-tab) +
   .ex-leg-body { height: 90px; }
   .ex-legend .src-meta { display: none; }
 }
+
+/* cierre del mapa (instalación local) */
+.btn-shutdown { color: var(--danger); }
+.btn-shutdown:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.closed-screen { min-height: 100vh; display: grid; place-content: center; gap: var(--sp-3); padding: var(--sp-5); text-align: center; background: var(--void); color: var(--ink); }
+.closed-screen h1 { font: 700 var(--fs-display) var(--font-display); color: var(--accent); margin: 0; }
+.closed-screen p { margin: 0; color: var(--ink-soft); }
+
+/* radar de comisarías (Mapa y Operativos) */
+.radar-panel { position: fixed; z-index: 9; left: calc(var(--rail-space) + var(--gap)); bottom: calc(var(--spine-space) + var(--gap) + var(--attrib-h));
+  width: min(360px, calc(100vw - var(--gap) * 2)); max-height: min(70vh, 640px); overflow-y: auto; padding: var(--sp-3);
+  display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-label); }
+.radar-panel[hidden] { display: none; }
+.radar-head { display: flex; justify-content: space-between; align-items: center; }
+.radar-head b { font: 700 var(--fs-label) var(--font-mono); letter-spacing: var(--tracking-hud); text-transform: uppercase; color: var(--accent); }
+.radar-name { margin: 0; font: 700 var(--fs-h3) var(--font-display); }
+.radar-h { margin: var(--sp-1) 0 0; font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.radar-kv { margin: 0; display: grid; gap: 2px; }
+.radar-kv div { display: flex; justify-content: space-between; gap: var(--sp-2); border-bottom: var(--border) solid var(--line); padding: 2px 0; }
+.radar-kv dt { display: flex; align-items: center; gap: var(--sp-2); color: var(--ink-soft); }
+.radar-kv dd { margin: 0; font: 700 var(--fs-label) var(--font-mono); }
+.radar-k { display: inline-block; width: 16px; height: 10px; border: 2px solid var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 15%, transparent); }
+.radar-k.is-solid { border-radius: 50%; background: none; }
+.radar-k.is-dash { border-radius: 50%; border-style: dashed; background: none; }
+.radar-k.is-dot { border-radius: 50%; border-style: dotted; border-color: var(--info); background: none; }
+.radar-list, .radar-inside { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.radar-list li { display: flex; justify-content: space-between; gap: var(--sp-2); }
+.radar-list span { color: var(--ink-muted); font-family: var(--font-mono); font-size: var(--fs-caption); white-space: nowrap; }
+.radar-inside li { display: flex; align-items: center; gap: var(--sp-2); }
+.radar-inside i { width: 10px; height: 10px; border-radius: 50%; }
+.radar-inside b { margin-left: auto; font-family: var(--font-mono); }
+.radar-off { margin: 0; }
+.pop-actions { margin-top: var(--sp-2); }
+body.jo-on .radar-panel { left: calc(var(--jo-left-w) + var(--gap) * 2); bottom: var(--jo-body-bottom); }
+body.sim-on .radar-panel { display: none; }
+@media (max-width: 1023px) { body.jo-on .radar-panel { left: var(--gap); } }
+@media (max-width: 767px) {
+  .radar-panel { left: var(--gap); right: var(--gap); width: auto; bottom: calc(var(--spine-h) + 48px + var(--gap) * 3); max-height: 46vh; }
+  body.jo-on .radar-panel { bottom: var(--jo-body-bottom); }
+}
+.radar-list .jo-link { color: var(--accent); text-align: left; }
+.radar-list .jo-link:hover { color: var(--ink); }

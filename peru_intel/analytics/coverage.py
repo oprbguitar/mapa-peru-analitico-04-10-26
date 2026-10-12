@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 
 from .. import config
 from ..simulation import accessibility as sim_access
@@ -25,6 +26,18 @@ INDICATORS = {201: "Comisarías básicas", 202: "Personal policial", 205: "Vehí
 
 class CoverageError(ValueError):
     pass
+
+
+# Unidades policiales que no atienden un territorio (direcciones, divisiones, escuelas, batallones…): no compiten por el área
+_NOT_TERRITORIAL = re.compile(r"direcci[oó]n|dirproc|dirin|divisi[oó]n|divpol|batall|canina|escuela|complejo|bienestar|hospital|"
+                              r"departamento|unidad de servicios especiales|grupo|brigada|regi[oó]n policial|frente policial|jefatura|estado mayor|museo|"
+                              r"club|villa |colegio|sanidad|almac[eé]n|taller|helipuerto|aviaci[oó]n|cuartel|fondo|vivienda|caja |cooperativa|mutual|"
+                              r"oficina|administrativ|polic[ií]a canina|cementerio|incri|divin|dirin|depin|antidrog|dirandro|inteligencia|dipro|divpro|udex|suat|dinoes|sucamec", re.I)
+
+
+def territorial(item: dict) -> bool:
+    """¿La dependencia atiende un territorio (comisaría, sección, puesto)? Las sin nombre en OSM se cuentan como tales."""
+    return item.get("cat") == "comisaria" and not _NOT_TERRITORIAL.search(item.get("name") or "")
 
 
 def _items() -> list[dict]:
@@ -106,7 +119,7 @@ def comisaria(sid: str, max_km: float = 25.0) -> dict:
         raise CoverageError("Comisaría no encontrada.")
     lat0, lon0 = me["lat"], me["lon"]
     # OSM a veces repite la misma sede (nodo y edificio): a menos de DUP_KM se considera la misma comisaría
-    others = sorted(((km(lat0, lon0, i["lat"], i["lon"]), i) for i in items if i["cat"] == "comisaria" and i["id"] != sid),
+    others = sorted(((km(lat0, lon0, i["lat"], i["lon"]), i) for i in items if territorial(i) and i["id"] != sid),
                     key=lambda t: t[0])
     duplicates = [o for d, o in others if d < DUP_KM]
     others = [(d, o) for d, o in others if d >= DUP_KM]
@@ -142,17 +155,18 @@ def comisaria(sid: str, max_km: float = 25.0) -> dict:
         "area_km2": round(area, 2), "reach_km": round(reach, 2),
         "inflexion_km": neighbors[0]["inflexion_km"] if neighbors else None,
         "mean_inflexion_km": round(sum(n["inflexion_km"] for n in neighbors[:3]) / len(neighbors[:3]), 2) if neighbors else None,
-        "neighbors": neighbors, "duplicates": len(duplicates), "inside": inside, "inside_counts": {c: len(v) for c, v in inside.items()},
+        "neighbors": neighbors, "duplicates": len(duplicates), "territorial": territorial(me), "inside": inside, "inside_counts": {c: len(v) for c, v in inside.items()},
         "district": _official(me.get("ubigeo") or ""),
         "method": ("Área de atención por cercanía (Voronoi) en un plano local, limitada a %g km; radio de inflexión = mitad de la "
-                   "distancia a la comisaría vecina. Ubicaciones OSM aproximadas; no considera red vial ni jurisdicción oficial." % max_km),
+                   "distancia a la comisaría vecina (solo dependencias territoriales: no cuentan direcciones, divisiones, escuelas ni batallones). Ubicaciones OSM aproximadas; no considera red vial ni jurisdicción oficial." % max_km),
         "kind": "calculado",
         "provenance": [{"institution": "OpenStreetMap / colaboradores", "nature": "vivo_tercero", "geographic_level": "punto",
                         "transform": "Sedes etiquetadas police/townhall; cálculo geométrico propio."}],
     }
 
 
-def nearest(lat: float, lon: float, per_cat: int = 3, speed_kmh: float | None = None, circuity: float | None = None) -> dict:
+def nearest(lat: float, lon: float, per_cat: int = 3, speed_kmh: float | None = None, circuity: float | None = None,
+            only_territorial: bool = False) -> dict:
     lat, lon = float(lat), float(lon)
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         raise CoverageError("Coordenadas inválidas.")
@@ -163,9 +177,32 @@ def nearest(lat: float, lon: float, per_cat: int = 3, speed_kmh: float | None = 
     out = {}
     items = _items()
     for c in CATS:
-        rows = sorted(((km(lat, lon, i["lat"], i["lon"]), i) for i in items if i["cat"] == c), key=lambda t: t[0])[:per_cat]
+        rows = sorted(((km(lat, lon, i["lat"], i["lon"]), i) for i in items if i["cat"] == c and (c != "comisaria" or not only_territorial
+                       or territorial(i))), key=lambda t: t[0])[:per_cat]
         out[c] = [{"id": i["id"], "name": i.get("name"), "lat": i["lat"], "lon": i["lon"], "km": round(dd, 2),
                    "eta_min": round(dd * circ / speed * 60, 1)} for dd, i in rows]
     return {"point": [lon, lat], "by_cat": out, "assumptions": {"speed_kmh": speed, "circuity": circ},
             "method": "Tiempo = distancia en línea recta × rodeo ÷ velocidad (supuestos del simulador; sin tráfico real).",
             "kind": "estimacion"}
+
+
+def radar(bbox: tuple[float, float, float, float], limit: int = 600) -> dict:
+    """Comisarías territoriales dentro del recuadro con su radio de inflexión (mitad de la distancia a la vecina más cercana)."""
+    w, so, e, n = bbox
+    pad = 0.25  # las vecinas pueden estar fuera de la vista
+    items = [i for i in _items() if territorial(i)]
+    near = [i for i in items if w - pad <= i["lon"] <= e + pad and so - pad <= i["lat"] <= n + pad]
+    view = [i for i in near if w <= i["lon"] <= e and so <= i["lat"] <= n]
+    if len(view) > limit:
+        return {"items": [], "truncated": True, "count": len(view), "note": "Acerca el mapa: hay demasiadas comisarías en la vista."}
+    out = []
+    for i in view:
+        d = min((km(i["lat"], i["lon"], o["lat"], o["lon"]) for o in near if o is not i and
+                 km(i["lat"], i["lon"], o["lat"], o["lon"]) >= DUP_KM), default=None)
+        out.append({"id": i["id"], "name": i.get("name"), "lat": i["lat"], "lon": i["lon"], "distrito": i.get("distrito"),
+                    "nearest_km": round(d, 2) if d is not None else None,
+                    "inflexion_km": round(min(d / 2, 25.0), 2) if d is not None else 25.0})
+    return {"items": out, "truncated": False, "count": len(out), "kind": "calculado",
+            "method": "Radio de inflexión = mitad de la distancia en línea recta a la comisaría territorial más cercana (máx. 25 km). "
+                      "Ubicaciones OSM aproximadas; no es la jurisdicción oficial ni considera la red vial.",
+            "provenance": [{"institution": "OpenStreetMap / colaboradores", "nature": "vivo_tercero", "geographic_level": "punto"}]}

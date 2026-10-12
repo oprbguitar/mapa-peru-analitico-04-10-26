@@ -109,7 +109,10 @@ def route_get(path: str, q: dict):
             if p[2] == "comisaria":
                 return coverage.comisaria(_one(q, "id", ""), float(_one(q, "max_km", 25) or 25))
             if p[2] == "nearest":
-                return coverage.nearest(_one(q, "lat"), _one(q, "lon"), _int(q, "n", 3), _one(q, "speed"), _one(q, "circuity"))
+                return coverage.nearest(_one(q, "lat"), _one(q, "lon"), _int(q, "n", 3), _one(q, "speed"), _one(q, "circuity"),
+                                        _one(q, "territorial") == "1")
+            if p[2] == "radar":
+                return coverage.radar(_bbox_values(q))
         except (coverage.CoverageError, TypeError, ValueError) as e:
             raise ApiError(400, str(e))
     if len(p) == 4 and p[:3] == ["intel", "weather", "gibs-range"]:

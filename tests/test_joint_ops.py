@@ -106,3 +106,45 @@ class InfraestructuraTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RadarComisariasTest(unittest.TestCase):
+    ITEMS = [
+        {"id": "a", "cat": "comisaria", "name": "Comisaría PNP Uno", "lat": -12.00, "lon": -77.00},
+        {"id": "b", "cat": "comisaria", "name": "Comisaría PNP Dos", "lat": -12.00, "lon": -77.02},
+        {"id": "x", "cat": "comisaria", "name": "DIVINCRI Lima", "lat": -12.00, "lon": -77.005},
+        {"id": "y", "cat": "comisaria", "name": "Dirección de Seguridad del Estado", "lat": -12.001, "lon": -77.001},
+    ]
+
+    def test_territorial(self):
+        from peru_intel.analytics import coverage
+        self.assertTrue(coverage.territorial(self.ITEMS[0]))
+        self.assertFalse(coverage.territorial(self.ITEMS[2]))
+        self.assertFalse(coverage.territorial(self.ITEMS[3]))
+        self.assertTrue(coverage.territorial({"cat": "comisaria", "name": "Dependencia policial (sin nombre en OSM)"}))
+
+    def test_radar_ignora_unidades_no_territoriales(self):
+        from peru_intel.analytics import coverage
+        with mock.patch.object(coverage, "_items", lambda: self.ITEMS):
+            r = coverage.radar((-77.1, -12.1, -76.9, -11.9))
+            self.assertEqual({i["id"] for i in r["items"]}, {"a", "b"})
+            a = next(i for i in r["items"] if i["id"] == "a")
+            self.assertAlmostEqual(a["inflexion_km"], a["nearest_km"] / 2, places=2)
+            self.assertGreater(a["nearest_km"], 2)   # la vecina es «b» (≈2,2 km), no la DIVINCRI a 0,5 km
+
+
+class CerrarMapaTest(unittest.TestCase):
+    def test_cerrar_envia_post_local(self):
+        from io import BytesIO
+        from scripts import iniciar_local
+        with mock.patch.object(iniciar_local.urllib.request, "urlopen", return_value=BytesIO(b'{"ok": true}')) as call:
+            self.assertEqual(iniciar_local.main(["--cerrar"]), 0)
+            req = call.call_args.args[0]
+            self.assertTrue(req.full_url.endswith("/api/v1/local/shutdown"))
+            self.assertEqual(req.get_method(), "POST")
+
+    def test_cerrar_si_ya_estaba_cerrado(self):
+        from scripts import iniciar_local
+        err = iniciar_local.urllib.error.URLError(ConnectionRefusedError())
+        with mock.patch.object(iniciar_local.urllib.request, "urlopen", side_effect=err):
+            self.assertEqual(iniciar_local.main(["--cerrar"]), 0)

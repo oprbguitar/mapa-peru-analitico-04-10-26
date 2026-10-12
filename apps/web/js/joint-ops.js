@@ -128,6 +128,7 @@ function onFacClick(e) {
     <div class="pop-row"><span>Tipo</span><b>${esc(lab)}</b></div>
     ${o ? `<div class="pop-row"><span>A operativo ${o.n}</span><b>${fmt(kmBetween([o.lon, o.lat], e.features[0].geometry.coordinates), 1)} km</b></div>
       <div class="jo-row"><button class="btn" type="button" data-pop="link">Conectar al operativo ${o.n}</button></div>` : '<p class="src-meta">Selecciona un operativo para conectar este apoyo.</p>'}
+    ${f.cat === 'comisaria' ? `<div class="jo-row"><button class="btn btn-ghost" type="button" data-radar="${esc(f.id)}">◎ Radar y área de atención</button></div>` : ''}
     ${f.kind !== 'oficial' ? '<div class="note">Ubicación aproximada.</div>' : ''}`
   st.popup?.remove()
   st.popup = new maplibregl.Popup({ maxWidth: '300px', offset: 8 }).setLngLat(e.lngLat).setHTML(html).addTo(map)
@@ -640,6 +641,40 @@ function loadPlan(plan) {
   if (st.plan.operations.length) calculate()
 }
 
+/** Agrega los 4 operativos de ejemplo (marcados como tales) sin borrar los del usuario. */
+function addDemo() {
+  const demo = demoPlan()
+  if (!st.plan.operations.length) {
+    st.plan.name = demo.name
+    st.plan.hypothesis = { ...st.plan.hypothesis, ...demo.hypothesis }
+  }
+  for (const o of demo.operations) {
+    const n = nextN()
+    st.plan.operations.push({ ...o, id: `demo${Date.now().toString(36)}${n}`, n, demo: true })
+  }
+  st.sel = st.plan.operations.find((o) => o.demo)?.id || st.sel
+  st.result = null
+  paintRoutes()
+  changed({ near: true, calc: false })
+  fitAll()
+  calculate()
+}
+
+function removeOps(pred) {
+  pause()
+  st.plan.operations = st.plan.operations.filter((o) => !pred(o))
+  st.sel = st.plan.operations[0]?.id || null
+  st.near = null
+  st.result = null
+  st.t = 0
+  paintRoutes()
+  renderGantt()
+  changed({ near: true, calc: false })
+  renderBar()
+  status(st.plan.operations.length ? 'Plan actualizado. Pulsa <b>Calcular</b>.' : 'Plan vacío. Crea un operativo con <b>＋ Operativo en el mapa</b> o carga el <b>Ejemplo</b>.')
+  if (st.plan.operations.length) calculate()
+}
+
 function onClick(e) {
   const b = e.target.closest('[data-act]')
   if (!b || b.tagName === 'INPUT' && b.type !== 'button') return
@@ -650,7 +685,12 @@ function onClick(e) {
     case 'tab': st.tab = b.dataset.tab; renderLeft(); if (st.tab === 'apoyos' && !st.near) loadNear(); break
     case 'add-op': setPick(st.pick?.type === 'op' ? null : { type: 'op' }); break
     case 'cancel-pick': setPick(null); break
-    case 'demo': loadPlan(demoPlan()); break
+    case 'demo': addDemo(); break
+    case 'undemo': removeOps((x) => x.demo); toast('Ejemplo retirado. Puedes volver a cargarlo con «Ejemplo».'); break
+    case 'clear-ops':
+      if (confirm(`¿Quitar los ${st.plan.operations.length} operativos del plan? (Los planes guardados no se borran.)`)) removeOps(() => true)
+      break
+    case 'radar-toggle': import('./comisaria-radar.js').then((r) => r.toggleRadar()); break
     case 'sel-op': select(b.dataset.id); { const op = selOp(); if (op && !b.closest('.jo-left')) map.flyTo({ center: [op.lon, op.lat], zoom: Math.max(map.getZoom(), 12), duration: reduced() ? 0 : 800 }) } break
     case 'fly-op': map.flyTo({ center: [o.lon, o.lat], zoom: Math.max(map.getZoom(), 13), duration: reduced() ? 0 : 800 }); break
     case 'fit': fitAll(); break
@@ -766,7 +806,10 @@ function onKey(e) {
 
 // ── API para main.js ────────────────────────────────────────────────────────
 export function onMapClick(e) {
-  if (!st.pick) return
+  if (!st.pick) {
+    if (map.queryRenderedFeatures(e.point, { layers: ['jo-fac'] }).length) return
+    return import('./comisaria-radar.js').then((r) => r.radarClick(e.lngLat))
+  }
   if (st.pick.type === 'op') { setPick(null); return addOp(e.lngLat) }
   if (st.pick.type === 'origin') {
     const o = st.plan.operations.find((x) => x.id === st.pick.op)
@@ -796,6 +839,9 @@ export async function renderJointOps() {
   ensureLayers()
   ensureOverlay()
   setVis(true)
+  // planes guardados con la versión anterior: los operativos del ejemplo se reconocen por nombre y ubicación
+  const demoKeys = new Set(demoPlan().operations.map((o) => `${o.name}|${o.lat}|${o.lon}`))
+  for (const o of st.plan.operations) if (demoKeys.has(`${o.name}|${o.lat}|${o.lon}`)) o.demo = true
   st.sel ??= st.plan.operations[0]?.id || null
   paintMarkers()
   paintLinks()

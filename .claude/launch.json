@@ -12,18 +12,6 @@
         "8360"
       ],
       "port": 8360
-    },
-    {
-      "name": "mapa-peru-dev",
-      "runtimeExecutable": "python",
-      "runtimeArgs": [
-        "-m",
-        "peru_intel",
-        "serve",
-        "--port",
-        "8361"
-      ],
-      "port": 8361
     }
   ]
 }

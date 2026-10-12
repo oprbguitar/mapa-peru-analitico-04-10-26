@@ -1,5 +1,19 @@
 # Documentación — Mapa Perú Analítico
 
+## Radar de comisarías, limpiar ejemplos y un solo puerto con cierre · 12 de octubre de 2026
+
+| Pedido | Resultado |
+|---|---|
+| Borrar o retirar los operativos de ejemplo y volver a aplicarlos | En **Operativos**: **Retirar ejemplo** quita solo los operativos de ejemplo (marcados «ejemplo»; también los guardados con la versión anterior) y conserva los tuyos; **Limpiar todo** vacía el plan (con confirmación; los planes guardados no se tocan); **Ejemplo** los vuelve a agregar sin borrar los tuyos. |
+| Ubicar comisarías y ver su radar / alrededores con un clic, también en Mapa | Botón **◎ Comisarías** en la barra de vista del mapa (y **◎ Radar de comisarías** en Operativos → Apoyos). Con el radar activo, cada comisaría territorial a la vista muestra su **radio de inflexión** (mitad de la distancia a la vecina) y un clic en el mapa abre la **más cercana** con su **área de atención** (Voronoi), anillos de inflexión, inflexión media y alcance, barrido animado, vecinas (clic para saltar), sedes dentro del área y denuncias oficiales del **distrito** tal cual (sin repartir). También desde el popup de una comisaría (**◎ Radar y área de atención**). |
+| El área se veía mínima en Lima | Las direcciones, divisiones, escuelas, batallones y similares (DIRPROC, DIVINCRI, DIPROVE, Policía Canina…) ya no cuentan como «vecinas»: solo las dependencias territoriales. |
+| Un solo puerto y poder cerrar el mapa | Se quitaron las configuraciones 8361/8362: el mapa usa solo **8360**. **⏻ Cerrar mapa** (menú ⋯, solo en la instalación local) detiene el servidor; **CERRAR-MAPA.bat** hace lo mismo; si el mapa ya está abierto, **INICIAR-MAPA.bat** pregunta *[A] Abrir* o *[C] Cerrar*. El cierre solo se acepta desde esta PC y desde la propia página (403 desde otro origen). |
+
+API: `GET /api/v1/intel/coverage/radar?bbox=` · `GET /api/v1/intel/coverage/nearest?…&territorial=1` · `POST /api/v1/local/shutdown` (local).
+Verificación: 196 pruebas, `design-lint` APROBADO; navegador en 8360: radar en Mapa (Comisaría PNP Rímac: 1,58 km², inflexión 0,55 km) y
+en Operativos; retirar/limpiar/reaplicar ejemplo; el botón de cierre dejó sin procesos los puertos 8360–8362.
+
+
 ## Operativos conjuntos sobre el mapa · 12 de octubre de 2026
 
 Modo **Operativos** en la barra superior (en línea y local). Guía de uso: [docs/GUIA-OPERATIVOS.md](docs/GUIA-OPERATIVOS.md).

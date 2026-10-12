@@ -25,6 +25,7 @@ function placePopup(f, lngLat) {
     <div class="pop-row"><span>Tipo</span><b>${esc(CAT_LABEL[p.cat] || p.cat)}</b></div>
     ${p.detalle && p.detalle !== 'null' ? `<div class="src-meta">${esc(p.detalle)}</div>` : ''}
     ${p.distrito ? `<div class="src-meta">${esc(p.distrito)}${p.provincia ? ', ' + esc(p.provincia) : ''}</div>` : ''}
+    ${p.cat === 'comisaria' && p.id ? `<div class="pop-actions"><button class="btn" type="button" data-radar="${esc(p.id)}">◎ Radar y área de atención</button></div>` : ''}
     ${p.kind !== 'oficial' ? '<div class="note">Ubicación aproximada (OpenStreetMap).</div>' : ''}`)
 }
 

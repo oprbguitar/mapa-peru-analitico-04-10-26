@@ -296,6 +296,14 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
             if not isinstance(body, dict):
                 return self._json(400, {"error": "se esperaba un objeto JSON"})
+            if path == "/api/v1/local/shutdown":
+                # cerrar el mapa: solo instalación local y solo desde esta misma PC (no deja el proceso cargando de fondo)
+                if not simulation.is_local() or self.client_address[0] not in ("127.0.0.1", "::1"):
+                    return self._json(403, {"error": "Solo en la instalación local, desde esta PC"})
+                srv = self.server
+                threading.Timer(0.4, srv.shutdown).start()
+                print("Cierre pedido desde el mapa. Deteniendo…", flush=True)
+                return self._json(200, {"ok": True, "message": "Mapa cerrado. Puedes cerrar esta pestaña."})
             if path == "/api/v1/auth/login":
                 if not simulation.is_local():
                     return self._json(403, {"error": "Disponible solo en la instalación local"})

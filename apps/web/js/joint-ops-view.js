@@ -23,13 +23,15 @@ function opsHtml(st) {
   const sel = ops.find((o) => o.id === st.sel)
   return `<div class="jo-row">
       <button class="btn jo-btn-ops" type="button" data-act="add-op" aria-pressed="${st.pick?.type === 'op'}">＋ Operativo en el mapa</button>
-      <button class="btn btn-ghost" type="button" data-act="demo" title="Cuatro operativos simultáneos en Lima, Callao, Iquitos y Piura">Ejemplo</button>
+      ${ops.some((o) => o.demo) ? '<button class="btn btn-ghost" type="button" data-act="undemo" title="Quita solo los operativos de ejemplo">Retirar ejemplo</button>'
+        : '<button class="btn btn-ghost" type="button" data-act="demo" title="Agrega cuatro operativos simultáneos en Lima, Callao, Iquitos y Piura">Ejemplo</button>'}
+      ${ops.length ? '<button class="btn btn-ghost jo-danger" type="button" data-act="clear-ops" title="Quita todos los operativos del plan">Limpiar todo</button>' : ''}
     </div>
     ${ops.length ? `<ol class="jo-oplist">${ops.map((o) => {
       const r = st.result?.operations.find((x) => x.id === o.id)
       return `<li><button type="button" class="jo-op" data-act="sel-op" data-id="${o.id}" aria-pressed="${o.id === st.sel}">
         <span class="jo-num" style="--c:${opColor(o.n)}">${o.n}</span>
-        <span class="jo-op-main"><b>${esc(o.name)}</b><small>${esc(cat.incidents[o.incident]?.label || o.incident)} · ${esc(PRIORITY[o.priority] || '')}</small></span>
+        <span class="jo-op-main"><b>${esc(o.name)}${o.demo ? ' <small class="jo-demo">ejemplo</small>' : ''}</b><small>${esc(cat.incidents[o.incident]?.label || o.incident)} · ${esc(PRIORITY[o.priority] || '')}</small></span>
         <span class="jo-op-meta">${o.resources.reduce((a, x) => a + (+x.qty || 1), 0)} u.<small>${r?.first_arrival != null ? `1.ª ${fmtDur(r.first_arrival - r.start)}` : 'sin calcular'}</small></span>
       </button></li>`
     }).join('')}</ol>` : '<p class="note">Pulsa <b>＋ Operativo en el mapa</b> y haz clic donde ocurre, o carga el <b>Ejemplo</b>. Puedes tener varios operativos a la vez en distintas regiones.</p>'}
@@ -88,7 +90,8 @@ function supportsHtml(st) {
   const cat = st.catalog
   const o = st.plan.operations.find((x) => x.id === st.sel)
   const cats = Object.keys(cat.facility_labels)
-  return `<h3 class="jo-h">Capas de apoyo en el mapa</h3>
+  return `<div class="jo-row"><button class="btn" type="button" data-act="radar-toggle" id="jo-radar-btn" title="Radio de inflexión de cada comisaría; clic en el mapa = área de atención de la más cercana">◎ Radar de comisarías</button></div>
+    <h3 class="jo-h">Capas de apoyo en el mapa</h3>
     <div class="jo-cats">${cats.map((c) => `<label class="jo-chk"><input type="checkbox" data-act="fac-cat" data-cat="${c}" ${st.facCats.has(c) ? 'checked' : ''}>
       <span class="jo-fg" style="--c:${fColor(c)}">${FAC_GLYPH[c]}</span>${esc(cat.facility_labels[c])} <small>${(cat.counts[c] || 0).toLocaleString('es-PE')}</small></label>`).join('')}</div>
     <p class="src-meta">${kindBadge('oficial', 'RENIPRESS')} salud · ${kindBadge('vivo_tercero', 'OpenStreetMap')} el resto (ubicación aproximada). Desde zoom 9 se muestran todas; antes, solo aeropuertos, puertos y bases.</p>
@@ -97,7 +100,8 @@ function supportsHtml(st) {
       : !st.near ? '<p class="loading">Buscando sedes cercanas</p>'
       : `<div class="jo-near">${cats.filter((c) => st.near.by_cat[c]?.length).map((c) => `<div class="jo-near-cat"><b><span class="jo-fg" style="--c:${fColor(c)}">${FAC_GLYPH[c]}</span>${esc(cat.facility_labels[c])}</b>
         ${st.near.by_cat[c].map((f) => `<div class="jo-near-row"><span>${esc(f.name)}<small>${fmt(f.km, 1)} km en línea recta${f.distrito ? ' · ' + esc(f.distrito) : ''}</small></span>
-          <button class="btn btn-ghost" type="button" data-act="link" data-fid="${esc(f.id)}" data-cat="${c}" ${o.links?.some((l) => l.id === f.id) ? 'aria-pressed="true"' : ''}>Conectar</button></div>`).join('')}</div>`).join('')}</div>
+          <span class="jo-row">${c === 'comisaria' ? `<button class="btn btn-ghost" type="button" data-radar="${esc(f.id)}" title="Radar y área de atención">◎</button>` : ''}
+          <button class="btn btn-ghost" type="button" data-act="link" data-fid="${esc(f.id)}" data-cat="${c}" ${o.links?.some((l) => l.id === f.id) ? 'aria-pressed="true"' : ''}>Conectar</button></span></div>`).join('')}</div>`).join('')}</div>
         <p class="src-meta">${esc(st.near.note)}</p>`}`
 }
 

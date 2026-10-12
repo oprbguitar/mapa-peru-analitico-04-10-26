@@ -24,8 +24,40 @@ def is_mapa(payload: object) -> bool:
     return isinstance(payload, dict) and payload.get('ok') is True and payload.get('app') == 'Mapa Perú Analítico'
 
 
-def main() -> int:
+def shutdown() -> int:
+    """Cierra el mapa que corre en esta PC (puerto 8360) para que no quede cargando de fondo."""
+    req = urllib.request.Request(URL + 'api/v1/local/shutdown', data=b'{}', method='POST',
+                                 headers={'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            json.load(response)
+    except urllib.error.URLError as error:
+        if isinstance(getattr(error, 'reason', None), ConnectionRefusedError) or 'refused' in str(error).lower() or '10061' in str(error):
+            print('[i] El mapa ya estaba cerrado.')
+            return 0
+        print(f'[X] No se pudo cerrar el mapa: {error}')
+        return 1
+    print('[OK] Mapa cerrado. El puerto 8360 queda libre.')
+    return 0
+
+
+def ask_open_or_close() -> str:
+    """Si el mapa ya está abierto y hay consola, el mismo botón permite abrirlo o cerrarlo."""
+    if not sys.stdin or not sys.stdin.isatty():
+        return 'a'
+    print('[i] El mapa ya está abierto en http://127.0.0.1:8360/')
+    try:
+        answer = input('    [A] Abrir en el navegador   [C] Cerrar el mapa   (Enter = abrir): ').strip().lower()
+    except EOFError:
+        return 'a'
+    return 'c' if answer.startswith('c') else 'a'
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
     os.chdir(ROOT)
+    if '--cerrar' in argv:
+        return shutdown()
     if sys.version_info < (3, 11):
         print('[X] Se necesita Python 3.11 o superior.')
         return 1
@@ -35,6 +67,8 @@ def main() -> int:
             if not is_mapa(json.load(response)):
                 print('[X] El puerto 8360 está ocupado por otro servicio. No se detuvo ningún proceso.')
                 return 1
+        if ask_open_or_close() == 'c':
+            return shutdown()
         webbrowser.open(URL)
         return 0
     except urllib.error.URLError as error:
@@ -56,7 +90,7 @@ def main() -> int:
             return result.returncode
     if not (ROOT / 'data/parquet/sidpol_denuncias.parquet').exists():
         print('[i] Sin datos SIDPOL locales. Para cargarlos: python -m peru_intel ingest all --download')
-    print('[i] Inicio nativo. Cierra esta ventana o pulsa Ctrl+C para detener el mapa.', flush=True)
+    print('[i] Mapa en http://127.0.0.1:8360/  ·  Para cerrarlo: botón ⏻ Cerrar mapa (menú ⋯), CERRAR-MAPA.bat, Ctrl+C o cerrar esta ventana.', flush=True)
     from peru_intel.__main__ import main as cli
     return cli(['serve', '--port', '8360', '--open'])
 
