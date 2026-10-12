@@ -333,6 +333,7 @@ export async function playStory(id) {
   if (!s) return toast('Historia no disponible')
   if (story) close()
   story = { s, i: 0, playing: false, timer: null, min: false }
+  import('./enso-explain.js').then((x) => x.foldExplain())
   drawAll()
   render()
   loadEvents(id)

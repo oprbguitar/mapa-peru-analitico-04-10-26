@@ -6,6 +6,7 @@ Cada respuesta con cifras incluye `provenance` (quién lo publicó, período, ni
 from __future__ import annotations
 
 import json
+import threading
 import time
 
 from .. import config
@@ -37,6 +38,8 @@ from ..simulation import operations as sim_ops
 from ..simulation import scenarios as sim_scen
 from .. import activities, connections, jev, municipal, notify, reports, users
 from ..simulation import runs as sim_runs
+
+simulation.apply_public_limits()   # en línea: techos ligeros para no degradar el visor
 from ..storage import sqlite_store
 
 
@@ -84,6 +87,30 @@ def route_get(path: str, q: dict):
                 "layers": ADAPTER.get_available_layers(), "data": _data_status()}
     if p == ["meta", "settings"]:
         return _settings_public()
+    if p == ["meta", "models"]:
+        from ..ai import model_keys
+        return model_keys.public()
+    if p[:2] == ["intel", "coverage"] and len(p) == 3:
+        from ..analytics import coverage
+        try:
+            if p[2] == "comisaria":
+                return coverage.comisaria(_one(q, "id", ""), float(_one(q, "max_km", 25) or 25))
+            if p[2] == "nearest":
+                return coverage.nearest(_one(q, "lat"), _one(q, "lon"), _int(q, "n", 3), _one(q, "speed"), _one(q, "circuity"))
+        except (coverage.CoverageError, TypeError, ValueError) as e:
+            raise ApiError(400, str(e))
+    if len(p) == 4 and p[:3] == ["intel", "weather", "gibs-range"]:
+        from ..weather import overlays as _ov
+        r = _ov.gibs_ranges(p[3])
+        if r is None:
+            raise ApiError(404, "capa no disponible")
+        return r
+    if len(p) == 4 and p[:3] == ["intel", "weather", "colormap"]:
+        from ..weather import overlays as _ov
+        cm = _ov.colormap(p[3])
+        if not cm:
+            raise ApiError(404, "paleta no disponible")
+        return cm
     if p[:1] in (["imagery"], ["flights"], ["street"]):
         return _territorial_get(p, q)
     if p[:1] == ["sim"]:
@@ -363,19 +390,19 @@ def route_post(path: str, body: dict):
     if p == ["sim", "accessibility", "run"]:
         _sim_local()
         try:
-            return sim_runs.run_accessibility(body)
+            return _sim_run(sim_runs.run_accessibility, body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
     if p == ["sim", "agents", "run"]:
         _sim_local()
         try:
-            return sim_runs.run_agents(body)
+            return _sim_run(sim_runs.run_agents, body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
     if p == ["sim", "operations", "run"]:
         _sim_local()
         try:
-            return sim_runs.run_operations(body)
+            return _sim_run(sim_runs.run_operations, body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
     if p == ["jev", "evaluate"]:
@@ -482,11 +509,32 @@ def route_post(path: str, body: dict):
     if p == ["sim", "queue", "run"]:
         _sim_local()
         try:
-            return sim_runs.run_queue(body)
+            return _sim_run(sim_runs.run_queue, body)
         except sim_queue.SimUnavailable as e:
             raise ApiError(503, str(e))
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
+    if p == ["meta", "models"]:
+        users.require("settings")
+        from ..ai import model_keys
+        action = str(body.get("action") or "")
+        try:
+            if action == "save":
+                out = model_keys.upsert(body)
+            elif action == "delete":
+                out = model_keys.remove(str(body.get("id")))
+            elif action == "activate":
+                out = model_keys.activate(str(body.get("id")))
+            elif action == "deactivate":
+                out = model_keys.deactivate(str(body.get("role")))
+            elif action == "test":
+                return model_keys.test(str(body.get("id")))
+            else:
+                raise ApiError(400, "acción no válida")
+        except model_keys.ModelKeyError as e:
+            raise ApiError(400, str(e))
+        sqlite_store.audit("usuario-local", "modelos", {"action": action, "id": body.get("id") or body.get("provider")})
+        return out
     if p == ["meta", "settings"]:
         users.require("settings")
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
@@ -518,15 +566,30 @@ def _local_only():
 
 
 def _sim_local():
-    if not simulation.is_local():
-        raise ApiError(403, "El laboratorio de simulación solo funciona en la instalación local (INICIAR-MAPA.bat)")
+    if not simulation.sim_allowed():
+        raise ApiError(403, "El laboratorio de simulación está desactivado en esta instalación (PI_SIM_PUBLIC=0)")
     users.require("sim")
+
+
+_SIM_PUBLIC_LOCK = threading.Lock()
+
+
+def _sim_run(fn, body):
+    """En línea, una sola simulación a la vez: si hay otra en curso se pide reintentar en vez de encolar carga."""
+    if simulation.is_local():
+        return fn(body)
+    if not _SIM_PUBLIC_LOCK.acquire(blocking=False):
+        raise ApiError(429, "Hay otra simulación en curso en el servidor en línea; reintenta en unos segundos.")
+    try:
+        return fn(body)
+    finally:
+        _SIM_PUBLIC_LOCK.release()
 
 
 def _sim_get(p: list[str], q: dict) -> dict:
     if p == ["engines"]:
         # «local» habilita el laboratorio en la interfaz: solo si es la instalación local y el rol puede simular
-        return {"local": simulation.is_local() and users.can(users.current.get(), "sim"), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
+        return {"local": simulation.sim_allowed() and users.can(users.current.get(), "sim"), "public": not simulation.is_local(), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
                 "services": {k: v["label"] for k, v in sim_access.SERVICES.items()}, "rain": list(sim_access.RAIN),
                 "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS,
                 "queue": {"available": sim_queue.available(), "defaults": sim_queue.DEFAULTS, "limits": sim_queue.LIMITS,
@@ -591,6 +654,15 @@ def _territorial_get(p, q):
     if p == ["street", "images"]:
         from ..live import street_imagery
         return _provider_call(street_imagery.search, _one(q, "bbox"))
+    if p == ["street", "near"]:
+        from ..live import street_imagery
+        return _provider_call(street_imagery.near, _one(q, "lon"), _one(q, "lat"), _one(q, "pano", ""), _one(q, "since", ""))
+    if len(p) == 3 and p[:2] == ["street", "meta"]:
+        from ..live import street_imagery
+        return _provider_call(street_imagery.image, p[2])
+    if len(p) == 3 and p[:2] == ["street", "sequence"]:
+        from ..live import street_imagery
+        return _provider_call(street_imagery.sequence, p[2])
     raise ApiError(404, "ruta territorial no encontrada")
 
 

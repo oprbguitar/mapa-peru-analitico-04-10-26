@@ -160,14 +160,27 @@ class SimApiTest(unittest.TestCase):
         self.assertEqual(listed["runs"][0]["run_id"], first["run_id"])
         self.assertEqual(got["params"]["seed"], 7)
 
-    def test_cloud_deploy_refuses_simulation_but_lists_engines(self):
+    def test_cloud_deploy_allows_light_simulation_unless_disabled(self):
         with patch.dict(os.environ, {"RENDER": "true"}):
             self.assertFalse(simulation.is_local())
             eng = api.route_get("/api/v1/sim/engines", {})
-            self.assertFalse(eng["local"])
+            self.assertTrue(eng["local"])
+            self.assertTrue(eng["public"])
+        with patch.dict(os.environ, {"RENDER": "true", "PI_SIM_PUBLIC": "0"}):
+            self.assertFalse(api.route_get("/api/v1/sim/engines", {})["local"])
             with self.assertRaises(api.ApiError) as e:
                 api.route_post("/api/v1/sim/accessibility/run", body())
         self.assertEqual(e.exception.status, 403)
+
+    def test_public_limits_never_raise_local_ceilings(self):
+        before = dict(acc.LIMITS)
+        with patch.dict(os.environ, {"RENDER": "true"}):
+            simulation.apply_public_limits()
+        for k, v in acc.LIMITS.items():
+            if isinstance(v, (int, float)):
+                self.assertLessEqual(v, before[k])
+        self.assertGreaterEqual(acc.LIMITS["iterations"], acc.DEFAULTS["iterations"])
+        acc.LIMITS.update(before)
 
     @unittest.skipUnless(que.available(), "SimPy no instalado")
     def test_queue_run_is_registered(self):
@@ -189,7 +202,7 @@ class SimApiTest(unittest.TestCase):
                 api.route_post("/api/v1/sim/queue/run", qbody())
         self.assertEqual(e.exception.status, 503)
         self.assertIn("requirements-simulation.txt", str(e.exception))
-        with patch.dict(os.environ, {"RENDER": "true"}), self.assertRaises(api.ApiError) as e:
+        with patch.dict(os.environ, {"RENDER": "true", "PI_SIM_PUBLIC": "0"}), self.assertRaises(api.ApiError) as e:
             api.route_post("/api/v1/sim/queue/run", qbody())
         self.assertEqual(e.exception.status, 403)
 

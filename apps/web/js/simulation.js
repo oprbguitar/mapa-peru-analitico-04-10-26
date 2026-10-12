@@ -15,7 +15,8 @@ import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
 import { clearAll, clearPerimeter, finishTramo, hasUnits, hideOps, initOps, loadSpec, onOpsClick, onReplayClick, onReplayInput, opsKeyHtml,
-  opsSpec, opsTool, replayHtml, setMarksOnly, setTool, showOps, showResult, toolbarHtml } from './sim-ops.js'
+  opsSpec, opsTool, replayHtml, setMarksOnly, setTool, showOps, showResult, toolbarHtml, addUnits } from './sim-ops.js'
+import { initCoverage } from './sim-coverage.js'
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const BANDS = [[15, '--seq-7', '≤ 15 min'], [30, '--seq-5', '≤ 30'], [45, '--seq-3', '≤ 45'], [Infinity, '--seq-1', '> 45']]
@@ -208,6 +209,8 @@ function scoreHtml() {
 function placeScore(busy = false) {
   const z = getZone()
   if (!z) return score?.remove()
+  // sin unidades no hay cifra que mostrar: la tarjeta solo repetiría la ayuda y taparía el mapa
+  if (engine === 'ops' && !hasUnits()) return score?.remove()
   if (!score) {
     const el = document.createElement('div')
     el.className = 'sim-score hud hud-frame'
@@ -237,6 +240,30 @@ function countUp(el) {
 }
 
 // ── controles flotantes (HUD) ───────────────────────────────────────────────
+// Ayuda breve bajo la barra: se cierra sola a los 8 s o con ✕ y no vuelve a salir en la misma sesión.
+const hintSeen = new Set()
+let hintTimer = 0
+function hintHtml() {
+  const need = !(getZone() && (engine !== 'ops' || hasUnits()) && (engine !== 'agt' || agt.hasSafePoints()))
+  const [key, text] = !getZone() ? ['zona', 'Clic en el mapa para elegir la zona · arrastra su borde para agrandarla']
+    : engine === 'agt' ? ['agt', 'Clic en el mapa para marcar puntos seguros (⛨)']
+    : ['ops', 'Elige una unidad y haz clic en el mapa · Tramo: clic punto a punto y «Terminar»']
+  return `<p class="sim-hint hud" id="sim-hint" data-key="${key}" role="status" ${need && !hintSeen.has(key) ? '' : 'hidden'}>
+    <span>${text}</span><button type="button" class="btn btn-ghost btn-icon" data-sim-hint-close aria-label="Cerrar ayuda">✕</button></p>`
+}
+
+function armHint() {
+  const h = hud?.querySelector('#sim-hint')
+  clearTimeout(hintTimer)
+  if (!h || h.hidden) return
+  hintTimer = setTimeout(() => { h.hidden = true; hintSeen.add(h.dataset.key) }, 8000)
+}
+
+// la altura real de la barra (1–3 filas según el ancho) coloca debajo la capa táctica y los botones de vista
+const topObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(([entry]) => {
+  document.documentElement.style.setProperty('--sim-top-h', `${Math.ceil(entry.target.getBoundingClientRect().height)}px`)
+}) : null
+
 function hudHtml() {
   const capOk = meta.queue?.available
   return `<div class="sim-bar sim-top hud hud-frame" role="toolbar" aria-label="Qué simular">
@@ -248,10 +275,7 @@ function hudHtml() {
       ${engine === 'agt' ? agt.toolbarHtml(agtTool) : engine === 'ops' ? toolbarHtml(scenario.name, scenario.state) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
         `<button type="button" data-sim-service="${k}" aria-pressed="${cfg.service === k}">${s.label}</button>`).join('')}</div>`}
     </div>
-    <p class="sim-hint hud" id="sim-hint" ${getZone() && (engine !== 'ops' || hasUnits()) && (engine !== 'agt' || agt.hasSafePoints()) ? 'hidden' : ''}>${!getZone()
-      ? 'Haz clic en el mapa para elegir la zona · después arrastra su borde para agrandarla'
-      : engine === 'agt' ? 'Haz clic en el mapa para marcar puntos seguros (⛨) · los agentes sintéticos irán al más cercano'
-      : 'Elige Patrullero, Serenazgo, Ambulancia o Bomberos arriba y haz clic en el mapa para colocar unidades · ╱ Tramo cortado: clic punto a punto y «Terminar tramo»'}</p>
+    ${hintHtml()}
     <div class="sim-bottom">
       ${engine === 'ops' ? replayHtml(cfg.ops.horizon_h * 60) : engine === 'agt' ? agt.replayHtml() : ''}
       <div class="sim-cards" role="group" aria-label="Imprevistos: activa o desactiva y combina">${usable().map((p) =>
@@ -291,6 +315,10 @@ function renderHud() {
   hud.dataset.anim = hud.hidden || !hud.innerHTML ? 'on' : 'off'   // la entrada escalonada solo al abrir, no en cada ajuste
   hud.hidden = false
   hud.innerHTML = hudHtml()
+  topObserver?.disconnect()
+  const top = hud.querySelector('.sim-top')
+  if (top) topObserver?.observe(top)
+  armHint()
 }
 
 function syncHud() {
@@ -310,6 +338,8 @@ function syncHud() {
 
 function onHudClick(e) {
   const t = e.target
+  const hint = t.closest('[data-sim-hint-close]')
+  if (hint) { const h = hint.closest('#sim-hint'); h.hidden = true; hintSeen.add(h.dataset.key); return }
   if (onReplayClick(e) || agt.onAgentsReplay(e)) return
   const at = t.closest('[data-agt-tool]')
   if (at) {
@@ -324,7 +354,7 @@ function onHudClick(e) {
   const tool = t.closest('[data-ops-tool]')
   if (tool) {
     const a = tool.dataset.opsTool
-    if (['tramo', 'perimetro', 'nota', 'medir'].includes(a)) {
+    if (['tramo', 'perimetro', 'nota', 'medir', 'cobertura', 'incidente'].includes(a)) {
       setTool(opsTool() === a ? 'unit' : a)
       if (engine === 'agt') agtTool = opsTool() === 'unit' ? 'safe' : a
     }
@@ -685,6 +715,11 @@ export async function loadScenario(id, version) {
 
 // ── ciclo de vida del modo ──────────────────────────────────────────────────
 initOps({ onChange: () => { renderHudKeepingTool(); simulate() } })
+// despacho desde el panel de incidente: unidades a las sedes elegidas, o herramienta para cerrar bloques
+initCoverage({ dispatch: ({ units, tool }) => {
+  if (units?.length) { addUnits(units); return }
+  if (tool) { setTool(tool); renderHud() }
+} })
 agt.initAgents({ onChange: () => { renderHudKeepingTool(); simulate() } })
 function renderHudKeepingTool() { if (hud && !hud.hidden) renderHud() }
 

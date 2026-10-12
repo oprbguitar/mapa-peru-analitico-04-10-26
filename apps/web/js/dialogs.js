@@ -70,6 +70,7 @@ async function openSettings() {
         <select name="ai_allow_external"><option value="false" ${s.values.ai_allow_external !== 'true' ? 'selected' : ''}>No (solo IA local)</option>
         <option value="true" ${s.values.ai_allow_external === 'true' ? 'selected' : ''}>Sí, solo datos agregados</option></select></label></fieldset>
     <div class="ai-actions"><button class="btn btn-primary" type="submit">Guardar</button><button class="btn" type="button" data-close>Cancelar</button></div>`
+  import('./models-ui.js').then((m) => m.mountModels(form))
   form.onsubmit = async (e) => {
     e.preventDefault()
     const data = Object.fromEntries([...new FormData(form)].filter(([, v]) => String(v).trim() !== ''))

@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 
 from .. import config
+from . import model_keys
 
 
 def _post(url: str, body: dict, headers: dict | None = None, timeout: float = 120) -> dict:
@@ -89,7 +90,7 @@ class OpenAICompatible(Provider):
         base = config.setting("external_base_url").rstrip("/")
         r = _post(base + "/chat/completions", {"model": self.model(), "messages": messages, "max_tokens": max_tokens,
                                                "temperature": temperature},
-                  headers={"Authorization": "Bearer " + config.setting("external_api_key")}, timeout=180)
+                  headers=model_keys.auth_headers(config.setting("external_provider"), config.setting("external_api_key")), timeout=180)
         return r["choices"][0]["message"]["content"]
 
 

@@ -45,12 +45,13 @@ def csp() -> str:
         _CSP_CACHE.update(t=time.time(), v=CSP.replace("connect-src 'self'", f"connect-src 'self' {extra}".rstrip()))
     return _CSP_CACHE["v"]
 TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
-WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
+WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi|owm|tomorrow)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
 SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jpg$")
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
 IMAGE_TILE_RX = re.compile(r"^/api/v1/imagery/tiles/([A-Za-z0-9_]{1,80})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
 CLOUD_TILE_RX = re.compile(r"^/api/v1/intel/weather/clouds/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
 STREET_IMAGE_RX = re.compile(r"^/api/v1/street/image/(\d{1,30})$")
+STREET_TILE_RX = re.compile(r"^/api/v1/street/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.pbf$")
 
 
 def _public_origin(host: str, port: int, scheme: str) -> str:
@@ -200,15 +201,20 @@ class Handler(BaseHTTPRequestHandler):
             m = STREET_IMAGE_RX.fullmatch(path)
             if m:
                 from ..live import street_imagery
-                data, ctype = api._provider_call(street_imagery.thumbnail, m[1])
+                data, ctype = api._provider_call(street_imagery.thumbnail, m[1], api._one(query, "size", "") == "2048")
                 return self._send(200, data, ctype, "max-age=300", compress=False)
+            m = STREET_TILE_RX.fullmatch(path)
+            if m:
+                from ..live import street_imagery
+                data = api._provider_call(street_imagery.coverage_tile, *map(int, m.groups()))
+                return self._send(200, data, "application/x-protobuf", "max-age=86400", compress=False) if data else self._send(204, b"", "application/x-protobuf")
             m = TILE_RX.match(path)
             if m:
                 data = api.TRAFFIC.tile(*map(int, m.groups()))
                 return self._send(200, data, "image/png", "max-age=60") if data else self._send(204, b"", "image/png")
             m = WX_TILE_RX.match(path)
             if m:
-                r = wx_overlays.tile(m[1], m[2], int(m[3]), int(m[4]), int(m[5]))
+                r = wx_overlays.tile(m[1], m[2], int(m[3]), int(m[4]), int(m[5]), api._one(query, "date"))
                 if r is None:
                     return self._send(404, b"", "text/plain")
                 return self._send(200 if r[0] else 204, r[0], r[1], "max-age=900")

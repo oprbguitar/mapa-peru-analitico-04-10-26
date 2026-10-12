@@ -1,5 +1,5 @@
 // Capa táctica del simulador (operaciones): retícula, coordenadas bajo el cursor (grados y UTM), cinta de rumbo,
-// reloj DTG en hora Zulu, cuadrícula de 1 km, anillos de alcance por unidad y registro de eventos del tiempo virtual.
+// reloj DTG en hora Zulu, cuadrícula UTM de 1 km o 500 m, anillos de alcance por unidad y registro de eventos del tiempo virtual.
 // Todo es lectura del mapa y de la simulación local; no se envía nada fuera del equipo.
 import { map } from './map.js'
 import { cssVar, esc } from './util.js'
@@ -7,15 +7,17 @@ import { cssVar, esc } from './util.js'
 const fc = (features) => ({ type: 'FeatureCollection', features })
 let root = null
 let on = { grid: false }
+const GRID_STEPS = [0, 1000, 500]   // metros; 500 m es el mínimo
+let gridIx = 0
 let ringsFor = null
 let log = []
 const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SET', 'OCT', 'NOV', 'DIC']
 
 /** UTM (WGS84) en formato de referencia de campo: «18L 279 123E 8 664 321N». */
-export function utm(lat, lon) {
+export function utm(lat, lon, forceZone) {
   const a = 6378137, f = 1 / 298.257223563, k0 = 0.9996
   const e2 = f * (2 - f), ep2 = e2 / (1 - e2)
-  const zone = Math.floor((lon + 180) / 6) + 1
+  const zone = forceZone || Math.floor((lon + 180) / 6) + 1
   const lon0 = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180
   const phi = lat * Math.PI / 180, lam = lon * Math.PI / 180
   const N = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2)
@@ -46,22 +48,52 @@ function ensureLayers() {
   map.addSource('tac-grid', { type: 'geojson', data: fc([]) })
   map.addSource('tac-rings', { type: 'geojson', data: fc([]) })
   map.addLayer({ id: 'tac-grid', type: 'line', source: 'tac-grid', layout: { visibility: 'none' },
-    paint: { 'line-color': cssVar('--accent'), 'line-width': 0.6, 'line-opacity': 0.35 } })
+    paint: { 'line-color': cssVar('--accent'), 'line-width': ['case', ['get', 'major'], 1, 0.6], 'line-opacity': ['case', ['get', 'major'], 0.55, 0.35] } })
   map.addLayer({ id: 'tac-rings', type: 'line', source: 'tac-rings',
     paint: { 'line-color': cssVar('--accent'), 'line-width': 1.4, 'line-dasharray': [4, 3], 'line-opacity': 0.9 } })
 }
 
+/** Inversa UTM (WGS84): de este/norte en una zona a latitud y longitud (precisión submétrica). */
+export function utmToLatLon(zone, E, N, south) {
+  const a = 6378137, f = 1 / 298.257223563, k0 = 0.9996
+  const e2 = f * (2 - f), ep2 = e2 / (1 - e2), e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2))
+  const x = E - 500000, y = south ? N - 10000000 : N
+  const mu = y / k0 / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
+  const p1 = mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * Math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * Math.sin(4 * mu)
+    + (151 * e1 ** 3 / 96) * Math.sin(6 * mu) + (1097 * e1 ** 4 / 512) * Math.sin(8 * mu)
+  const N1 = a / Math.sqrt(1 - e2 * Math.sin(p1) ** 2), T1 = Math.tan(p1) ** 2, C1 = ep2 * Math.cos(p1) ** 2
+  const R1 = a * (1 - e2) / (1 - e2 * Math.sin(p1) ** 2) ** 1.5, D = x / (N1 * k0)
+  const lat = p1 - (N1 * Math.tan(p1) / R1) * (D ** 2 / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * ep2) * D ** 4 / 24
+    + (61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * ep2 - 3 * C1 ** 2) * D ** 6 / 720)
+  const lon = (D - (1 + 2 * T1 + C1) * D ** 3 / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 ** 2 + 8 * ep2 + 24 * T1 ** 2) * D ** 5 / 120) / Math.cos(p1)
+  return [((zone - 1) * 6 - 180 + 3) + lon * 180 / Math.PI, lat * 180 / Math.PI]
+}
+
+/** Cuadrícula UTM real (líneas cada 1 km o 500 m de este/norte en la zona del centro), como en una carta topográfica. */
 function drawGrid() {
   if (!on.grid || !map.getSource('tac-grid')) return
-  const b = map.getBounds()
-  const lat0 = map.getCenter().lat
-  const dLat = 1 / 111.32, dLon = 1 / (111.32 * Math.cos(lat0 * Math.PI / 180))   // 1 km
-  const span = (b.getEast() - b.getWest()) / dLon
-  if (span > 120) return map.getSource('tac-grid').setData(fc([]))            // demasiado alejado: sin cuadrícula
-  const lines = []
-  for (let x = Math.floor(b.getWest() / dLon) * dLon; x <= b.getEast(); x += dLon) lines.push([[x, b.getSouth()], [x, b.getNorth()]])
-  for (let y = Math.floor(b.getSouth() / dLat) * dLat; y <= b.getNorth(); y += dLat) lines.push([[b.getWest(), y], [b.getEast(), y]])
-  map.getSource('tac-grid').setData(fc(lines.map((c) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: c } }))))
+  const step = GRID_STEPS[gridIx]
+  const b = map.getBounds(), c = map.getCenter()
+  const zone = utm(c.lat, c.lng).zone, south = c.lat < 0
+  const corners = [[b.getWest(), b.getSouth()], [b.getEast(), b.getSouth()], [b.getEast(), b.getNorth()], [b.getWest(), b.getNorth()]]
+    .map(([lo, la]) => utm(la, lo, zone))
+  const e0 = Math.floor(Math.min(...corners.map((q) => q.e)) / step) * step, e1 = Math.max(...corners.map((q) => q.e))
+  const n0 = Math.floor(Math.min(...corners.map((q) => q.n)) / step) * step, n1 = Math.max(...corners.map((q) => q.n))
+  if ((e1 - e0) / step > 160 || (n1 - n0) / step > 160) { setGridNote('acerca el mapa'); return map.getSource('tac-grid').setData(fc([])) }
+  setGridNote('')
+  const feats = []
+  const line = (pts, major) => feats.push({ type: 'Feature', properties: { major }, geometry: { type: 'LineString', coordinates: pts } })
+  const K = 12
+  for (let e = e0; e <= e1; e += step) line(Array.from({ length: K + 1 }, (_, i) => utmToLatLon(zone, e, n0 + (n1 - n0 + step) * i / K, south)), e % 1000 === 0)
+  for (let n = n0; n <= n1; n += step) line(Array.from({ length: K + 1 }, (_, i) => utmToLatLon(zone, e0 + (e1 - e0 + step) * i / K, n, south)), n % 1000 === 0)
+  map.getSource('tac-grid').setData(fc(feats))
+}
+
+function setGridNote(text) {
+  const b = root?.querySelector('[data-tac="grid"]')
+  if (!b) return
+  const step = GRID_STEPS[gridIx]
+  b.textContent = step ? `Cuadrícula ${step >= 1000 ? `${step / 1000} km` : `${step} m`}${text ? ` · ${text}` : ''}` : 'Cuadrícula'
 }
 
 const circle = (lon, lat, km) => Array.from({ length: 65 }, (_, i) => {
@@ -109,10 +141,13 @@ export function initTactical() {
   root.className = 'tac'
   root.setAttribute('aria-hidden', 'false')
   root.innerHTML = `<div class="tac-reticle" aria-hidden="true"></div>
+    <div class="tac-stack">
     <div class="tac-top"><span class="tac-heading">RUMBO 000° N</span><span class="tac-dtg"></span></div>
     <div class="tac-readout" aria-live="off"><span class="tac-ll">—</span><span class="tac-utm">—</span></div>
     <div class="tac-tools" role="toolbar" aria-label="Capa táctica">
-      <button type="button" class="btn" data-tac="grid" aria-pressed="false" title="Cuadrícula de 1 km (tecla G)">Cuadrícula 1 km</button></div>
+      <button type="button" class="btn" data-tac="grid" aria-pressed="false" title="Cuadrícula UTM alineada a la zona: apagada → 1 km → 500 m (tecla G)">Cuadrícula</button></div>
+    <div class="tac-measure" id="tac-measure" role="status" aria-live="polite" hidden></div>
+    </div>
     <p class="tac-rings-info" hidden></p>
     <section class="tac-log hud" hidden aria-label="Registro de eventos"><h3>Registro · tiempo virtual</h3><ol></ol></section>`
   document.body.appendChild(root)
@@ -133,8 +168,10 @@ export function initTactical() {
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-tac]')
     if (!b) return
-    on[b.dataset.tac] = !on[b.dataset.tac]
-    b.setAttribute('aria-pressed', String(on[b.dataset.tac]))
+    gridIx = (gridIx + 1) % GRID_STEPS.length
+    on.grid = gridIx > 0
+    b.setAttribute('aria-pressed', String(on.grid))
+    setGridNote('')
     map.setLayoutProperty('tac-grid', 'visibility', on.grid ? 'visible' : 'none')
     drawGrid()
   })
@@ -149,7 +186,9 @@ export function hideTactical() {
   if (map.getSource('tac-rings')) map.getSource('tac-rings').setData(fc([]))
   if (map.getLayer('tac-grid')) map.setLayoutProperty('tac-grid', 'visibility', 'none')
   on.grid = false
+  gridIx = 0
   root?.querySelector('[data-tac="grid"]')?.setAttribute('aria-pressed', 'false')
+  setGridNote('')
   setLog([])
   renderRingLegend(null)
 }

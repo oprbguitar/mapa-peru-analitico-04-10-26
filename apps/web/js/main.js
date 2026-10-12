@@ -294,7 +294,7 @@ async function setMode(m) {
   }
   mode = m
   document.body.dataset.mode = m
-  if (m !== 'ninio') closeStory()
+  if (m !== 'ninio') { closeStory(); import('./enso-explain.js').then((x) => x.stopExplain()) }
   ensoChoro = false
   if (mediaModes.includes(m)) {
     renderLegend(null)
@@ -334,6 +334,7 @@ async function setMode(m) {
   }
   if (m === 'ninio') {
     panelView = 'enso'
+    import('./enso-explain.js').then((x) => x.startExplain())
     return renderEnso()
   }
 }
@@ -641,6 +642,7 @@ async function boot() {
       }
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return
       const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|eonet|fires|satellites|datacenters|rt-)/.test(f.layer.id))
+      if (mode === 'ninio' && !hit) return import('./enso-explain.js').then((x) => x.probeExplain(e.lngLat))
       if (hit || mode === 'ninio') return   // en El Niño el mapa se queda: los clics son para los registros
       if (mode !== 'mapa') setMode('mapa')
       showContext(e.lngLat.lat, e.lngLat.lng)
@@ -712,6 +714,7 @@ async function boot() {
     if (state.choropleth) loadChoropleth()
     if (state.selected) setSelected(state.selected)
   })
+  document.getElementById('btn-wx')?.addEventListener('click', (e) => import('./wx-dock.js').then((x) => x.toggleWxDock(e.currentTarget)))
   for (const [id, fn] of [['btn-3d', () => onView('terrain')], ['btn-relief', () => onView('relief')], ['btn-north', () => resetNorth()]]) {
     document.getElementById(id).addEventListener('click', fn)
   }

@@ -157,8 +157,8 @@ class ScenarioTest(unittest.TestCase):
         with self.assertRaises(api.ApiError):
             api.route_post("/api/v1/sim/scenarios/import", {"payload": {"format": "otro"}})
 
-    def test_operations_api_is_local_only(self):
-        with patch.dict(os.environ, {"RENDER": "true"}):
+    def test_operations_api_can_be_disabled_online(self):
+        with patch.dict(os.environ, {"RENDER": "true", "PI_SIM_PUBLIC": "0"}):
             with self.assertRaises(api.ApiError) as e:
                 api.route_post("/api/v1/sim/operations/run", body())
         self.assertEqual(e.exception.status, 403)

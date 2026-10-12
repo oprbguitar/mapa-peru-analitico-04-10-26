@@ -1,5 +1,18 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## El Niño explicado, cobertura y paneles flotantes · 12 de octubre de 2026
+
+Se conserva la identidad HUD (pizarra/cian, Space Grotesk/Noto Sans/Space Mono, radio 4 px). Direcciones evaluadas para
+El Niño: (a) infografía estática en el panel — descartada, separa la explicación del mapa; (b) **tarjeta de 5 pasos +
+rótulos numerados sobre el mapa + capa NASA con su paleta oficial** — elegida, sigue las referencias del usuario;
+(c) recorrido automático a pantalla completa — disponible como «Recorrer los 5 pasos», no como único modo.
+Color: la leyenda usa la **paleta publicada por NASA GIBS** (no una rampa propia) y `--enso-warm` solo para la identidad
+del modo; los flujos usan `--fx-wind/--fx-rain/--fx-storm/--info`. Motion: cometas a ~20 fps sobre trazos ilustrativos,
+evolución mensual a 1,3 s por fotograma; con `prefers-reduced-motion` no hay animación y la evolución va a 2,5 s.
+Mapillary: verde de cobertura `--street-cov` (identidad del proveedor) y cian `--street-sel` para la secuencia elegida.
+Paneles flotantes nuevos (`.enso-explain`, `.wx-dock`, `.cov-panel`, `.img`) evitan la pestaña «Capas» cuando el rail está
+plegado y pasan a ancho completo en móvil. Simular: la altura medida de la barra (`--sim-top-h`) ordena la capa táctica.
+
 ## Simulador sobre el mapa · 11 de octubre de 2026
 
 Pedido del usuario: la simulación debe vivir en el mapa, interactiva y con sensación de juego; el panel solo para datos.

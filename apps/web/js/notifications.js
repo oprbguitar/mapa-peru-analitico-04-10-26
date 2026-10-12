@@ -1,6 +1,7 @@
 // Centro de avisos (plan maestro §9): observado · técnico · predictivo (con incertidumbre y hechos) · actividad.
 // Campana en la barra superior; se consulta cada 30 s y al terminar una simulación (evento «notify-refresh»).
 import { esc, getJSON, postJSON } from './util.js'
+import { autoDismiss } from './chrome.js'
 
 const TYPE_TONE = { observado: '--info', tecnico: '--warn', predictivo: '--kind-ia', actividad: '--ok' }
 let box = null
@@ -64,7 +65,7 @@ export function initNotifications() {
       refresh()
     }
   })
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !box.hidden) toggle(false) })
+  autoDismiss(btn, box, () => toggle(false), () => !box.hidden)
   document.addEventListener('notify-refresh', refresh)
   refresh()
   setInterval(refresh, 30000)

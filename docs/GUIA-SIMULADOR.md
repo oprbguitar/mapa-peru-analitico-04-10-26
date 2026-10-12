@@ -100,7 +100,9 @@ independiente (B, C…) para probar otra distribución de unidades, otros tramos
   dentro del perímetro; **Quitar perímetro** vuelve al círculo.
 - **✎ Nota**: clic donde quieras anotar; elige **Referencia, Evidencia o Riesgo** y escribe el texto. Doble clic sobre la nota la quita.
   Las notas se guardan con el escenario y salen en el informe.
-- **↔ Medir**: clic punto a punto; muestra los km en línea recta. Esc o cambiar de herramienta borra la medida.
+- **↔ Medir**: clic punto a punto; distancia geodésica en m/km (3 decimales), tramo en vivo hasta el cursor y rumbo. Doble clic termina; Esc borra.
+- **⌖ Comisaría**: clic cerca de una comisaría → área de atención (Voronoi), radio de inflexión, sedes dentro, cifras del distrito y estimador de dotación.
+- **◎ Incidente**: clic en un punto crítico → sedes más cercanas con tiempo estimado; «Despachar» las agrega al escenario; «Cerrar bloque» y «Cortar vía».
 
 ### 15 · Informe imprimible
 **INFORME** (barra del operativo) abre el documento del escenario en una pestaña: resumen ejecutivo, captura del mapa,
@@ -137,7 +139,7 @@ Botón **🎬 Recorrido** (junto a 3D · Relieve · N; funciona en cualquier mod
 
 ### 19 · Capa táctica en operaciones
 En Simular se muestran retícula central, **coordenadas bajo el cursor** (grados y **UTM**), **rumbo**, reloj **DTG Zulu** y
-**Cuadrícula 1 km** (tecla G). En Operativo, las unidades llevan **indicativo** (P-01, A-01…) y su estado en vivo (borde azul en
+**Cuadrícula UTM** de 1 km o 500 m (tecla G). En Operativo, las unidades llevan **indicativo** (P-01, A-01…) y su estado en vivo (borde azul en
 ruta, ámbar en escena, punteado de retorno); el **Registro** lista llamadas, despachos, llegadas y cierres al minuto virtual;
 **clic en una unidad** dibuja sus **anillos de alcance** de 5, 10 y 15 minutos con la velocidad efectiva del escenario.
 

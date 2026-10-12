@@ -58,7 +58,12 @@ function ensureLayers() {
   for (const id of ['ops-tramos', 'ops-draft', 'ops-routes', 'ops-calls', 'ops-moving', 'ops-perimeter', 'ops-measure']) map.addSource(id, { type: 'geojson', data: fc([]) })
   map.addLayer({ id: 'ops-perimeter-fill', type: 'fill', source: 'ops-perimeter', paint: { 'fill-color': cssVar('--warn'), 'fill-opacity': 0.08 } })
   map.addLayer({ id: 'ops-perimeter', type: 'line', source: 'ops-perimeter', paint: { 'line-color': cssVar('--warn'), 'line-width': 3 } })
-  map.addLayer({ id: 'ops-measure', type: 'line', source: 'ops-measure', paint: { 'line-color': cssVar('--ink'), 'line-width': 2, 'line-dasharray': [1, 1] } })
+  map.addLayer({ id: 'ops-measure', type: 'line', source: 'ops-measure', filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!', ['get', 'live']]],
+    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': cssVar('--accent'), 'line-width': 3 } })
+  map.addLayer({ id: 'ops-measure-live', type: 'line', source: 'ops-measure', filter: ['all', ['==', ['geometry-type'], 'LineString'], ['get', 'live']],
+    paint: { 'line-color': cssVar('--accent'), 'line-width': 2, 'line-dasharray': [2, 2] } })
+  map.addLayer({ id: 'ops-measure-pt', type: 'circle', source: 'ops-measure', filter: ['==', ['geometry-type'], 'Point'],
+    paint: { 'circle-radius': 4, 'circle-color': cssVar('--accent'), 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--void') } })
   map.addLayer({ id: 'ops-routes', type: 'line', source: 'ops-routes', paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [1, 1.5], 'line-opacity': 0.9 } })
   map.addLayer({ id: 'ops-tramos', type: 'line', source: 'ops-tramos', layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-color': cssVar('--danger'), 'line-width': 6, 'line-opacity': 0.9 } })
@@ -73,7 +78,7 @@ function ensureLayers() {
     'circle-radius': 7, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--ink') } })
 }
 
-const MARK_LAYERS = ['ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-perimeter', 'ops-perimeter-fill', 'ops-measure']
+const MARK_LAYERS = ['ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-perimeter', 'ops-perimeter-fill', 'ops-measure', 'ops-measure-live', 'ops-measure-pt']
 
 function vis(on) {
   for (const id of ['ops-routes', 'ops-calls', 'ops-moving', ...MARK_LAYERS]) {
@@ -129,16 +134,56 @@ function noteEl(n) {
   return el
 }
 
-const kmBetween = (a, b) => Math.hypot((b[0] - a[0]) * 111.32 * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), (b[1] - a[1]) * 111.32)
+const kmBetween = (a, b) => metersBetween(a, b) / 1000
 
-function paintMeasure() {
-  map.getSource('ops-measure')?.setData(fc(st.measure.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: st.measure } }] : []))
-  st.measureLabel?.remove()
-  st.measureLabel = null
-  if (st.measure.length < 2) return
-  const km = st.measure.slice(1).reduce((acc, q, i) => acc + kmBetween(st.measure[i], q), 0)
-  const el = Object.assign(document.createElement('div'), { className: 'ops-measure-label', textContent: `${fmt(km, 2)} km en línea recta` })
-  st.measureLabel = new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [8, -6] }).setLngLat(st.measure.at(-1)).addTo(map)
+/** Distancia geodésica (haversine, radio medio WGS84 6 371 008,8 m): error < 0,3 % frente al elipsoide. */
+export function metersBetween(a, b) {
+  const R = 6371008.8, r = Math.PI / 180
+  const dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+
+const bearing = (a, b) => {
+  const r = Math.PI / 180
+  const y = Math.sin((b[0] - a[0]) * r) * Math.cos(b[1] * r)
+  const x = Math.cos(a[1] * r) * Math.sin(b[1] * r) - Math.sin(a[1] * r) * Math.cos(b[1] * r) * Math.cos((b[0] - a[0]) * r)
+  return (Math.atan2(y, x) / r + 360) % 360
+}
+
+export const fmtDist = (m) => m < 1000 ? `${Math.round(m).toLocaleString('es-PE')} m`
+  : `${(m / 1000).toLocaleString('es-PE', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} km`
+
+/** Pinta la medición; con `cursor`, añade el tramo provisional hasta el puntero (vista previa en vivo). */
+function paintMeasure(cursor) {
+  const pts = cursor && st.measure.length ? [...st.measure, [cursor.lng, cursor.lat]] : st.measure
+  const feats = st.measure.map((c) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
+  if (st.measure.length > 1) feats.push({ type: 'Feature', properties: { live: false }, geometry: { type: 'LineString', coordinates: st.measure } })
+  if (pts.length > st.measure.length && st.measure.length) feats.push({ type: 'Feature', properties: { live: true }, geometry: { type: 'LineString', coordinates: pts.slice(-2) } })
+  map.getSource('ops-measure')?.setData(fc(feats))
+  for (const id of ['ops-measure', 'ops-measure-live', 'ops-measure-pt']) if (map.getLayer(id)) map.moveLayer(id)   // siempre encima de la zona
+  const panel = document.getElementById('tac-measure')
+  if (pts.length < 2) {
+    st.measureLabel?.remove()
+    st.measureLabel = null
+    if (panel) { panel.hidden = st.tool !== 'medir'; panel.innerHTML = st.tool === 'medir' ? '<span>MEDIR · clic en el punto inicial</span>' : '' }
+    return
+  }
+  const segs = pts.slice(1).map((q, i) => metersBetween(pts[i], q))
+  const total = segs.reduce((a, b) => a + b, 0)
+  const last = segs.at(-1), rumbo = bearing(pts.at(-2), pts.at(-1))
+  if (!st.measureLabel) {
+    const el = Object.assign(document.createElement('div'), { className: 'ops-measure-label' })
+    st.measureLabel = new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [10, -8] })
+  }
+  st.measureLabel.getElement().textContent = fmtDist(total)
+  st.measureLabel.setLngLat(pts.at(-1)).addTo(map)
+  if (panel) {
+    panel.hidden = false
+    panel.innerHTML = `<span>MEDICIÓN · ${pts.length - 1} tramo${pts.length > 2 ? 's' : ''}${cursor ? ' · en vivo' : ''}</span><b>${fmtDist(total)}</b>
+      <span>Último tramo ${fmtDist(last)} · rumbo ${String(Math.round(rumbo)).padStart(3, '0')}°</span>
+      <span>Geodésica (haversine) · Esc borra · doble clic termina</span>`
+  }
 }
 
 /** Formulario de nota en el punto elegido (sin diálogos del navegador). */
@@ -199,22 +244,25 @@ let keysBound = false
 
 export function setTool(tool, kind) {
   if ((st.tool === 'tramo' || st.tool === 'perimetro') && tool !== st.tool) finishTramo()
-  if (st.tool === 'medir' && tool !== 'medir') { st.measure = []; paintMeasure() }
+  if (st.tool === 'medir' && tool !== 'medir') { st.measure = []; st.measureDone = false; st.tool = tool; paintMeasure() }
   st.tool = tool
   if (kind) st.kind = kind
   map.getCanvas().style.cursor = 'crosshair'
   // mientras se dibuja un tramo, el doble clic lo termina en vez de acercar el mapa
   if (['tramo', 'perimetro', 'medir'].includes(tool)) map.doubleClickZoom.disable()
   else map.doubleClickZoom.enable()
+  if (tool === 'medir') paintMeasure()
   if (keysBound) return
   keysBound = true
   map.on('dblclick', () => {
     const min = st.tool === 'perimetro' ? 3 : 2
     if ((st.tool === 'tramo' || st.tool === 'perimetro') && st.draft.length >= min) { st.draft.pop(); finishTramo() }
   })
+  map.on('mousemove', (e) => { if (st.tool === 'medir' && st.measure.length && !st.measureDone) paintMeasure(e.lngLat) })
+  map.on('dblclick', () => { if (st.tool === 'medir' && st.measure.length > 1) { st.measureDone = true; paintMeasure() } })
   document.addEventListener('keydown', (e) => {
     if (e.target.closest('input, textarea, select')) return
-    if (st.tool === 'medir' && e.key === 'Escape') { st.measure = []; paintMeasure(); return }
+    if (st.tool === 'medir' && e.key === 'Escape') { st.measure = []; st.measureDone = false; paintMeasure(); return }
     if (st.tool !== 'tramo' && st.tool !== 'perimetro') return
     if (e.key === 'Enter') finishTramo()
     if (e.key === 'Escape') { st.draft = []; paintMarks() }
@@ -223,7 +271,7 @@ export function setTool(tool, kind) {
 
 /** Clic en el mapa con el modo operativo activo. Devuelve true si lo consumió. */
 export function onOpsClick(e) {
-  const p = [+e.lngLat.lng.toFixed(5), +e.lngLat.lat.toFixed(5)]
+  const p = [+e.lngLat.lng.toFixed(st.tool === 'medir' ? 7 : 5), +e.lngLat.lat.toFixed(st.tool === 'medir' ? 7 : 5)]
   if (st.tool === 'unit') {
     st.units.push({ id: `${UNIT_KINDS[st.kind].short.toLowerCase()}${++st.seq}`, kind: st.kind, lon: p[0], lat: p[1] })
     paintMarks()
@@ -236,8 +284,26 @@ export function onOpsClick(e) {
     return true
   }
   if (st.tool === 'nota') { askNote(p); return true }
-  if (st.tool === 'medir') { st.measure.push(p); paintMeasure(); return true }
+  if (st.tool === 'cobertura') { import('./sim-coverage.js').then((c) => c.pickComisaria(e.lngLat)); return true }
+  if (st.tool === 'incidente') { import('./sim-coverage.js').then((c) => c.incident(e.lngLat)); return true }
+  if (st.tool === 'medir') {
+    if (st.measureDone) { st.measure = []; st.measureDone = false }   // tras terminar, un clic nuevo empieza otra medición
+    if (!st.measure.length || metersBetween(st.measure.at(-1), p) > 0.5) st.measure.push(p)
+    paintMeasure()
+    return true
+  }
   return false
+}
+
+/** Unidades colocadas desde fuera (despacho de un incidente): mismas reglas que un clic con la herramienta Unidad. */
+export function addUnits(units) {
+  for (const u of units) {
+    if (!UNIT_KINDS[u.kind]) continue
+    if (st.units.some((x) => x.kind === u.kind && Math.abs(x.lon - u.lon) < 1e-5 && Math.abs(x.lat - u.lat) < 1e-5)) continue   // ya despachada
+    st.units.push({ id: `${UNIT_KINDS[u.kind].short.toLowerCase()}${++st.seq}`, kind: u.kind, lon: +u.lon.toFixed(5), lat: +u.lat.toFixed(5) })
+  }
+  paintMarks()
+  st.onChange()
 }
 
 export function finishTramo() {
@@ -426,6 +492,7 @@ export function onReplayClick(e) {
 
 export function hideOps() {
   pause()
+  import('./sim-coverage.js').then((c) => c.hideCoverage())
   map.doubleClickZoom.enable()
   clearMarkers()
   vis(false)
@@ -447,6 +514,8 @@ export function toolbarHtml(scenarioName, state) {
     <button type="button" class="btn" data-ops-tool="perimetro" aria-pressed="${st.tool === 'perimetro'}" title="Las llamadas caen dentro del perímetro">⬠ Perímetro</button>
     <button type="button" class="btn" data-ops-tool="nota" aria-pressed="${st.tool === 'nota'}">✎ Nota</button>
     <button type="button" class="btn" data-ops-tool="medir" aria-pressed="${st.tool === 'medir'}">↔ Medir</button>
+    <button type="button" class="btn" data-ops-tool="cobertura" aria-pressed="${st.tool === 'cobertura'}" title="Clic cerca de una comisaría: área de atención, radio de inflexión, sedes dentro y estimador de dotación">⌖ Comisaría</button>
+    <button type="button" class="btn" data-ops-tool="incidente" aria-pressed="${st.tool === 'incidente'}" title="Clic en un punto crítico: sedes más cercanas, tiempos en paralelo y despacho al escenario">◎ Incidente</button>
     ${st.tool === 'tramo' || st.tool === 'perimetro' ? `<button type="button" class="btn btn-primary" data-ops-tool="finish">Terminar ${st.tool === 'tramo' ? 'tramo' : 'perímetro'}</button>` : ''}
     ${st.perimeter.length ? '<button type="button" class="btn btn-ghost" data-ops-tool="noperim">Quitar perímetro</button>' : ''}
     <button type="button" class="btn btn-ghost" data-ops-tool="clear">Borrar todo</button>

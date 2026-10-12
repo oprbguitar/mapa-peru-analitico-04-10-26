@@ -47,7 +47,9 @@ def _external(kind: str, payload: dict) -> dict | None:
         return None
     try:
         req = urllib.request.Request(url, data=json.dumps({"kind": kind, "contract": CONTRACT_VERSION, "payload": payload}).encode(),
-                                     headers={"Content-Type": "application/json"}, method="POST")
+                                     headers={"Content-Type": "application/json",
+                                              **({"Authorization": "Bearer " + config.setting("jev_api_key")} if config.setting("jev_api_key") else {})},
+                                     method="POST")
         with urllib.request.urlopen(req, timeout=8) as r:
             out = json.loads(r.read().decode("utf-8"))
         if out.get("contract") != CONTRACT_VERSION or out.get("decision") not in DECISIONS:

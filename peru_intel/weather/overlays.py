@@ -58,6 +58,28 @@ def _senamhi_layers() -> list[tuple]:
     ]
 
 
+# Mapas meteorológicos de proveedores con clave (BYOK). id, capa del proveedor, tipo, etiqueta, nivel máximo, ttl (s)
+OWM = [
+    ("lluvia", "precipitation_new", "lluvia", "Precipitación actual", 9, 600),
+    ("nubes", "clouds_new", "nubes", "Nubosidad actual", 9, 600),
+    ("temp", "temp_new", "temp", "Temperatura del aire", 9, 600),
+    ("viento", "wind_new", "viento", "Velocidad del viento", 9, 600),
+    ("presion", "pressure_new", "presion", "Presión a nivel del mar", 9, 600),
+]
+TOMORROW = [
+    ("lluvia", "precipitationIntensity", "lluvia", "Intensidad de precipitación", 12, 900),
+    ("nubes", "cloudCover", "nubes", "Cobertura de nubes", 12, 900),
+    ("temp", "temperature", "temp", "Temperatura del aire", 12, 900),
+    ("viento", "windSpeed", "viento", "Velocidad del viento", 12, 900),
+    ("presion", "pressureSurfaceLevel", "presion", "Presión en superficie", 12, 900),
+]
+# tipo meteorológico de cada capa ya existente (para el selector por tipo)
+TYPE_OF = {"gibs:precip": "lluvia", "gibs:clouds": "nubes", "gibs:lst": "temp",
+           "senamhi:aviso24h": "lluvia", "senamhi:anom_tmax2": "temp"}
+TYPES = {"lluvia": ("Lluvia", "mm/h"), "nubes": ("Nubes", "%"), "temp": ("Temperatura", "°C"), "viento": ("Viento", "km/h"),
+         "presion": ("Presión", "hPa")}
+_DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 _DATES: dict[str, str] = {}
 _DATES_AT = 0.0
 _LOCK = threading.Lock()
@@ -101,7 +123,16 @@ def catalog() -> dict:
                      "tiles": f"/api/v1/intel/weather/tiles/senamhi/{i}/{{z}}/{{x}}/{{y}}.png", "kind": "oficial",
                      "bounds": [-81.6, -18.6, -68.4, 0.2], "attribution": "SENAMHI · IDESEP",
                      "service": f"{IDESEP}/{ws}/wms"} for i, ws, layer, lab, g, _ttl in _senamhi_layers()],
-        "note": "GIBS: productos satelitales casi en tiempo real (~3 h). SENAMHI: geoservicios oficiales WMS del IDESEP.",
+        "owm": [{"id": i, "label": lab, "group": "Tiempo actual", "type": t, "layer": layer, "maxzoom": z,
+                 "tiles": f"/api/v1/intel/weather/tiles/owm/{i}/{{z}}/{{x}}/{{y}}.png", "kind": "vivo_tercero",
+                 "attribution": "OpenWeather"} for i, layer, t, lab, z, _ttl in OWM] if config.setting("openweather_key") else [],
+        "tomorrow": [{"id": i, "label": lab, "group": "Tiempo actual", "type": t, "layer": layer, "maxzoom": z,
+                      "tiles": f"/api/v1/intel/weather/tiles/tomorrow/{i}/{{z}}/{{x}}/{{y}}.png", "kind": "vivo_tercero",
+                      "attribution": "Tomorrow.io"} for i, layer, t, lab, z, _ttl in TOMORROW] if config.setting("tomorrow_key") else [],
+        "types": {k: {"label": v[0], "unit": v[1]} for k, v in TYPES.items()},
+        "type_of": TYPE_OF,
+        "note": "GIBS: productos satelitales casi en tiempo real (~3 h). SENAMHI: geoservicios oficiales WMS del IDESEP. "
+                "OpenWeather y Tomorrow.io: mapas del tiempo actual con la clave de este equipo (teselas en caché 10–15 min).",
     }
 
 
@@ -118,15 +149,30 @@ def _tile_lonlat_bounds(z, x, y):
     return lon0, lat(y + 1), lon1, lat(y)
 
 
-def tile(src: str, lid: str, z: int, x: int, y: int) -> tuple[bytes, str] | None:
+def tile(src: str, lid: str, z: int, x: int, y: int, date: str | None = None) -> tuple[bytes, str] | None:
     if not (0 <= z <= 14 and 0 <= x < 2 ** z and 0 <= y < 2 ** z):
         return None
-    if src == "gibs":
+    if src in ("owm", "tomorrow"):
+        spec = next((g for g in (OWM if src == "owm" else TOMORROW) if g[0] == lid), None)
+        key = config.setting("openweather_key" if src == "owm" else "tomorrow_key")
+        if not spec or not key or z > spec[4]:
+            return None
+        _id, layer, _t, _lab, _z, ttl = spec
+        # la clave solo viaja del servidor al proveedor; nunca llega al navegador
+        if src == "owm":
+            url = f"https://tile.openweathermap.org/map/{layer}/{z}/{x}/{y}.png?appid={urllib.parse.quote(key)}"
+        else:
+            url = f"https://api.tomorrow.io/v4/map/tile/{z}/{x}/{y}/{layer}/now.png?apikey={urllib.parse.quote(key)}"
+        path = config.LIVE / "tiles" / src / layer / str(z) / str(x) / f"{y}.png"
+        ctype = "image/png"
+    elif src == "gibs":
         spec = next((g for g in GIBS if g[0] == lid), None)
         if not spec or z > spec[2]:
             return None
         _id, layer, lv, fmt, *_ = spec
-        date = gibs_dates()[layer]
+        latest = gibs_dates()[layer]
+        # fecha pedida (comparador de imágenes NASA): válida y nunca posterior al último día completo publicado
+        date = date if date and _DATE_RX.match(date) and "2012-01-19" <= date <= latest else latest
         path = config.LIVE / "tiles" / "gibs" / layer / date / str(z) / str(x) / f"{y}.{fmt}"
         url = f"{GIBS_BASE}/{layer}/default/{date}/GoogleMapsCompatible_Level{lv}/{z}/{y}/{x}.{fmt}"
         ttl = None  # inmutable para una fecha
@@ -171,3 +217,73 @@ def tile(src: str, lid: str, z: int, x: int, y: int) -> tuple[bytes, str] | None
     except OSError:
         pass
     return data, ctype
+
+
+# ── Paletas oficiales GIBS (leyenda exacta y lectura del valor por color) ────
+COLORMAPS = {"ssta": "GHRSST_Sea_Surface_Temperature_Anomalies", "sst": "GHRSST_Sea_Surface_Temperature"}
+_CMAP: dict[str, dict] = {}
+
+
+def colormap(cid: str) -> dict | None:
+    """Entradas rgb → intervalo de valores publicadas por NASA GIBS (caché en disco; sin red, la última guardada)."""
+    name = COLORMAPS.get(cid)
+    if not name:
+        return None
+    if cid in _CMAP:
+        return _CMAP[cid]
+    path = config.LIVE / "colormaps" / f"{name}.xml"
+    url = f"https://gibs.earthdata.nasa.gov/colormaps/v1.3/{name}.xml"
+    try:
+        xml = http_get(url, timeout=30, retries=1).decode("utf-8", "ignore")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(xml, encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        try:
+            xml = path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+    units = (re.search(r'<ColorMap title="(?!No Data)[^"]*" units="([^"]*)"', xml) or [None, ""])[1]
+    entries = []
+    for rgb, val in re.findall(r'<ColorMapEntry rgb="(\d+,\d+,\d+)" transparent="false"[^>]*?value="([^"]+)"', xml):
+        m = re.match(r"[\[(]\s*(-?INF|-?[\d.]+)\s*,\s*(-?INF|\+?INF|-?[\d.]+)\s*[\])]", val)
+        if not m:
+            continue
+        lo, hi = (None if "INF" in v else float(v) for v in m.groups())
+        entries.append({"rgb": [int(c) for c in rgb.split(",")], "from": lo, "to": hi})
+    out = {"id": cid, "layer": name, "units": units, "entries": entries, "source": url,
+           "provenance": {"institution": "NASA EOSDIS GIBS", "nature": "oficial", "url": url,
+                          "transform": "Paleta publicada: cada color corresponde a un intervalo de 0,1 °C."}}
+    if entries:
+        _CMAP[cid] = out
+    return out
+
+
+_RANGES: dict[str, tuple[float, list]] = {}
+
+
+def gibs_ranges(lid: str) -> dict | None:
+    """Intervalos de fechas publicados por GIBS para una capa (GetCapabilities, caché 6 h)."""
+    spec = next((g for g in GIBS if g[0] == lid), None)
+    if not spec:
+        return None
+    layer = spec[1]
+    hit = _RANGES.get(layer)
+    if hit and time.time() - hit[0] < 21600:
+        ranges = hit[1]
+    else:
+        path = config.LIVE / "gibs_caps.xml"
+        try:
+            xml = http_get(GIBS_CAPS, timeout=60, retries=1).decode("utf-8", "ignore")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(xml, encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            try:
+                xml = path.read_text(encoding="utf-8")
+            except OSError:
+                return {"id": lid, "layer": layer, "ranges": [], "latest": gibs_dates().get(layer)}
+        i = xml.find(f"<ows:Identifier>{layer}</ows:Identifier>")
+        j, k = xml.rfind("<Layer>", 0, i), xml.find("</Layer>", i)
+        ranges = [v.split("/")[:2] for v in re.findall(r"<Value>([^<]*)</Value>", xml[j:k]) if "/" in v] if i >= 0 else []
+        _RANGES[layer] = (time.time(), ranges)
+    return {"id": lid, "layer": layer, "ranges": ranges, "first": ranges[0][0] if ranges else None,
+            "latest": gibs_dates().get(layer), "provenance": {"institution": "NASA EOSDIS GIBS", "url": GIBS_CAPS}}

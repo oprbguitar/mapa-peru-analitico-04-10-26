@@ -1,5 +1,53 @@
 # Documentación — Mapa Perú Analítico
 
+## El Niño explicado, cobertura de comisarías, clima, calle, satélite y claves de modelos · 12 de octubre de 2026
+
+### Qué se hizo
+
+| Pedido | Resultado |
+|---|---|
+| Ayuda de Simular → Operativo tapaba el mapa | Aviso compacto bajo la barra, con ✕; se cierra solo a los 8 s y no vuelve en la sesión. Sin unidades ya no aparece la tarjeta «Elige una unidad…» sobre la zona. |
+| Vistas superpuestas en Simular | La barra ocupa todo el ancho y se parte en filas (sin desplazamiento). Su altura real (`--sim-top-h`, medida con ResizeObserver) coloca debajo la capa táctica (izquierda) y nivel/3D/relieve (derecha). |
+| Medir no era exacto | Distancia geodésica (haversine, radio medio WGS84) en m o km con 3 decimales, tramo en vivo hasta el cursor, rumbo, panel con total y último tramo. Doble clic termina; Esc borra. |
+| Cuadrícula de hasta ½ km | Cuadrícula **UTM real** (líneas de este/norte de la zona del centro, inversa UTM submétrica): apagada → 1 km → 500 m (botón o tecla G). |
+| Menús que no se cerraban (🔔, ⋯) | Se cierran al retirar el puntero (pausa de 450 ms), con clic fuera o Esc. |
+| Clima interactivo con la clave | Botón **☁ Clima**: proveedor (OpenWeather, Tomorrow.io, NASA, SENAMHI) × tipo (lluvia, nubes, temperatura, viento, presión), opacidad y valor exacto al hacer clic (todos los proveedores lado a lado). Las teselas con clave pasan por el servidor; la clave no llega al navegador. |
+| Claves de JEV y otros modelos | En **Claves → Modelos e intérpretes**: agregar con selector (JEV, Anthropic, OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Mistral, otro compatible), usar, probar, editar y quitar. «Usar» copia la conexión a `jev_url/jev_api_key` o `external_*`; JEV envía su clave como Bearer. |
+| Mapillary no funcionaba con la clave | La clave era válida; la búsqueda por recuadro de la Graph API responde «reduce the amount of data» en Lima. Ahora: cobertura con las **teselas vectoriales oficiales** (verde, zoom ≥ 13), clic → foto más cercana a ~60 m, recorrido por la secuencia (◀ ▶ y reproducción), filtros Todas/360°/Planas y año mínimo, panorámicas arrastrables. |
+| Selector de imágenes NASA como Gods View | Panel «Imágenes recientes»: Seleccionar área / Usar vista / Limpiar, fuente **Sentinel‑2 10 m** o **NASA VIIRS diaria**, modos **Imagen · vs Mapa base · A / B** con cortina arrastrable (segundo mapa sincronizado y recortado), opacidad, exportar GeoTIFF (Sentinel‑2) y Detalles. |
+| Comisaría: rango, punto de inflexión, serenazgo dentro, dotación | Herramienta **⌖ Comisaría** en Operativo: área de atención por cercanía (Voronoi), radio de inflexión (mitad de la distancia a la comisaría vecina), radio medio, sedes de serenazgo/fiscalía/judicial dentro, cifras oficiales del **distrito** tal cual (sin repartir) y un **estimador de dotación** con supuestos editables. |
+| Punto crítico: sedes cercanas y tiempo en paralelo, cerrar bloques | Herramienta **◎ Incidente**: sedes más cercanas por tipo con tiempo estimado, primera llegada y llegada de todas; **Despachar** coloca las unidades en esas sedes y el simulador recalcula; **Cerrar bloque** (perímetro) y **Cortar vía** (tramo). |
+| El Niño explicado en el mapa | Al abrir **El Niño**: anomalía de temperatura del mar NASA GHRSST MUR por fecha con la **paleta oficial GIBS** (leyenda exacta y lectura del valor al clic), evolución mes a mes con reproducción, corrientes reales animadas (Open-Meteo Marine) y un esquema en 5 pasos (mar cálido → humedad → lluvias → quebradas → impactos) con flujos animados y rótulos numerados. |
+| Barra inferior plegable | Pestaña **▾ Ocultar** en el borde superior de la línea de tiempo (también en tableta y móvil) y tecla **T**; «▴ Tiempo» la vuelve a mostrar. |
+| Simular en línea | El laboratorio corre también en Render con techos ligeros (`PUBLIC_LIMITS`) y una simulación a la vez (429 si hay otra). `PI_SIM_PUBLIC=0` lo desactiva. |
+
+### Naturaleza de cada dato nuevo
+
+- **Oficial:** anomalía y temperatura del mar NASA GHRSST MUR y su paleta (GIBS), lluvia NASA IMERG, VIIRS color real, cifras MININTER/SIDPOL del distrito.
+- **En vivo de tercero:** OpenWeather, Tomorrow.io, Mapillary, sedes OpenStreetMap.
+- **Modelo:** corrientes Open-Meteo Marine.
+- **Calculado:** área de atención, radio de inflexión, conteos dentro del área, distancia geodésica, cuadrícula UTM.
+- **Estimación:** tiempos de llegada (línea recta × rodeo ÷ velocidad del simulador) y el estimador de dotación (fórmula y supuestos visibles; no es una norma).
+- **Esquema conceptual:** flechas de los 5 pasos de El Niño (ENFEN/SENAMHI); no son mediciones y no llevan cifras propias.
+- La anomalía NASA MUR existe desde 2019‑07‑23 en GIBS: para 1982‑83 y 1997‑98 se usa el ICEN del gráfico inferior.
+
+### API nueva
+
+`GET /api/v1/meta/models` · `POST /api/v1/meta/models {action: save|activate|deactivate|delete|test}` ·
+`GET /api/v1/intel/coverage/comisaria?id=` · `GET /api/v1/intel/coverage/nearest?lat=&lon=&n=` ·
+`GET /api/v1/intel/weather/colormap/ssta` · `GET /api/v1/intel/weather/gibs-range/<capa>` ·
+`GET /api/v1/intel/weather/tiles/{owm|tomorrow|gibs|senamhi}/<capa>/{z}/{x}/{y}.png[?date=]` ·
+`GET /api/v1/street/tiles/{z}/{x}/{y}.pbf` · `GET /api/v1/street/near?lon=&lat=&pano=&since=` ·
+`GET /api/v1/street/meta/<id>` · `GET /api/v1/street/sequence/<id>` · `GET /api/v1/street/image/<id>?size=2048`.
+
+### Verificación
+
+183 pruebas Python aprobadas (5 nuevas en `tests/test_coverage_models.py`; 3 pruebas actualizadas a la nueva regla de
+simulación en línea). `design-lint` APROBADO. Navegador real a 1440 px y 375 px: Mapillary con 3 274 tramos de cobertura y
+secuencia de 199 fotos en Lima; NASA A/B 2026‑10‑11 vs 2025‑10‑11; nubes OpenWeather y clima por punto (5/7 proveedores);
+anomalía NASA del 2026‑10‑10 leída como «mayor que +3,0 °C» frente a Piura (coherente con ENFEN: Niño 1+2 extraordinario);
+área de atención y despacho de incidente en Lima.
+
 ## Edición municipal (venta a municipalidades) · 12 de octubre de 2026
 
 `peru_intel/municipal.py`, `apps/web/js/municipal.js`, Herramientas → **Municipal** (rol con permiso de ajustes; solo local).

@@ -8,8 +8,8 @@ let pin = null
 let current = { id: null, opacity: 0.75 }
 const COLS = [['temp_c', '°C'], ['precip_mm', 'mm'], ['wind_kmh', 'km/h'], ['rh_pct', '%'], ['cloud_pct', 'nub. %']]
 
-export async function loadCatalog() {
-  if (!catalog) catalog = await getJSON('/api/v1/intel/weather/layers').catch(() => ({ gibs: [], senamhi: [] }))
+export async function loadCatalog(force = false) {
+  if (!catalog || force) catalog = await getJSON('/api/v1/intel/weather/layers').catch(() => ({ gibs: [], senamhi: [] }))
   return catalog
 }
 
@@ -20,7 +20,8 @@ export function overlayOptions() {
     return groups.map((g) => `<optgroup label="${esc(title)} · ${esc(g)}">${list.filter((l) => l.group === g)
       .map((l) => `<option value="${src}:${l.id}" ${current.id === `${src}:${l.id}` ? 'selected' : ''}>${esc(l.label)}${l.date ? ` · ${esc(l.date)}` : ''}</option>`).join('')}</optgroup>`).join('')
   }
-  return group(catalog.senamhi, 'senamhi', 'SENAMHI') + group(catalog.gibs, 'gibs', 'NASA GIBS')
+  return group(catalog.owm || [], 'owm', 'OpenWeather') + group(catalog.tomorrow || [], 'tomorrow', 'Tomorrow.io') +
+    group(catalog.senamhi, 'senamhi', 'SENAMHI') + group(catalog.gibs, 'gibs', 'NASA GIBS')
 }
 
 export function currentOverlay() {
@@ -38,7 +39,7 @@ export function setOverlay(key) {
   map.addSource('pi-wx', { type: 'raster', tiles: [location.origin + spec.tiles], tileSize: 256, maxzoom: spec.maxzoom,
     ...(spec.bounds ? { bounds: spec.bounds } : {}), attribution: spec.attribution })
   map.addLayer({ id: 'pi-wx', type: 'raster', source: 'pi-wx', paint: { 'raster-opacity': current.opacity, 'raster-fade-duration': 200 } }, getFirstSymbol())
-  toast(`${spec.label} — ${src === 'senamhi' ? 'SENAMHI · IDESEP (oficial)' : `NASA GIBS · ${spec.date}`}`)
+  toast(`${spec.label} — ${src === 'senamhi' ? 'SENAMHI · IDESEP (oficial)' : src === 'gibs' ? `NASA GIBS · ${spec.date}` : spec.attribution}`)
 }
 
 export function setOverlayOpacity(v) {

@@ -15,6 +15,36 @@ def is_local() -> bool:
     return not (os.environ.get("PI_PUBLIC_ACCESS_PASSWORD") or os.environ.get("RENDER"))
 
 
+def sim_allowed() -> bool:
+    """El laboratorio también corre en línea (con límites ligeros) salvo que PI_SIM_PUBLIC=0 lo desactive."""
+    return is_local() or os.environ.get("PI_SIM_PUBLIC", "1") != "0"
+
+
+# En línea (Render Free, 1 núcleo compartido): techos menores para que una simulación no degrade el visor.
+# Son ≥ los valores por defecto de la interfaz, así una corrida normal funciona igual; solo se recortan los extremos.
+PUBLIC_LIMITS = {
+    "accessibility": {"iterations": 500, "points": 600, "facilities": 250, "seconds": 8.0},
+    "agents": {"agents": 2000, "replications": 5, "seconds": 8.0, "replay_agents": 250},
+    "operations": {"units": 25, "replications": 20, "horizon_h": 12, "expected_calls": 15_000, "seconds": 8.0, "timeline_calls": 800},
+    "queue": {"replications": 30, "horizon_h": 24, "expected_calls": 20_000, "seconds": 8.0},
+}
+
+
+def apply_public_limits() -> None:
+    """Reduce los techos de cada motor cuando no es la instalación local (idempotente)."""
+    if is_local():
+        return
+    import importlib
+    for mod, lim in PUBLIC_LIMITS.items():
+        try:
+            m = importlib.import_module(f"{__name__}.{mod}")
+        except ImportError:  # SimPy opcional
+            continue
+        for k, v in lim.items():
+            if k in m.LIMITS and isinstance(m.LIMITS[k], (int, float)):
+                m.LIMITS[k] = min(m.LIMITS[k], v)
+
+
 ENGINES = [
     {"id": "S1", "name": "Qué pasaría si (determinista)", "status": "disponible", "in": "accessibility"},
     {"id": "S2", "name": "Monte Carlo y sensibilidad", "status": "disponible", "in": "accessibility"},

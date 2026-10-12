@@ -55,6 +55,8 @@
   --mod-otros: #8a9aa8; --mod-violencia: #b07cf0; --mod-hurto: #f5b82e; --mod-robo: #ef4b4b; --mod-estafa: #3d9df2; --mod-extorsion: #ff8a3d; --mod-secuestro: #e05aa8;
   /* sedes de seguridad y justicia */
   --inst-comisaria: #3d8bfd; --inst-serenazgo: #ffc233; --inst-fiscalia: #ff5c6c; --inst-judicial: #b197fc; --inst-ring: #05080c;
+  /* nivel de calle: verde de cobertura Mapillary (identidad del proveedor) y cian de la secuencia elegida */
+  --street-cov: #05cb63; --street-sel: #35d0ff;
   /* focos (territorios con mayor valor) y alerta: coral de la dirección v0.3 */
   --hot: #ff4d5e;
   /* animación del clima */
@@ -129,6 +131,7 @@
   --live-port: #0b7285; --live-dc: #5f3dc4; --live-sat: #b08400; --live-weather: #087f5b;
   --live-volcano: #a61e4d; --live-flood: #1864ab; --live-storm: #6741d9; --live-event: #495057;
   --inst-comisaria: #1c64d8; --inst-serenazgo: #c98a00; --inst-fiscalia: #d6283a; --inst-judicial: #6a45c9; --inst-ring: #ffffff;
+  --street-cov: #03994a; --street-sel: #0b84b8;
   --hot: #d6283a; --fx-sun: #f0a500; --fx-rain: #1971c2; --fx-storm: #6a45c9; --fx-cloud: #7d8a96; --fx-wind: #3d4a57; --fx-frost: #0b7285; --fx-fog: #7d8a96;
   --enso-warm: #d6402b; --enso-cold: #1971c2; --enso-neutral: #8a96a3;
   --shadow: 0 8px 24px rgba(18, 24, 31, .16);
