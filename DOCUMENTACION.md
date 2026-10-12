@@ -1,5 +1,17 @@
 # Documentación — Mapa Perú Analítico
 
+## Evacuación con agentes sintéticos (S4) · 12 de octubre de 2026
+
+Cuarto motor del simulador (**Evacuación**; `peru_intel/simulation/agents.py`, `apps/web/js/sim-agents.js`). Agentes
+sintéticos uniformes en el área o perímetro (no son personas ni población repartida) se desplazan a pie (4,5 km/h) o en
+vehículo (25 km/h) con variación individual hacia el punto seguro más cercano sin cruzar tramos cortados (si no hay, rodeo
+declarado). Congestión emergente por densidad en celdas de 250 m (BPR: v ÷ (1 + 0,15·(d/c)⁴)). Paso de 30 s, hasta 120 min,
+réplicas con semilla. Salidas: % evacuado a 10/30/60 min, t50/t90, no llegan, carga y exceso de capacidad por punto,
+celdas congestionadas, curva acumulada y reproducción de 400 agentes de muestra por minuto. JEV evalúa «% evacuado en
+30 min»; informes y escenarios lo incluyen. Tramos y perímetro se comparten con el Operativo. API:
+`POST /api/v1/sim/agents/run` (registrado como `agt-<hash>`). Pruebas: `tests/test_agents.py` (tiempo acotado por distancia,
+congestión, evitar punto bloqueado, perímetro) y `tests/e2e/simulation-agents.mjs`. Guía: pasos 16–17.
+
 ## Ciclo de vida de escenarios, exportar e importar (§7.3) · 12 de octubre de 2026
 
 Estados: **borrador** → **configurado** (zona y unidades) → **validado para simular** (coordinación) → **finalizado** (al

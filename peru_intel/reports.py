@@ -73,7 +73,12 @@ def _executive(rec: dict | None, ev: dict | None) -> list[str]:
         return ["Este escenario aún no tiene una ejecución terminada: no hay cifras que resumir."]
     p, r = rec["params"], rec["results"]
     lines = []
-    if p.get("engine") == "operations":
+    if p.get("engine") == "agents":
+        e30 = r["evacuated_pct"]["30"]
+        t90 = r["t90_min"]["p50"]
+        lines.append(f"Con {len(p['safe_points'])} punto(s) seguro(s), el {e30['p50']:g} % de {p['agents']['n']} agentes sintéticos llega en 30 min "
+                     f"(rango {e30['p5']:g}–{e30['p95']:g} %); el 90 % llega {'en ' + format(t90, 'g') + ' min' if t90 is not None else 'después del horizonte'}.")
+    elif p.get("engine") == "operations":
         q = r["within_target_pct"]
         lines.append(f"Con {len(p['units'])} unidad(es) y {len(p['tramos'])} tramo(s) cortado(s), el {q['p50']:g} % de las llamadas hipotéticas "
                      f"se atiende en ≤ {p['ops']['target_min']} min (rango del 90 %: {q['p5']:g}–{q['p95']:g} %).")
@@ -101,7 +106,7 @@ def run_report(run_id: str) -> dict:
 
 
 def _run_block(rec: dict) -> dict:
-    keep = ("run_id", "params", "results", "assumptions", "warnings", "provenance", "validity", "kind", "created_at", "saturated", "units", "sample")
+    keep = ("run_id", "params", "results", "assumptions", "warnings", "provenance", "validity", "kind", "created_at", "saturated", "units", "sample", "safe_points")
     return {k: rec.get(k) for k in keep if k in rec}
 
 

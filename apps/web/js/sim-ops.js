@@ -15,6 +15,7 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const NOTE_CAT = { referencia: { label: 'Referencia', glyph: 'i' }, evidencia: { label: 'Evidencia', glyph: '✓' }, riesgo: { label: 'Riesgo', glyph: '!' } }
 const st = {
+  marksOnly: false,   // en «Evacuación» solo se muestran tramos y perímetro (sin unidades ni llamadas del operativo)
   units: [], tramos: [], draft: [], tool: 'unit', kind: 'patrulla', seq: 0, perimeter: [], notes: [], measure: [], noteMarkers: new Map(), measureLabel: null,
   result: null, t: 0, speed: 30, playing: false, frame: 0, markers: new Map(), onChange: () => {},
 }
@@ -59,10 +60,20 @@ function ensureLayers() {
     'circle-radius': 7, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--ink') } })
 }
 
+const MARK_LAYERS = ['ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-perimeter', 'ops-perimeter-fill', 'ops-measure']
+
 function vis(on) {
-  for (const id of ['ops-routes', 'ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-calls', 'ops-moving', 'ops-perimeter', 'ops-perimeter-fill', 'ops-measure']) {
-    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
+  for (const id of ['ops-routes', 'ops-calls', 'ops-moving', ...MARK_LAYERS]) {
+    const show = on && (!st.marksOnly || MARK_LAYERS.includes(id))
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', show ? 'visible' : 'none')
   }
+}
+
+/** Solo marcas (tramos, perímetro): lo usa la evacuación para compartir el dibujo sin mostrar el operativo. */
+export function setMarksOnly(on) {
+  st.marksOnly = on
+  if (on) { pause(); for (const m of st.markers.values()) m.remove(); st.markers.clear() }
+  paintMarks()
 }
 
 function unitEl(u) {
@@ -134,7 +145,7 @@ function paintMarks() {
   ensureLayers()
   vis(true)
   for (const [id, m] of st.markers) if (!st.units.some((u) => u.id === id)) { m.remove(); st.markers.delete(id) }
-  for (const u of st.units) {
+  for (const u of st.marksOnly ? [] : st.units) {
     let m = st.markers.get(u.id)
     if (!m) {
       m = new maplibregl.Marker({ element: unitEl(u), draggable: true }).setLngLat([u.lon, u.lat]).addTo(map)

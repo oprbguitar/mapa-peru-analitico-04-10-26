@@ -369,6 +369,7 @@ body.sim-on .spine, body.sim-on .edge-tab--spine, body.sim-on .legend, body.sim-
 .sim-top .seg { flex: 0 0 auto; flex-wrap: nowrap; }
 .sim-top:has(.ops-scn) { flex-wrap: wrap; justify-content: center; width: min(1180px, calc(100% - var(--panel-space) - var(--gap) * 2)); }
 .sim-top .seg button { padding: 0 var(--sp-3); white-space: nowrap; }
+.sim-top .btn { white-space: nowrap; }
 .sim-hint { position: absolute; top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) + var(--sp-4)); left: 50%; transform: translateX(-50%);
   margin: 0; padding: var(--sp-2) var(--sp-4); font-size: var(--fs-ui); text-align: center; max-width: calc(100% - var(--gap) * 2);
   border-color: var(--accent); animation: sim-breathe 2.4s var(--ease) infinite; }
@@ -580,3 +581,12 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .scn-state[data-state="finalizado"] { color: var(--warn); }
 .scn-state[data-state="revisado"] { color: var(--ok); }
 .import-btn { cursor: pointer; display: inline-flex; align-items: center; }
+
+/* Evacuación (S4): puntos seguros y control de agentes */
+.agt-safe { display: grid; justify-items: center; gap: 0; padding: var(--sp-1); border: var(--rule) solid var(--void); border-radius: var(--radius);
+  background: var(--ok); color: var(--void); cursor: grab; box-shadow: var(--shadow); font: 700 var(--fs-caption) var(--font-mono); }
+.agt-safe b { font-size: var(--fs-h3); line-height: 1; }
+.agt-safe[data-over="true"] { background: var(--danger); }
+.agt-n { display: inline-flex; align-items: center; gap: var(--sp-1); font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; }
+.agt-n select { min-height: 30px; background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }
+.sim-sites input[type="number"] { width: 9ch; min-height: 28px; background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }

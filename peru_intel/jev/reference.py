@@ -18,6 +18,9 @@ def _primary(run: dict) -> dict:
     p = run.get("params", {})
     eng = p.get("engine")
     r = run.get("results", {})
+    if eng == "agents":
+        q = r["evacuated_pct"]["30"]
+        return {"name": "agentes evacuados en 30 min", "unit": "%", "q": q, "n": p.get("replications"), "n_kind": "réplicas", "min_n": 5}
     if eng == "operations":
         q = r["within_target_pct"]
         return {"name": f"llamadas atendidas a tiempo (≤ {p['ops']['target_min']} min)", "unit": "%", "q": q,

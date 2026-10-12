@@ -35,7 +35,7 @@ comprometen esa secuencia.
 | 4 | Laboratorio de simulación (what-if, Monte Carlo, SimPy) + JEV desacoplado | L | Muy alto: demostración de «jugar con los datos» | **Solo local** | 🟡 S1+S2+S9 (accesibilidad A/B) y S3 (capacidad con SimPy) entregados el 11/10; JEV pendiente |
 | 5 | Cámaras continuas (go2rtc → WebRTC/MSE) con JPEG como respaldo | M | Alto si hay grabador disponible | **Solo local** | 🟡 registro y mosaico JPEG existen (`vision.js`, `vision/device.py`) |
 | 6 | Imágenes: auditar Sentinel-2 A/B, intérprete local por teselas | M–L | Alto | Consulta en web · interpretación **solo local** | 🟡 comparador A/B verificado |
-| 7 | Agentes, movilidad (SUMO), sensores, drones | XL | Medio | **Solo local** | ⬜ |
+| 7 | Agentes, movilidad (SUMO), sensores, drones | XL | Medio | **Solo local** | 🟡 12/10: agentes sintéticos de evacuación con congestión (S4); faltan red vial (SUMO/OSRM), sensores y drones |
 | 8 | Productos piloto (Municipio 360 + Market Simulator o Crisis Room) | XL | Comercial | Local; demo exportable | ⬜ |
 | 9 | Empaquetado Windows, respaldos, actualizaciones firmadas | M | Alto para entrega | **Solo local** | 🟡 `INICIAR-MAPA.bat` y contenedor |
 

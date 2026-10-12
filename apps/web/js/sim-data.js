@@ -139,11 +139,11 @@ function jevSection(j) {
     ${j.fallback ? `<p class="note">${esc(j.fallback)}</p>` : ''}</div></details>`
 }
 
-export function dataHtml({ last, cfg, meta, engine, scenario, jev, scenarioId }) {
+export function dataHtml({ last, cfg, meta, engine, scenario, jev, scenarioId, agentsBody }) {
   const head = `<div class="panel-head"><div class="eyebrow">Laboratorio · cifras de la simulación</div>
-    <h2>${engine === 'ops' ? 'Operativo simulado' : engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
+    <h2>${engine === 'agt' ? 'Evacuación con agentes sintéticos' : engine === 'ops' ? 'Operativo simulado' : engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
     <p class="sub">Hoy frente a «${esc(scenario)}». Todo es ${kindBadge('estimacion')} exploratoria con supuestos editables.</p></div>`
-  const body = !last ? '<p class="src-meta">Aún no hay resultado: elige una zona en el mapa.</p>'
+  const body = agentsBody != null ? agentsBody : !last ? '<p class="src-meta">Aún no hay resultado: elige una zona en el mapa.</p>'
     : last.params.engine === 'operations' ? opsHtml(last)
       : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
   return `${head}${jevSection(jev)}${body}${settingsHtml(cfg, meta, engine)}

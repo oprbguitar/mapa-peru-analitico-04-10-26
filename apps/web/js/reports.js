@@ -22,7 +22,10 @@ function runSection(run) {
   const p = run.params
   const r = run.results
   let rows = []
-  if (p.engine === 'operations') {
+  if (p.engine === 'agents') {
+    rows = [['Evacuado en 10 min', q(r.evacuated_pct['10'], ' %')], ['Evacuado en 30 min', q(r.evacuated_pct['30'], ' %')],
+      ['Evacuado en 60 min', q(r.evacuated_pct['60'], ' %')], ['90 % llega en', q(r.t90_min, ' min')], ['No llegan en el horizonte', q(r.not_arrived)]]
+  } else if (p.engine === 'operations') {
     rows = [['A tiempo (≤ ' + p.ops.target_min + ' min)', q(r.within_target_pct, ' %')], ['Respuesta p50', q(r.response_p50_min, ' min')],
       ['Respuesta p90', q(r.response_p90_min, ' min')], ['Llamadas', q(r.calls)], ['Sin atender al cierre', q(r.unattended)],
       ['Trayectos que cruzan tramos', q(r.crossing_tramos_pct, ' %')]]

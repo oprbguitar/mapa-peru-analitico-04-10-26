@@ -9,11 +9,12 @@ import { map } from './map.js'
 import { cssVar, esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js'
 import { dataHtml, runsHtml, scenariosHtml, signed } from './sim-data.js'
 import { openReport, timelineHtml } from './reports.js'
+import * as agt from './sim-agents.js'
 import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
 import { clearAll, clearPerimeter, finishTramo, hasUnits, hideOps, initOps, loadSpec, onOpsClick, onReplayClick, onReplayInput, opsKeyHtml,
-  opsSpec, opsTool, replayHtml, setTool, showOps, showResult, toolbarHtml } from './sim-ops.js'
+  opsSpec, opsTool, replayHtml, setMarksOnly, setTool, showOps, showResult, toolbarHtml } from './sim-ops.js'
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const BANDS = [[15, '--seq-7', '≤ 15 min'], [30, '--seq-5', '≤ 30'], [45, '--seq-3', '≤ 45'], [Infinity, '--seq-1', '> 45']]
@@ -38,15 +39,16 @@ let meta = null
 let hud = null
 let score = null
 let active = false
-let engine = 'acc'          // acc = tiempo de llegada · cap = capacidad (S3) · ops = operativo (ejercicio de mesa)
+let engine = 'acc'          // acc = tiempo de llegada · cap = capacidad (S3) · ops = operativo · agt = evacuación (S4)
+let agtTool = 'safe'
 let view = 'swipe'          // swipe (hoy ⟷ hipótesis) · delta (qué cambia)
 let split = 0
 let runSeq = 0
 let liveTimer = 0
 let layersBound = false
 let lastError = ''
-const lastBy = { acc: null, cap: null, ops: null }
-const jevBy = { acc: null, cap: null, ops: null }   // evaluación JEV del último resultado de cada motor
+const lastBy = { acc: null, cap: null, ops: null, agt: null }
+const jevBy = { acc: null, cap: null, ops: null, agt: null }   // evaluación JEV del último resultado de cada motor
 let scenario = { id: null, name: 'Escenario A', state: null }
 const STATE_LABEL = { borrador: 'Borrador', configurado: 'Configurado', validado_para_simular: 'Validado para simular', finalizado: 'Finalizado', revisado: 'Revisado', archivado: 'Archivado' }
 // acciones manuales posibles desde cada estado (el servidor las vuelve a validar y exige rol de coordinación)
@@ -113,6 +115,7 @@ function drawResult() {
   for (const id of LAYERS) vis(id, false)
   hideSwipe()
   if (engine === 'ops') return showOps()
+  if (engine === 'agt') return agt.showAgents()
   if (!r) return
   if (r.params.engine === 'queue') return drawCapacity(r)
   const radius = cellRadius(r.sample.spacing_km, r.params.area.lat)
@@ -158,6 +161,8 @@ const tone = (from, to) => (to < from - 1 ? 'peor' : to > from + 1 ? 'mejor' : '
 function scoreHtml() {
   const r = last()
   if (lastError) return `<p class="sim-score-k">No se pudo simular</p><p class="sim-score-s">${esc(lastError)}</p>`
+  if (engine === 'agt' && !agt.hasSafePoints()) return '<p class="sim-score-k">Evacuación</p><p class="sim-score-s">Marca uno o más puntos seguros en el mapa (⛨). Los agentes irán al más cercano.</p>'
+  if (engine === 'agt' && r?.params.engine === 'agents') return agt.scoreHtml(r, kindBadge)
   if (engine === 'ops' && !hasUnits()) return '<p class="sim-score-k">Operativo</p><p class="sim-score-s">Elige una unidad arriba y haz clic en el mapa para colocarla.</p>'
   if (!r) return '<p class="sim-score-busy">Calculando…</p>'
   if (r.params.engine === 'operations') {
@@ -220,15 +225,17 @@ function hudHtml() {
       <div class="seg" role="group" aria-label="Qué medir">
         <button type="button" data-sim-engine="acc" aria-pressed="${engine === 'acc'}">Tiempo de llegada</button>
         <button type="button" data-sim-engine="cap" aria-pressed="${engine === 'cap'}" ${capOk ? '' : 'disabled title="Falta SimPy: pip install -r requirements-simulation.txt"'}>Capacidad</button>
-        <button type="button" data-sim-engine="ops" aria-pressed="${engine === 'ops'}">Operativo</button></div>
-      ${engine === 'ops' ? toolbarHtml(scenario.name, scenario.state) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
+        <button type="button" data-sim-engine="ops" aria-pressed="${engine === 'ops'}">Operativo</button>
+        <button type="button" data-sim-engine="agt" aria-pressed="${engine === 'agt'}">Evacuación</button></div>
+      ${engine === 'agt' ? agt.toolbarHtml(agtTool) : engine === 'ops' ? toolbarHtml(scenario.name, scenario.state) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
         `<button type="button" data-sim-service="${k}" aria-pressed="${cfg.service === k}">${s.label}</button>`).join('')}</div>`}
     </div>
-    <p class="sim-hint hud" id="sim-hint" ${getZone() && (engine !== 'ops' || hasUnits()) ? 'hidden' : ''}>${!getZone()
+    <p class="sim-hint hud" id="sim-hint" ${getZone() && (engine !== 'ops' || hasUnits()) && (engine !== 'agt' || agt.hasSafePoints()) ? 'hidden' : ''}>${!getZone()
       ? 'Haz clic en el mapa para elegir la zona · después arrastra su borde para agrandarla'
+      : engine === 'agt' ? 'Haz clic en el mapa para marcar puntos seguros (⛨) · los agentes sintéticos irán al más cercano'
       : 'Elige Patrullero, Serenazgo, Ambulancia o Bomberos arriba y haz clic en el mapa para colocar unidades · ╱ Tramo cortado: clic punto a punto y «Terminar tramo»'}</p>
     <div class="sim-bottom">
-      ${engine === 'ops' ? replayHtml(cfg.ops.horizon_h * 60) : ''}
+      ${engine === 'ops' ? replayHtml(cfg.ops.horizon_h * 60) : engine === 'agt' ? agt.replayHtml() : ''}
       <div class="sim-cards" role="group" aria-label="¿Qué pasa si…?">${PRESETS.filter((p) => !p.cap || engine === 'cap').map((p) =>
         `<button type="button" class="sim-card hud" data-sim-preset="${p.id}" aria-pressed="${cfg.preset === p.id}">
           <span class="sim-card-i" aria-hidden="true">${p.icon}</span><b>${p.label}</b><small>${p.hint}</small></button>`).join('')}</div>
@@ -245,6 +252,7 @@ function hudHtml() {
 function keyHtml() {
   const sw = (v, l) => `<span><i style="background:var(${v})"></i>${l}</span>`
   if (engine === 'ops') return opsKeyHtml()
+  if (engine === 'agt') return agt.keyHtml()
   if (engine === 'cap') return Object.values(UTIL).map(([v, l]) => sw(v, l)).join('')
   if (view === 'delta') return Object.values(DELTA).map(([v, l]) => sw(v, l)).join('')
   return BANDS.map(([, v, l]) => sw(v, l)).join('') + sw('--danger', 'sin servicio')
@@ -257,7 +265,8 @@ function renderHud() {
     hud.id = 'sim-hud'
     document.body.appendChild(hud)
     hud.addEventListener('click', onHudClick)
-    hud.addEventListener('input', onReplayInput)
+    hud.addEventListener('input', (e) => { onReplayInput(e); agt.onAgentsInput(e) })
+    hud.addEventListener('change', (e) => { if (e.target.id === 'agt-n') agt.setAgentsConfig({ n: Number(e.target.value) }) })
   }
   hud.dataset.anim = hud.hidden || !hud.innerHTML ? 'on' : 'off'   // la entrada escalonada solo al abrir, no en cada ajuste
   hud.hidden = false
@@ -275,15 +284,26 @@ function syncHud() {
 
 function onHudClick(e) {
   const t = e.target
-  if (onReplayClick(e)) return
+  if (onReplayClick(e) || agt.onAgentsReplay(e)) return
+  const at = t.closest('[data-agt-tool]')
+  if (at) {
+    if (at.dataset.agtTool === 'clear') agt.clearAgents()
+    else { agtTool = at.dataset.agtTool; setTool('unit') }
+    return renderHud()
+  }
+  const am = t.closest('[data-agt-mode]')
+  if (am) { agt.setAgentsConfig({ mode: am.dataset.agtMode }); return renderHud() }
   const kindB = t.closest('[data-ops-kind]')
   if (kindB) { setTool('unit', kindB.dataset.opsKind); return renderHud() }
   const tool = t.closest('[data-ops-tool]')
   if (tool) {
     const a = tool.dataset.opsTool
-    if (['tramo', 'perimetro', 'nota', 'medir'].includes(a)) setTool(opsTool() === a ? 'unit' : a)
+    if (['tramo', 'perimetro', 'nota', 'medir'].includes(a)) {
+      setTool(opsTool() === a ? 'unit' : a)
+      if (engine === 'agt') agtTool = opsTool() === 'unit' ? 'safe' : a
+    }
     else if (a === 'noperim') clearPerimeter()
-    else if (a === 'finish') { finishTramo(); setTool('unit') }   // terminar el tramo ya recalcula (onChange)
+    else if (a === 'finish') { finishTramo(); setTool('unit'); if (engine === 'agt') agtTool = 'safe' }   // terminar el tramo ya recalcula (onChange)
     else if (a === 'clear') { clearAll(); lastBy.ops = null; placeScore(false) }
     return renderHud()
   }
@@ -292,8 +312,10 @@ function onHudClick(e) {
   const eng = t.closest('[data-sim-engine]')
   if (eng && !eng.disabled) {
     if (engine === 'ops' && eng.dataset.simEngine !== 'ops') hideOps()
+    if (engine === 'agt' && eng.dataset.simEngine !== 'agt') { agt.hideAgents(); setMarksOnly(false); hideOps() }
     engine = eng.dataset.simEngine
     if (engine === 'ops') setTool('unit')
+    if (engine === 'agt') { agtTool = 'safe'; setTool('unit'); setMarksOnly(true) }
     if (engine === 'acc' && cfg.preset === 'demanda') applyPreset('lluvia', false)
     renderHud()
     drawResult()
@@ -342,6 +364,11 @@ function payload() {
     base: { speed_kmh: cfg.speed_kmh },
     hypothesis: { rain: cfg.rain, congestion_pct: cfg.congestion_pct, out_of_service_pct: cfg.out_of_service_pct, detour_pct: cfg.detour_pct,
       closed_ids: [...cfg.closed] } }
+  if (engine === 'agt') {
+    const o = opsSpec()
+    return ['/api/v1/sim/agents/run', { area: common.area, base: common.base, seed: cfg.seed, replications: 5,
+      hypothesis: { ...common.hypothesis, closed_ids: [] }, tramos: o.tramos, perimeter: o.perimeter, ...agt.agentsSpec() }]
+  }
   if (engine === 'ops') {
     return ['/api/v1/sim/operations/run', { area: common.area, base: common.base, seed: cfg.seed, replications: cfg.opsReplications,
       hypothesis: { ...common.hypothesis, closed_ids: [] }, ...opsSpec(), ops: cfg.ops }]
@@ -386,6 +413,7 @@ function simulate() {
   if (!getZone() || !active) return
   clearTimeout(liveTimer)
   if (engine === 'ops' && !hasUnits()) { lastBy.ops = null; return placeScore(false) }
+  if (engine === 'agt' && !agt.hasSafePoints()) { lastBy.agt = null; return placeScore(false) }
   placeScore(true)
   liveTimer = setTimeout(async () => {
     const seq = ++runSeq
@@ -398,6 +426,7 @@ function simulate() {
       jevBy[forEngine] = null
       evaluateJev(forEngine, r, seq)
       if (forEngine === 'ops') showResult(r)
+      if (forEngine === 'agt') agt.showResult(r)
       drawResult()
       placeScore(false)
       // refresca las cifras solo si el panel está a la vista; cerrado, no debe reabrirse solo
@@ -414,7 +443,9 @@ function simulate() {
 function openData(section) {
   document.dispatchEvent(new CustomEvent('sim-open-panel'))
   const box = document.getElementById('panel-body')
-  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine], scenarioId: scenario.id })}</div>`
+  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine], scenarioId: scenario.id,
+    agentsBody: engine === 'agt' ? agt.dataHtml(last()) : null })}</div>`
+  box.querySelectorAll('[data-cap]').forEach((inp) => { inp.onchange = () => agt.setCapacity(inp.dataset.cap, Number(inp.value)) })
   const life = document.getElementById('sim-lifecycle')
   if (life && scenario.id) life.addEventListener('toggle', () => { if (life.open) renderLifecycle() })
   document.getElementById('scn-import')?.addEventListener('change', importScenario)
@@ -620,6 +651,7 @@ export async function loadScenario(id, version) {
 
 // ── ciclo de vida del modo ──────────────────────────────────────────────────
 initOps({ onChange: () => { renderHudKeepingTool(); simulate() } })
+agt.initAgents({ onChange: () => { renderHudKeepingTool(); simulate() } })
 function renderHudKeepingTool() { if (hud && !hud.hidden) renderHud() }
 
 initZone({
@@ -641,6 +673,12 @@ function frameZone() {
 export function onMapClick(e) {
   if (!active) return false
   if (map.getLayer('sim-sites') && map.queryRenderedFeatures(e.point, { layers: ['sim-sites'] }).length) return true
+  if (engine === 'agt' && getZone()) {
+    if (agtTool === 'safe') agt.addSafePoint(e.lngLat)
+    else onOpsClick(e)
+    hud?.querySelector('#sim-hint')?.setAttribute('hidden', '')
+    return true
+  }
   if (engine === 'ops' && getZone() && onOpsClick(e)) {
     hud?.querySelector('#sim-hint')?.setAttribute('hidden', '')
     if (opsTool() === 'unit') simulate()   // tramos, perímetros y notas recalculan al terminarlos
@@ -688,6 +726,7 @@ export function hideSimulation() {
   stopRain()
   hideSwipe()
   hideOps()
+  agt.hideAgents()
   score?.remove()
   for (const id of LAYERS) vis(id, false)
 }

@@ -107,6 +107,21 @@ resultados, unidades, supuestos, fuentes, evaluación JEV, marcas en el mapa, de
 **Ctrl+P → Guardar como PDF**. En «Ver cifras» hay informe de una simulación y, en «Comparar», informe comparativo;
 «Desarrollo del escenario» permite **abrir cualquier versión anterior** en el mapa.
 
+### 16 · Evacuación con agentes (S4)
+Pulsa **EVACUACIÓN**. Con **⛨ Punto seguro** haz clic para marcar uno o varios puntos (arrástralos para moverlos; doble clic
+los quita). Elige **A pie** o **En vehículo** y cuántos **agentes** (500 a 5000). Los agentes sintéticos aparecen repartidos
+al azar en la zona (o en el perímetro) y caminan o conducen al punto seguro más cercano que no esté bloqueado por un
+**tramo cortado**; donde muchos coinciden se forma congestión (naranja = cargada, rojo = saturada). El marcador muestra el
+% evacuado en 30 min y en cuánto llega el 90 %. En **Ver cifras** puedes poner la **capacidad** de cada punto: si recibe más,
+se marca en rojo. Las fichas de escenario (lluvia, hora punta…) también afectan la velocidad.
+
+![Evacuación](img/simulador/16-evacuacion.png)
+
+### 17 · Estado del escenario, exportar e importar
+En «Ver cifras» → **Estado y archivo del escenario**: el escenario pasa solo de borrador a configurado y a finalizado;
+la coordinación puede **validarlo**, **marcarlo revisado** (con nota) o **archivarlo**. **Exportar archivo** descarga un JSON con
+huella de integridad; **Importar escenario** lo carga en otra PC (si el archivo fue modificado, se rechaza).
+
 > El operativo es un **ejercicio de mesa**: las llamadas son sintéticas (tasa y mezcla declaradas, ubicadas al azar en la
 > zona), no provienen de denuncias ni de personas, y el sistema no emite órdenes ni rutas sobre personas reales.
 
