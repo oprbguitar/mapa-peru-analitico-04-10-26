@@ -19,6 +19,7 @@ from ..vision import cameras as vcams
 from ..vision import device as vdev
 from ..vision import discovery as vdisc
 from ..vision import events as vevents
+from ..vision import live as vlive
 from ..live import adsb, celestrak, eonet, firms, seismic, telecom, weather
 from ..live import ais as ais_live
 from ..live.traffic import PROVIDER as TRAFFIC
@@ -652,10 +653,22 @@ def _vision_get(p: list[str], q: dict) -> dict:
         return {"devices": vdisc.discover()}
     if p == ["events"]:
         return vevents.summary(_int(q, "minutes", 60))
+    if p == ["selftest"]:
+        return vlive.selftest()
+    if p == ["streams"]:
+        try:
+            return vlive.streams()
+        except vlive.LiveError as e:
+            raise ApiError(400, str(e))
     raise ApiError(404, "ruta no encontrada")
 
 
 def _vision_post(p: list[str], body: dict) -> dict:
+    if p == ["webrtc"]:
+        try:
+            return vlive.webrtc_answer(str(body.get("cam") or ""), int(body.get("ch") or 0), body.get("sdp"))
+        except vlive.LiveError as e:
+            raise ApiError(409, str(e))
     try:
         if p == ["cameras"]:
             cam = vcams.upsert(body)
