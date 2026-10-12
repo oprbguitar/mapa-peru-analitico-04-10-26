@@ -19,7 +19,7 @@ ENGINES = [
     {"id": "S1", "name": "Qué pasaría si (determinista)", "status": "disponible", "in": "accessibility"},
     {"id": "S2", "name": "Monte Carlo y sensibilidad", "status": "disponible", "in": "accessibility"},
     {"id": "S3", "name": "Eventos discretos (colas y capacidad)", "status": "disponible", "in": "queue", "requires": "simpy"},
-    {"id": "S4", "name": "Agentes sintéticos", "status": "planificado"},
+    {"id": "S4", "name": "Agentes sintéticos (evacuación a puntos seguros)", "status": "disponible", "in": "agents"},
     {"id": "S5", "name": "Movilidad y transporte (OSRM/SUMO)", "status": "planificado"},
     {"id": "S6", "name": "Redes de infraestructura y cascadas", "status": "planificado"},
     {"id": "S7", "name": "Optimización multiobjetivo", "status": "planificado"},

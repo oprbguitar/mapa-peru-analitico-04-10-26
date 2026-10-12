@@ -351,6 +351,12 @@ def route_post(path: str, body: dict):
             return sim_runs.run_accessibility(body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
+    if p == ["sim", "agents", "run"]:
+        _sim_local()
+        try:
+            return sim_runs.run_agents(body)
+        except sim_access.SimError as e:
+            raise ApiError(400, str(e))
     if p == ["sim", "operations", "run"]:
         _sim_local()
         try:
