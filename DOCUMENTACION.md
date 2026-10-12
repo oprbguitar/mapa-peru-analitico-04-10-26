@@ -1,5 +1,17 @@
 # Documentación — Mapa Perú Analítico
 
+## Ciclo de vida de escenarios, exportar e importar (§7.3) · 12 de octubre de 2026
+
+Estados: **borrador** → **configurado** (zona y unidades) → **validado para simular** (coordinación) → **finalizado** (al
+guardar con una ejecución terminada) → **revisado** (coordinación, con nota obligatoria) → **archivado** (desarchivar vuelve a
+borrador). Las transiciones automáticas y manuales quedan en el historial del escenario (fecha, autor, nota) y en la
+auditoría; los cambios avisan a coordinación. La etiqueta de estado aparece junto al nombre y en «Comparar»; un escenario en
+borrador o sin revisar no se presenta como recomendación validada. «Ver cifras» → **Estado y archivo del escenario**:
+acciones permitidas, historial, **Exportar archivo** (JSON con huella SHA-256) e **Importar escenario** (verifica la huella;
+crea una copia «(importado)» sin ejecuciones, que se repiten en la PC que importa).
+API: `POST /api/v1/sim/scenarios/<id>/state {state, note}`, `GET /api/v1/sim/scenarios/<id>/export`,
+`POST /api/v1/sim/scenarios/import {payload}`.
+
 ## Estrategia: perímetro, notas y medición (§5) · 12 de octubre de 2026
 
 En **Operativo**: **⬠ Perímetro** (polígono irregular de 3–200 vértices; las llamadas sintéticas caen dentro por muestreo de

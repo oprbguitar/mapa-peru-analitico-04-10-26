@@ -47,7 +47,12 @@ let layersBound = false
 let lastError = ''
 const lastBy = { acc: null, cap: null, ops: null }
 const jevBy = { acc: null, cap: null, ops: null }   // evaluación JEV del último resultado de cada motor
-let scenario = { id: null, name: 'Escenario A' }
+let scenario = { id: null, name: 'Escenario A', state: null }
+const STATE_LABEL = { borrador: 'Borrador', configurado: 'Configurado', validado_para_simular: 'Validado para simular', finalizado: 'Finalizado', revisado: 'Revisado', archivado: 'Archivado' }
+// acciones manuales posibles desde cada estado (el servidor las vuelve a validar y exige rol de coordinación)
+const NEXT = { configurado: ['validado_para_simular', 'archivado'], finalizado: ['validado_para_simular', 'revisado', 'archivado'],
+  validado_para_simular: ['archivado'], revisado: ['archivado'], borrador: ['archivado'], archivado: ['borrador'] }
+const ACTION = { validado_para_simular: 'Validar para simular', revisado: 'Marcar revisado', archivado: 'Archivar', borrador: 'Desarchivar' }
 const cfg = { service: 'hospital', preset: 'lluvia', iterations: 400, seed: 2026, speed_kmh: 30, closed: new Set(),
   rate_per_h: 6, capacity: 2, service_min: 45, horizon_h: 24, replications: 30,
   ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, opsReplications: 20, ...CALM, ...PRESETS[0].h }
@@ -216,7 +221,7 @@ function hudHtml() {
         <button type="button" data-sim-engine="acc" aria-pressed="${engine === 'acc'}">Tiempo de llegada</button>
         <button type="button" data-sim-engine="cap" aria-pressed="${engine === 'cap'}" ${capOk ? '' : 'disabled title="Falta SimPy: pip install -r requirements-simulation.txt"'}>Capacidad</button>
         <button type="button" data-sim-engine="ops" aria-pressed="${engine === 'ops'}">Operativo</button></div>
-      ${engine === 'ops' ? toolbarHtml(scenario.name) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
+      ${engine === 'ops' ? toolbarHtml(scenario.name, scenario.state) : `<div class="seg" role="group" aria-label="Servicio">${Object.entries(SERVICE).map(([k, s]) =>
         `<button type="button" data-sim-service="${k}" aria-pressed="${cfg.service === k}">${s.label}</button>`).join('')}</div>`}
     </div>
     <p class="sim-hint hud" id="sim-hint" ${getZone() && (engine !== 'ops' || hasUnits()) ? 'hidden' : ''}>${!getZone()
@@ -410,6 +415,9 @@ function openData(section) {
   document.dispatchEvent(new CustomEvent('sim-open-panel'))
   const box = document.getElementById('panel-body')
   box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine], scenarioId: scenario.id })}</div>`
+  const life = document.getElementById('sim-lifecycle')
+  if (life && scenario.id) life.addEventListener('toggle', () => { if (life.open) renderLifecycle() })
+  document.getElementById('scn-import')?.addEventListener('change', importScenario)
   const tl = document.getElementById('sim-timeline')
   if (tl) tl.addEventListener('toggle', async () => {
     if (!tl.open) return
@@ -468,6 +476,9 @@ function openData(section) {
     if (run) loadRun(run.dataset.run)
     const scn = e.target.closest('[data-load-scn]')
     if (scn) loadScenario(scn.dataset.loadScn)
+    const stBtn = e.target.closest('[data-set-state]')
+    if (stBtn) changeState(stBtn.dataset.setState)
+    if (e.target.closest('[data-export]')) exportScenario()
     const ver = e.target.closest('[data-open-version]')
     if (ver && scenario.id) loadScenario(scenario.id, Number(ver.dataset.openVersion))
     const rep = e.target.closest('[data-report]')
@@ -518,13 +529,13 @@ async function scenarioAction(a) {
     if (a === 'save') {
       const s = await postJSON('/api/v1/sim/scenarios', { id: scenario.id, name: scenario.name, spec: scenarioSpec(),
         run_id: lastBy.ops?.run_id, metrics: scenarioMetrics() })
-      scenario = { id: s.id, name: s.name }
-      toast(`«${s.name}» guardado (versión ${s.versions.at(-1).v})`)
+      scenario = { id: s.id, name: s.name, state: s.state }
+      toast(`«${s.name}» guardado (versión ${s.versions.at(-1).v} · ${STATE_LABEL[s.state] || s.state})`)
     } else if (a === 'dup') {
       if (!scenario.id) await scenarioAction('save')
       const letter = String.fromCharCode(65 + Math.min(25, (await getJSON('/api/v1/sim/scenarios')).scenarios.length))
       const d = await postJSON(`/api/v1/sim/scenarios/${scenario.id}/duplicate`, { name: `Escenario ${letter}` })
-      scenario = { id: d.id, name: d.name }
+      scenario = { id: d.id, name: d.name, state: d.state }
       toast(`Ahora editas «${d.name}», copia independiente. Cambia unidades, tramos o el «¿qué pasa si…?».`)
     } else if (a === 'compare') return openData('compare')
     else if (a === 'report') {
@@ -536,6 +547,59 @@ async function scenarioAction(a) {
   } catch (e) { toast(e.message) }
 }
 
+async function renderLifecycle() {
+  const box = document.getElementById('sim-life')
+  if (!box || !scenario.id) return
+  try {
+    const s = await getJSON(`/api/v1/sim/scenarios/${scenario.id}`)
+    scenario.state = s.state
+    const next = NEXT[s.state] || []
+    box.innerHTML = `<p><i class="scn-state" data-state="${esc(s.state)}">${esc(STATE_LABEL[s.state] || s.state)}</i>
+        ${['borrador', 'configurado'].includes(s.state) ? '<small> · aún no es una recomendación validada</small>' : ''}</p>
+      ${next.includes('revisado') ? '<label class="field"><span>Nota de revisión</span><input id="scn-note" maxlength="300" placeholder="p. ej., coherente con la capacidad real del distrito"></label>' : ''}
+      <div class="tool-row">${next.map((k) => `<button class="btn" type="button" data-set-state="${k}">${ACTION[k]}</button>`).join('')}
+        <button class="btn btn-ghost" type="button" data-export>Exportar archivo</button>
+        <label class="btn btn-ghost import-btn">Importar escenario…<input type="file" id="scn-import" accept="application/json,.json" hidden></label></div>
+      <ol class="scn-timeline">${(s.states || []).slice().reverse().map((h) => `<li><b>${esc(STATE_LABEL[h.to] || h.to)}</b> · ${esc(h.at.replace('T', ' ').slice(0, 16))} · ${esc(h.by)}
+        ${h.note ? `<span>${esc(h.note)}</span>` : ''}</li>`).join('')}</ol>`
+    document.getElementById('scn-import')?.addEventListener('change', importScenario)
+    renderHud()
+  } catch (e) { box.innerHTML = `<p class="note">${esc(e.message)}</p>` }
+}
+
+async function changeState(to) {
+  try {
+    const s = await postJSON(`/api/v1/sim/scenarios/${scenario.id}/state`, { state: to, note: document.getElementById('scn-note')?.value || '' })
+    scenario.state = s.state
+    toast(`«${s.name}»: ${STATE_LABEL[s.state]}`)
+    document.dispatchEvent(new CustomEvent('notify-refresh'))
+    renderLifecycle()
+  } catch (e) { toast(e.message) }
+}
+
+async function exportScenario() {
+  try {
+    const pkg = await getJSON(`/api/v1/sim/scenarios/${scenario.id}/export`)
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([JSON.stringify(pkg, null, 1)], { type: 'application/json' })),
+      download: `escenario-${scenario.name.replace(/[^\wáéíóúñ-]+/gi, '-').toLowerCase()}.json`,
+    })
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000)
+  } catch (e) { toast(e.message) }
+}
+
+async function importScenario(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  try {
+    if (file.size > 3_000_000) throw new Error('Archivo demasiado grande')
+    const s = await postJSON('/api/v1/sim/scenarios/import', { payload: JSON.parse(await file.text()) })
+    toast(`Importado como «${s.name}» (huella verificada). Las ejecuciones se repiten en esta PC.`)
+    loadScenario(s.id)
+  } catch (err) { toast(err.message) }
+}
+
 /** Abre un escenario guardado (o una versión concreta, para revisar cómo evolucionó) y lo vuelve a simular. */
 export async function loadScenario(id, version) {
   try {
@@ -543,7 +607,7 @@ export async function loadScenario(id, version) {
     const v = (version && s.versions.find((x) => x.v === version)) || s.versions.at(-1)
     const spec = v.spec
     if (version) toast(`«${s.name}» · versión ${v.v} (${v.at.replace('T', ' ').slice(0, 16)}). Guardar creará una versión nueva.`)
-    scenario = { id: s.id, name: s.name }
+    scenario = { id: s.id, name: s.name, state: s.state }
     engine = 'ops'
     Object.assign(cfg, CALM, spec.hypothesis || {}, { preset: spec.preset || 'propio', seed: spec.seed ?? cfg.seed, ops: { ...cfg.ops, ...(spec.ops || {}) } })
     if (spec.area) { setZone(spec.area); fitZone(80) }

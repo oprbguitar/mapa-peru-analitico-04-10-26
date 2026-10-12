@@ -87,12 +87,15 @@ export async function scenariosHtml() {
   if (!ops.length) return '<p class="src-meta">Aún no hay escenarios guardados. Usa «Guardar» y luego «Duplicar» para crear B, C…</p>'
   const m = (s, k, u) => (s.metrics?.[k] == null ? '—' : `${fmt(s.metrics[k], 0)}${u}`)
   const best = Math.max(...ops.map((s) => s.metrics?.within_target_pct ?? -1))
-  return `<table class="why-table sim-cmp"><thead><tr><th>Escenario</th><th>A tiempo</th><th>Resp. p50</th><th>Sin atender</th><th>Unid.</th><th>Tramos</th><th></th></tr></thead><tbody>
+  const ST = { borrador: 'Borrador', configurado: 'Configurado', validado_para_simular: 'Validado', finalizado: 'Finalizado', revisado: 'Revisado', archivado: 'Archivado' }
+  return `<table class="why-table sim-cmp"><thead><tr><th>Escenario</th><th>Estado</th><th>A tiempo</th><th>Resp. p50</th><th>Sin atender</th><th>Unid.</th><th>Tramos</th><th></th></tr></thead><tbody>
     ${ops.map((s) => `<tr ${s.metrics?.within_target_pct === best && best >= 0 ? 'data-best="true"' : ''}><td>${esc(s.name)}<small>v${s.version} · ${esc(s.metrics?.scenario || '')}</small></td>
+      <td><i class="scn-state" data-state="${esc(s.state || 'borrador')}">${esc(ST[s.state] || 'Borrador')}</i></td>
       <td>${m(s, 'within_target_pct', ' %')}</td><td>${m(s, 'response_p50_min', ' min')}</td><td>${m(s, 'unattended', '')}</td>
       <td>${m(s, 'units', '')}</td><td>${m(s, 'tramos', '')}</td>
       <td><button class="btn btn-ghost" type="button" data-load-scn="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table>
-    <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.</p>
+    <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.
+      Un escenario en borrador o sin revisar no es una recomendación validada.</p>
     <div class="tool-row"><button class="btn" type="button" data-report="compare" data-ids="${esc(ops.map((s) => s.id).join(','))}">Informe comparativo</button></div>
     ${await jevCompareHtml(ops)}`
 }
@@ -144,6 +147,9 @@ export function dataHtml({ last, cfg, meta, engine, scenario, jev, scenarioId })
     : last.params.engine === 'operations' ? opsHtml(last)
       : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
   return `${head}${jevSection(jev)}${body}${settingsHtml(cfg, meta, engine)}
+    ${engine === 'ops' ? `<details class="why" id="sim-lifecycle"><summary>Estado y archivo del escenario</summary><div class="why-body" id="sim-life">
+      ${scenarioId ? '<p class="loading">Leyendo</p>' : '<p class="src-meta">Guarda el escenario para gestionar su estado o exportarlo.</p>'}
+      <div class="tool-row"><label class="btn btn-ghost import-btn">Importar escenario…<input type="file" id="scn-import" accept="application/json,.json" hidden></label></div></div></details>` : ''}
     ${engine === 'ops' && scenarioId ? '<details class="why" id="sim-timeline"><summary>Desarrollo del escenario (versiones)</summary><div class="why-body" id="sim-tl"></div></details>' : ''}
     ${engine === 'ops' ? '<details class="why" id="sim-compare"><summary>Comparar escenarios A / B / C</summary><div class="why-body" id="sim-cmp"></div></details>' : ''}
     <details class="why" id="sim-history"><summary>Simulaciones anteriores</summary><div class="why-body" id="sim-runs"></div></details>

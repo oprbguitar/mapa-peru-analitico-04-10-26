@@ -572,3 +572,11 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .ops-note-form select, .ops-note-form textarea { background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); padding: var(--sp-1); font: inherit; }
 .ops-measure-label { font: 700 var(--fs-caption) var(--font-mono); background: var(--glass-strong); color: var(--ink); padding: calc(var(--sp-1) / 2) var(--sp-2);
   border: var(--border) solid var(--line-strong); border-radius: var(--radius); white-space: nowrap; }
+
+/* Ciclo de vida del escenario (§7.3) */
+.scn-state { font: 700 var(--fs-caption) var(--font-mono); font-style: normal; text-transform: uppercase; letter-spacing: .05em; padding: 0 var(--sp-1);
+  border: var(--border) solid currentColor; border-radius: var(--radius); color: var(--ink-muted); margin-left: var(--sp-1); white-space: nowrap; }
+.scn-state[data-state="configurado"], .scn-state[data-state="validado_para_simular"] { color: var(--info); }
+.scn-state[data-state="finalizado"] { color: var(--warn); }
+.scn-state[data-state="revisado"] { color: var(--ok); }
+.import-btn { cursor: pointer; display: inline-flex; align-items: center; }

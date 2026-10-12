@@ -113,6 +113,19 @@ try {
       assert.ok(await rep.locator('img.map').count() === 1, 'captura del mapa')
       if (out) await rep.screenshot({ path: `${out}/informe-escenario.png`, fullPage: true })
       await rep.close()
+
+      // ciclo de vida: finalizado → revisado (con nota); exportar e importar el archivo
+      assert.match(await page.locator('.ops-scn .scn-state').innerText(), /finalizado/i)
+      await page.locator('#sim-lifecycle summary').click()
+      await page.waitForSelector('#sim-life [data-set-state="revisado"]')
+      await page.locator('#scn-note').fill('Coherente con la capacidad del distrito')
+      await page.locator('#sim-life [data-set-state="revisado"]').click()
+      await page.waitForFunction(() => /revisado/i.test(document.querySelector('.ops-scn .scn-state')?.textContent || ''))
+      const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#sim-life [data-export]').click()])
+      const file = await dl.path()
+      await page.locator('#sim-life #scn-import').setInputFiles({ name: 'escenario.json', mimeType: 'application/json', buffer: (await import('node:fs')).readFileSync(file) })
+      await page.waitForFunction(() => /importado/.test(document.querySelector('.ops-scn b')?.textContent || ''), null, { timeout: 15000 })
+      await settled(page)
     }
 
     await page.locator('[data-mode="mapa"]').click()

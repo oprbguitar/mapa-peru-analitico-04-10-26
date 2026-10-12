@@ -385,7 +385,9 @@ export function showOps() {
 
 // ── HTML de las barras ──────────────────────────────────────────────────────
 /** Herramientas de marcado (van dentro de la barra superior del simulador). */
-export function toolbarHtml(scenarioName) {
+const STATE_LABEL = { borrador: 'Borrador', configurado: 'Configurado', validado_para_simular: 'Validado', finalizado: 'Finalizado', revisado: 'Revisado', archivado: 'Archivado' }
+
+export function toolbarHtml(scenarioName, state) {
   return `<div class="seg" role="group" aria-label="Unidad a colocar">${Object.entries(UNIT_KINDS).map(([k, u]) =>
       `<button type="button" data-ops-kind="${k}" aria-pressed="${st.tool === 'unit' && st.kind === k}"><i class="ops-dot" style="--unit:var(${u.color})">${u.short}</i>${u.label}</button>`).join('')}</div>
     <button type="button" class="btn" data-ops-tool="tramo" aria-pressed="${st.tool === 'tramo'}">╱ Tramo cortado</button>
@@ -395,7 +397,7 @@ export function toolbarHtml(scenarioName) {
     ${st.tool === 'tramo' || st.tool === 'perimetro' ? `<button type="button" class="btn btn-primary" data-ops-tool="finish">Terminar ${st.tool === 'tramo' ? 'tramo' : 'perímetro'}</button>` : ''}
     ${st.perimeter.length ? '<button type="button" class="btn btn-ghost" data-ops-tool="noperim">Quitar perímetro</button>' : ''}
     <button type="button" class="btn btn-ghost" data-ops-tool="clear">Borrar todo</button>
-    <span class="ops-scn"><b title="Escenario actual">${esc(scenarioName)}</b>
+    <span class="ops-scn"><b title="Escenario actual">${esc(scenarioName)}</b>${state ? `<i class="scn-state" data-state="${esc(state)}">${esc(STATE_LABEL[state] || state)}</i>` : ''}
       <button type="button" class="btn" data-scn="save">Guardar</button><button type="button" class="btn" data-scn="dup">Duplicar</button>
       <button type="button" class="btn" data-scn="compare">Comparar</button><button type="button" class="btn" data-scn="report">Informe</button></span>`
 }
