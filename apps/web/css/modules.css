@@ -598,3 +598,39 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .sim-card[aria-pressed="true"] .sim-card-on { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
 .sim-card[aria-pressed="false"] { opacity: .78; }
 .sim-card-all { border-style: dashed; }
+
+/* Capa táctica de operaciones: retícula, coordenadas, rumbo, DTG, registro y estados de unidad */
+.tac { display: none; }
+body.sim-on .tac { display: block; }
+.tac-reticle { position: fixed; z-index: 4; left: 50%; top: 50%; width: var(--sp-8); height: var(--sp-8); transform: translate(-50%, -50%); pointer-events: none;
+  background: linear-gradient(var(--accent), var(--accent)) center top / var(--rule) 34% no-repeat, linear-gradient(var(--accent), var(--accent)) center bottom / var(--rule) 34% no-repeat,
+    linear-gradient(var(--accent), var(--accent)) left center / 34% var(--rule) no-repeat, linear-gradient(var(--accent), var(--accent)) right center / 34% var(--rule) no-repeat;
+  opacity: .55; }
+.tac-top, .tac-readout, .tac-tools { position: fixed; z-index: 6; left: var(--gap); font: 700 var(--fs-caption) var(--font-mono); letter-spacing: .06em;
+  color: var(--accent); background: var(--glass-strong); border: var(--border) solid var(--line); border-radius: var(--radius); padding: calc(var(--sp-1) / 2) var(--sp-2); }
+.tac-top { top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) + var(--sp-2)); display: grid; gap: calc(var(--sp-1) / 2); }
+.tac-readout { top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) * 2 + var(--sp-3)); display: grid; gap: calc(var(--sp-1) / 2); color: var(--ink); min-width: 25ch; }
+.tac-tools { top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) * 3 + var(--sp-4)); padding: 0; border: 0; background: transparent; }
+.tac-tools .btn { font-size: var(--fs-caption); min-height: var(--sp-6); }
+.tac-rings-info { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); top: calc(50% + var(--sp-7)); margin: 0;
+  font: 700 var(--fs-caption) var(--font-mono); color: var(--accent); background: var(--glass-strong); padding: calc(var(--sp-1) / 2) var(--sp-2);
+  border: var(--border) solid var(--accent); border-radius: var(--radius); white-space: nowrap; pointer-events: none; }
+.tac-rings-info[hidden] { display: none; }
+.tac-log { position: fixed; z-index: 6; right: calc(var(--panel-space) + var(--gap)); top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) * 2 + var(--sp-4));
+  width: min(330px, 30vw); padding: var(--sp-2); font: 400 var(--fs-caption) var(--font-mono); max-height: 40vh; overflow: hidden; }
+.tac-log[hidden] { display: none; }
+.tac-log h3 { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 0 0 var(--sp-1); }
+.tac-log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--sp-1) / 2); }
+.tac-log li { border-left: var(--rule) solid var(--line-strong); padding-left: var(--sp-1); color: var(--ink-soft); }
+.tac-log li b { color: var(--ink); }
+.tac-log li[data-kind="despacho"] { border-left-color: var(--info); }
+.tac-log li[data-kind="escena"] { border-left-color: var(--warn); }
+.tac-log li[data-kind="cierre"] { border-left-color: var(--ok); }
+.tac-log li[data-kind="alerta"] { border-left-color: var(--danger); color: var(--danger); }
+.ops-unit { width: auto; min-width: var(--sp-6); padding: 0 var(--sp-1); border-radius: var(--radius); font-size: var(--fs-caption); letter-spacing: .04em; }
+.ops-unit[data-status="ruta"] { outline: var(--rule) solid var(--info); outline-offset: 2px; }
+.ops-unit[data-status="escena"] { outline: var(--rule) solid var(--warn); outline-offset: 2px; opacity: 1; }
+.ops-unit[data-status="retorno"] { outline: var(--rule) dashed var(--ink-muted); outline-offset: 2px; }
+@media (max-width: 1023px) { .tac-log { display: none; } }
+@media (max-width: 767px) { .tac-readout, .tac-tools, .tac-top { display: none; } }
+.tac-z { font-family: var(--font-display); }

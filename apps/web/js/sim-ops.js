@@ -3,6 +3,19 @@
 /* global maplibregl */
 import { map } from './map.js'
 import { cssVar, esc, fmt } from './util.js'
+import { renderLog, setLog, showRings } from './sim-tactical.js'
+
+const RAIN_FACTOR = { ninguna: 1, moderada: 0.8, intensa: 0.6 }
+const CALL_NAME = { seguridad: 'SEGURIDAD', medica: 'MÉDICA', incendio: 'INCENDIO' }
+
+/** Indicativos tácticos por tipo y orden de alta: P-01, P-02, A-01, B-01, S-01… */
+function callsigns(units) {
+  const n = {}
+  return Object.fromEntries(units.map((u) => {
+    n[u.kind] = (n[u.kind] || 0) + 1
+    return [u.id, `${UNIT_KINDS[u.kind].short}-${String(n[u.kind]).padStart(2, '0')}`]
+  }))
+}
 
 export const UNIT_KINDS = {
   patrulla: { label: 'Patrullero', short: 'P', color: '--info' }, serenazgo: { label: 'Serenazgo', short: 'S', color: '--support' },
@@ -83,7 +96,13 @@ function unitEl(u) {
   el.className = 'ops-unit'
   el.style.setProperty('--unit', `var(${k.color})`)
   el.textContent = k.short
-  el.title = `${k.label} · arrastra para mover · doble clic para quitar`
+  el.title = `${k.label} · clic: anillos de alcance · arrastra para mover · doble clic para quitar`
+  el.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const p = st.result?.params
+    const speed = p ? p.base.speed_kmh * RAIN_FACTOR[p.hypothesis.rain] * (1 - p.hypothesis.congestion_pct / 100) : 30
+    showRings({ ...u, callsign: el.textContent }, speed, p?.base.circuity ?? 1.4)
+  })
   el.setAttribute('aria-label', `${k.label} ${u.id}`)
   el.addEventListener('dblclick', (e) => { e.stopPropagation(); removeUnit(u.id) })
   el.addEventListener('keydown', (e) => { if (e.key === 'Delete' || e.key === 'Backspace') removeUnit(u.id) })
@@ -145,6 +164,7 @@ function paintMarks() {
   ensureLayers()
   vis(true)
   for (const [id, m] of st.markers) if (!st.units.some((u) => u.id === id)) { m.remove(); st.markers.delete(id) }
+  const cs = callsigns(st.units)
   for (const u of st.marksOnly ? [] : st.units) {
     let m = st.markers.get(u.id)
     if (!m) {
@@ -157,6 +177,8 @@ function paintMarks() {
       st.markers.set(u.id, m)
     } else m.setLngLat([u.lon, u.lat]).addTo(map)
     m.getElement().dataset.ghost = String(!!st.result)
+    m.getElement().textContent = cs[u.id]
+    m.getElement().setAttribute('aria-label', `${UNIT_KINDS[u.kind].label} ${cs[u.id]}`)
   }
   map.getSource('ops-tramos').setData(fc(st.tramos.map((t) => ({ type: 'Feature', properties: { id: t.id }, geometry: { type: 'LineString', coordinates: t.coords } }))))
   map.getSource('ops-draft').setData(fc(st.draft.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: st.tool === 'perimetro' ? [...st.draft, st.draft[0]] : st.draft } }] : []))
@@ -289,7 +311,15 @@ function stateAt(t) {
     moving.push({ type: 'Feature', geometry: { type: 'Point', coordinates: lerp(tr.from, tr.to, k) }, properties: { color: col } })
     routes.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [lerp(tr.from, tr.to, k), tr.to] }, properties: { color: col } })
   }
-  return { calls, moving, routes, counts }
+  // estado táctico de cada unidad: en ruta (ida), en escena, retorno o disponible
+  const status = {}
+  for (const c of r.timeline.calls) if (t >= c.arrive && t < c.clear) status[c.unit] = 'escena'
+  for (const tr of r.timeline.trips) {
+    if (t < tr.t0 || t > tr.t1 || status[tr.unit] === 'escena') continue
+    const call = r.timeline.calls.find((c) => c.id === tr.call)
+    status[tr.unit] = call && tr.to[0] === call.lon && tr.to[1] === call.lat ? 'ruta' : 'retorno'
+  }
+  return { calls, moving, routes, counts, status }
 }
 
 function renderFrame() {
@@ -302,6 +332,8 @@ function renderFrame() {
     return
   }
   const s = stateAt(st.t)
+  for (const [id, m] of st.markers) m.getElement().dataset.status = s.status[id] || 'disponible'
+  renderLog(st.t)
   map.getSource('ops-calls').setData(fc(s.calls))
   map.getSource('ops-moving').setData(fc(s.moving))
   map.getSource('ops-routes').setData(fc(s.routes))
@@ -359,6 +391,16 @@ export const getTime = () => st.t
 export function showResult(r, autoplay = true) {
   if (st.result?.run_id && st.result.run_id === r.run_id) { st.result = r; return renderFrame() }   // mismo cálculo: no reinicia el tiempo
   st.result = r
+  const cs = callsigns(r.params.units)
+  const ev = []
+  for (const c of r.timeline.calls) {
+    ev.push({ t: c.t, kind: 'llamada', text: `LLAMADA #${c.id} · ${CALL_NAME[c.type]}` })
+    ev.push({ t: c.dispatch, kind: 'despacho', text: `${cs[c.unit]} DESPACHADO → #${c.id}${c.tramos ? ' · rodeo por tramo' : ''}` })
+    ev.push({ t: c.arrive, kind: 'escena', text: `${cs[c.unit]} EN ESCENA #${c.id} · respuesta ${Math.round(c.response)} min` })
+    ev.push({ t: c.clear, kind: 'cierre', text: `#${c.id} CERRADA · ${cs[c.unit]} retorna` })
+  }
+  for (const c of r.timeline.unattended) ev.push({ t: c.t, kind: 'alerta', text: `#${c.id} SIN UNIDAD DISPONIBLE · ${CALL_NAME[c.type]}` })
+  setLog(ev.sort((a, b) => a.t - b.t))
   paintMarks()
   st.t = 0
   renderFrame()

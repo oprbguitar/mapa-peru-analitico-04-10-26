@@ -43,8 +43,8 @@ try {
 
     // tramo cortado: dos clics y «Terminar tramo»
     await page.locator('[data-ops-tool="tramo"]').click()
-    await page.mouse.click(...at(-0.03, -0.12))
-    await page.mouse.click(...at(-0.03, 0.15))
+    await page.mouse.click(...at(0.3, -0.1))    // lejos de las unidades: sus etiquetas (P-01…) capturan el clic
+    await page.mouse.click(...at(0.3, 0.16))
     await page.locator('[data-ops-tool="finish"]').click()
     await settled(page)
     assert.equal(await page.evaluate(() => window.__piMap.getSource('ops-tramos').serialize().data.features.length), 1)
@@ -62,8 +62,8 @@ try {
     await page.locator('.ops-note-form [type="submit"]').click()
     await page.waitForSelector('.ops-note[data-cat="riesgo"]')
     await page.locator('[data-ops-tool="medir"]').click()
-    await page.mouse.click(...at(-0.1, -0.02))
-    await page.mouse.click(...at(0.1, -0.02))
+    await page.mouse.click(...at(-0.08, -0.2))
+    await page.mouse.click(...at(0.08, -0.2))
     assert.match(await page.locator('.ops-measure-label').innerText(), /km en línea recta/)
     await page.locator('[data-ops-kind="patrulla"]').click()
     assert.equal(await page.locator('.ops-measure-label').count(), 0, 'cambiar de herramienta limpia la medición')
@@ -83,6 +83,18 @@ try {
     } else {
       await page.locator('#ops-time').evaluate((el) => { el.value = '120'; el.dispatchEvent(new Event('input', { bubbles: true })) })
       await page.waitForFunction(() => document.getElementById('ops-clock').textContent.trim() === '02:00 h', null, { timeout: 3000 })
+    }
+    // capa táctica (escritorio): coordenadas UTM bajo el cursor, indicativos, registro y anillos de alcance
+    if (w > 1023) {
+      await page.mouse.move(...at(0.2, 0.2))
+      await page.waitForFunction(() => /UTM 18L/.test(document.querySelector('.tac-utm')?.textContent || ''))
+      assert.match(await page.locator('.tac-dtg').innerText(), /^DTG \d{6}Z [A-Z]{3} \d{2}$/i)
+      assert.match(await page.locator('.ops-unit').first().innerText(), /^[PSAB]-0\d$/)
+      await page.waitForFunction(() => /DESPACHADO|LLAMADA/.test(document.querySelector('.tac-log')?.innerText || ''), null, { timeout: 15000 })
+      await page.locator('.ops-unit').first().click()
+      await page.waitForSelector('.tac-rings-info:not([hidden])')
+      assert.match(await page.locator('.tac-rings-info').innerText(), /alcance 5′/)
+      assert.equal(await page.evaluate(() => window.__piMap.getSource('tac-rings').serialize().data.features.length), 3)
     }
     if (out) await page.screenshot({ path: `${out}/operativo-${w}.png` })
 

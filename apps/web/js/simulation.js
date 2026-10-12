@@ -10,6 +10,7 @@ import { cssVar, esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js
 import { dataHtml, runsHtml, scenariosHtml, signed } from './sim-data.js'
 import { openReport, timelineHtml } from './reports.js'
 import * as agt from './sim-agents.js'
+import { hideTactical, initTactical } from './sim-tactical.js'
 import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
@@ -336,7 +337,7 @@ function onHudClick(e) {
   if (scn) return scenarioAction(scn.dataset.scn)
   const eng = t.closest('[data-sim-engine]')
   if (eng && !eng.disabled) {
-    if (engine === 'ops' && eng.dataset.simEngine !== 'ops') hideOps()
+    if (engine === 'ops' && eng.dataset.simEngine !== 'ops') { hideOps(); hideTactical() }
     if (engine === 'agt' && eng.dataset.simEngine !== 'agt') { agt.hideAgents(); setMarksOnly(false); hideOps() }
     engine = eng.dataset.simEngine
     if (engine === 'ops') setTool('unit')
@@ -739,6 +740,7 @@ export async function renderSimulation() {
   }
   active = true
   document.body.classList.add('sim-on')
+  initTactical()
   setPanel('panel', false)
   map.getCanvas().style.cursor = 'crosshair'
   renderHud()
@@ -760,6 +762,7 @@ export function hideSimulation() {
   hideSwipe()
   hideOps()
   agt.hideAgents()
+  hideTactical()
   score?.remove()
   for (const id of LAYERS) vis(id, false)
 }
