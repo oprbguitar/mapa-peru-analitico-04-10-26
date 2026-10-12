@@ -34,7 +34,7 @@ from ..simulation import accessibility as sim_access
 from ..simulation import queue as sim_queue
 from ..simulation import operations as sim_ops
 from ..simulation import scenarios as sim_scen
-from .. import activities, jev, notify, users
+from .. import activities, connections, jev, notify, users
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -100,6 +100,10 @@ def route_get(path: str, q: dict):
     if p == ["users"]:
         _local_only()
         return {"users": users.listing(), "roles": users.ROLES}
+    if p == ["admin", "connections"]:
+        _local_only()
+        users.require("admin")
+        return connections.cards()
     if p == ["users", "directory"]:
         _local_only()
         return {"users": [users.public(users.PERSONAL)] if not users.enabled() else users.directory()}
@@ -377,6 +381,18 @@ def route_post(path: str, body: dict):
     if p == ["users"]:
         _local_only()
         return users.create(body.get("name"), body.get("role"), body.get("pin"))
+    if len(p) == 4 and p[:2] == ["admin", "connections"] and p[3] == "test":
+        _local_only()
+        users.require("admin")
+        try:
+            out = connections.test(p[2])
+        except ValueError as e:
+            raise ApiError(404, str(e))
+        sqlite_store.audit(users.actor(), "conexion.probar", {"id": p[2], "ok": out["ok"], "status": out["status"]})
+        if not out["ok"]:
+            notify.emit("tecnico", f"Conexión «{p[2]}» sin respuesta", out.get("error") or out["status"], ref=p[2], source="consola",
+                        audience="rol:admin", dedupe=f"conn:{p[2]}:{out['status']}")
+        return out
     if len(p) == 3 and p[0] == "users" and p[2] == "role":
         _local_only()
         return users.set_role(p[1], str(body.get("role") or ""))
@@ -419,7 +435,8 @@ def route_post(path: str, body: dict):
         users.require("settings")
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
                    "external_base_url", "external_api_key", "external_model", "ai_allow_external",
-                   "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order", "go2rtc_url", "mapillary_token"}
+                   "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order", "go2rtc_url", "mapillary_token",
+                   "jev_url"}
         vals = {k: str(v).strip() for k, v in body.items() if k in allowed and v is not None}
         if not vals:
             raise ApiError(400, "sin ajustes válidos")
@@ -519,7 +536,7 @@ def _territorial_get(p, q):
 def _settings_public() -> dict:
     keys = ["aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "external_api_key",
             "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "mapillary_token"]
-    plain = ["ollama_url", "ollama_model", "external_base_url", "external_model", "ai_allow_external", "weather_order", "go2rtc_url"]
+    plain = ["ollama_url", "ollama_model", "external_base_url", "external_model", "ai_allow_external", "weather_order", "go2rtc_url", "jev_url"]
     return {"secrets": {k: bool(config.setting(k)) for k in keys}, "values": {k: config.setting(k) for k in plain},
             "stored_in": "data/config.local.json (ignorado por git; nunca se envía al navegador)"}
 

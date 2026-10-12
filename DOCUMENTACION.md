@@ -1,5 +1,19 @@
 # Documentación — Mapa Perú Analítico
 
+## Consola de conexiones (§3) · 11 de octubre de 2026
+
+Herramientas (⋯) → **Conexiones** (solo administración, solo local). Una ficha por cada una de las 60 fuentes del catálogo
+y por las conexiones propias (Ollama, IA externa, JEV externo, go2rtc): finalidad, dirección (solo `esquema://host`, nunca
+ruta ni consulta), autenticación («configurada / falta clave», jamás el valor), frecuencia y refresco, última
+sincronización, estado (en línea, desactualizado, error, sin configurar, datos locales, a demanda), respaldo si falla y
+qué la usa. **Probar** refresca la capa en vivo o hace un HEAD de 6 s a la dirección pública; un fallo deja un aviso
+técnico para la administración y la prueba queda en la auditoría. **Quién hace qué**: motor de cálculo (local),
+interpretación (JEV: `jev-ref` o URL externa, editable aquí), explicación (consola «IA») y decisión (persona).
+**Fuentes por simulación**: qué datos usa cada motor. Las claves se siguen editando en **Claves** (`data/config.local.json`).
+Código: `peru_intel/connections.py`, `apps/web/js/connections.js`. API: `GET /api/v1/admin/connections`,
+`POST /api/v1/admin/connections/<id>/test`. Pruebas: `tests/test_connections.py` (ningún secreto ni ruta en la
+respuesta, solo administración, fallo avisado) y `tests/e2e/connections.mjs` (solo lectura).
+
 ## JEV, avisos y usuarios con roles · 11 de octubre de 2026
 
 **JEV (§2 / §9.1)** — `peru_intel/jev/`. Evaluador desacoplado del motor: recibe una ejecución y devuelve una

@@ -147,3 +147,10 @@ BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · 
 | POST | `/api/v1/activities/<id>/status` | `{status: pendiente|en_curso|hecha|bloqueada, note?}`. |
 
 Con usuarios activados, toda la API salvo `/api/v1/health` y `/api/v1/auth/*` responde 401 sin sesión.
+
+## Consola de conexiones (administración, solo local)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/admin/connections` | Fichas (finalidad, dirección sin ruta, autenticación sin valores, frecuencia, estado, última sincronización, respaldo, uso), componentes y fuentes por simulación. |
+| POST | `/api/v1/admin/connections/<id>/test` | Prueba la conexión (capa en vivo o HEAD 6 s). Auditada; un fallo emite aviso técnico. |

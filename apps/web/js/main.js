@@ -24,6 +24,7 @@ import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode
 import { setFxMode, setWeatherFx } from './wxfx.js'
 import { initNotifications } from './notifications.js'
 import { initUsers } from './users.js'
+import { initConnections } from './connections.js'
 import { clearImagery, initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
@@ -601,6 +602,7 @@ async function boot() {
   renderKindKey()
   initChrome()
   initDialogs()
+  initConnections()
   bindTheme()
   bindSearch()
   document.getElementById('open-admin').addEventListener('click', openAdmin)
