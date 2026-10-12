@@ -62,6 +62,21 @@ class OperationsTest(unittest.TestCase):
         self.assertTrue(any("Emergencia médica" in w for w in r["warnings"]))
         self.assertGreater(r["results"]["unattended"]["p50"], 0)
 
+    def test_perimeter_confines_calls_and_notes_travel(self):
+        poly = [[-77.03, -12.02], [-76.98, -12.02], [-76.98, -11.98]]
+        r = ops.run(body(perimeter=poly, ops={"rate_per_h": 8, "horizon_h": 4, "mix": {"seguridad": 1, "medica": 0, "incendio": 0}},
+                         notes=[{"cat": "evidencia", "text": "Foto del tramo", "lat": -12.0, "lon": -77.0}]))
+        calls = r["timeline"]["calls"] + r["timeline"]["unattended"]
+        self.assertTrue(calls)
+        self.assertTrue(all(ops.inside(c["lon"], c["lat"], poly) for c in calls), "todas dentro del perímetro")
+        self.assertEqual(r["params"]["notes"][0]["cat"], "evidencia")
+        self.assertIn("perímetro dibujado", r["assumptions"][0])
+        self.assertTrue(ops.inside(0.5, 0.5, [[0, 0], [1, 0], [1, 1], [0, 1]]))
+        self.assertFalse(ops.inside(1.5, 0.5, [[0, 0], [1, 0], [1, 1], [0, 1]]))
+        for bad in ({"perimeter": [[-77, -12], [-76.9, -12]]}, {"notes": [{"cat": "chisme", "lat": -12, "lon": -77}]}):
+            with self.assertRaises(ops.SimError):
+                ops.normalize(body(**bad))
+
     def test_validation(self):
         for bad in ({"units": []}, {"units": [UNIT | {"kind": "tanque"}]}, {"units": [UNIT | {"lat": 10}]},
                     {"tramos": [{"coords": [[-77, -12]]}]}, {"ops": {"rate_per_h": 999}}):

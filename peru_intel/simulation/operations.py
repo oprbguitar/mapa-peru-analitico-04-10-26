@@ -32,7 +32,7 @@ SimError = acc.SimError
 KINDS = {"patrulla": "Patrullero", "serenazgo": "Serenazgo", "ambulancia": "Ambulancia", "bomberos": "Bomberos"}
 CALLS = {"seguridad": ("patrulla", "serenazgo"), "medica": ("ambulancia",), "incendio": ("bomberos",)}
 CALL_LABEL = {"seguridad": "Seguridad", "medica": "Emergencia médica", "incendio": "Incendio / rescate"}
-LIMITS = {"units": 40, "tramos": 30, "tramo_points": 50, "rate_per_h": 60.0, "horizon_h": 24, "replications": 60,
+LIMITS = {"units": 40, "tramos": 30, "tramo_points": 50, "perimeter_points": 200, "notes": 100, "rate_per_h": 60.0, "horizon_h": 24, "replications": 60,
           "expected_calls": 60_000, "seconds": 15.0, "timeline_calls": 1500}
 DEFAULTS = {"rate_per_h": 2.0, "horizon_h": 8, "service_min": 25.0, "target_min": 15, "replications": 20,
             "detour_per_tramo_pct": 60, "mix": {"seguridad": 0.5, "medica": 0.35, "incendio": 0.15}}
@@ -72,6 +72,18 @@ def normalize(body: dict) -> dict:
         if not 2 <= len(pts) <= LIMITS["tramo_points"]:
             raise SimError(f"tramo {i + 1}: entre 2 y {LIMITS['tramo_points']} puntos")
         norm_tramos.append({"id": str(t.get("id") or f"t{i + 1}")[:24], "coords": [_point(p, f"tramo {i + 1}") for p in pts]})
+    perimeter = body.get("perimeter") or []
+    if perimeter:
+        if not 3 <= len(perimeter) <= LIMITS["perimeter_points"]:
+            raise SimError(f"perímetro: entre 3 y {LIMITS['perimeter_points']} vértices")
+        perimeter = [_point(p, "perímetro") for p in perimeter]
+    notes = []
+    for i, n in enumerate((body.get("notes") or [])[: LIMITS["notes"]]):
+        lon, lat = _point([n.get("lon"), n.get("lat")], f"nota {i + 1}")
+        cat = str(n.get("cat") or "referencia")
+        if cat not in ("referencia", "evidencia", "riesgo"):
+            raise SimError("nota: categoría referencia, evidencia o riesgo")
+        notes.append({"id": str(n.get("id") or f"n{i + 1}")[:24], "cat": cat, "text": str(n.get("text") or "")[:240], "lon": lon, "lat": lat})
     ops = body.get("ops") or {}
     mix_in = ops.get("mix") or DEFAULTS["mix"]
     mix = {k: c(mix_in.get(k, 0), 0, 1, f"mezcla {k}") for k in CALLS}
@@ -83,6 +95,7 @@ def normalize(body: dict) -> dict:
         "engine": "operations", "engine_version": ENGINE_VERSION,
         "area": common["area"], "base": common["base"], "hypothesis": common["hypothesis"],
         "units": sorted(norm_units, key=lambda u: u["id"]), "tramos": sorted(norm_tramos, key=lambda t: t["id"]),
+        "perimeter": perimeter, "notes": notes,
         "ops": {"rate_per_h": c(ops.get("rate_per_h", DEFAULTS["rate_per_h"]), 0.1, LIMITS["rate_per_h"], "llamadas por hora"),
                 "horizon_h": int(c(ops.get("horizon_h", DEFAULTS["horizon_h"]), 1, LIMITS["horizon_h"], "horizonte")),
                 "service_min": c(ops.get("service_min", DEFAULTS["service_min"]), 1, 240, "tiempo en escena"),
@@ -123,16 +136,43 @@ def tramos_crossed(a_lonlat, b_lonlat, tramos, lat0) -> int:
 
 
 # ── una réplica ─────────────────────────────────────────────────────────────
-def _calls(rng, p):
+def inside(lon: float, lat: float, poly: list) -> bool:
+    """Punto en polígono (par-impar)."""
+    hit = False
+    for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            hit = not hit
+    return hit
+
+
+def _positions(rng, p, n):
+    """Ubicaciones uniformes en el ÁREA: dentro del perímetro dibujado si existe; si no, en el círculo de la zona."""
     a = p["area"]
+    poly = p.get("perimeter")
+    if poly:
+        xs, ys = [q[0] for q in poly], [q[1] for q in poly]
+        lon, lat = [], []
+        while len(lon) < n:   # muestreo por rechazo en el rectángulo que contiene el perímetro
+            cx = rng.uniform(min(xs), max(xs), max(64, 2 * (n - len(lon))))
+            cy = rng.uniform(min(ys), max(ys), cx.size)
+            for x, y in zip(cx, cy):
+                if inside(x, y, poly):
+                    lon.append(x)
+                    lat.append(y)
+                    if len(lon) == n:
+                        break
+        return np.array(lat), np.array(lon)
+    r = a["radius_km"] * np.sqrt(rng.random(n))
+    th = rng.uniform(0, 2 * math.pi, n)
+    return a["lat"] + r * np.sin(th) / 111.32, a["lon"] + r * np.cos(th) / (111.32 * math.cos(math.radians(a["lat"])))
+
+
+def _calls(rng, p):
     o = p["ops"]
     horizon = o["horizon_h"] * 60
     n = rng.poisson(o["rate_per_h"] / 60 * horizon)
     t = np.sort(rng.uniform(0, horizon, n))
-    r = a["radius_km"] * np.sqrt(rng.random(n))
-    th = rng.uniform(0, 2 * math.pi, n)
-    lat = a["lat"] + r * np.sin(th) / 111.32
-    lon = a["lon"] + r * np.cos(th) / (111.32 * math.cos(math.radians(a["lat"])))
+    lat, lon = _positions(rng, p, n)
     kinds = list(CALLS)
     typ = rng.choice(len(kinds), size=n, p=[o["mix"][k] for k in kinds])
     service = rng.exponential(o["service_min"], n)
@@ -272,7 +312,8 @@ def run(body: dict) -> dict:
         "replay": {"horizon_min": p["ops"]["horizon_h"] * 60, "replication": 0, "calls": first["calls"]},
         "sample": {"replications": p["replications"], "units": len(units), "tramos": len(p["tramos"])},
         "assumptions": [
-            f"Llamadas hipotéticas: Poisson de {p['ops']['rate_per_h']:g}/h durante {p['ops']['horizon_h']} h, ubicadas al azar en el área "
+            f"Llamadas hipotéticas: Poisson de {p['ops']['rate_per_h']:g}/h durante {p['ops']['horizon_h']} h, ubicadas al azar en "
+            f"{'el perímetro dibujado' if p.get('perimeter') else 'el área de la zona'} "
             f"(mezcla: {', '.join(f'{CALL_LABEL[k]} {v * 100:.0f} %' for k, v in p['ops']['mix'].items())}). No provienen de denuncias ni personas.",
             "Seguridad la atienden patrulleros o serenazgo; emergencias médicas, ambulancias; incendios y rescates, bomberos.",
             f"Traslado: distancia geodésica × rodeo {p['base']['circuity']:g} ÷ {p['base']['speed_kmh']:g} km/h (con lluvia y congestión de la hipótesis) "
