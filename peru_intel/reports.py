@@ -30,7 +30,8 @@ def _spec_summary(spec: dict) -> dict:
     return {"area": spec.get("area"), "units": len(spec.get("units") or []), "tramos": len(spec.get("tramos") or []),
             "kinds": sorted({u.get("kind") for u in spec.get("units") or []}), "preset": spec.get("preset"),
             "hypothesis": {k: h.get(k) for k in ("rain", "congestion_pct", "out_of_service_pct", "detour_pct") if k in h},
-            "ops": spec.get("ops") or {}}
+            "ops": spec.get("ops") or {}, "perimeter": len(spec.get("perimeter") or []),
+            "notes": [{k: n.get(k) for k in ("cat", "text", "lat", "lon")} for n in spec.get("notes") or []]}
 
 
 def diff_specs(a: dict, b: dict) -> list[str]:
@@ -47,6 +48,10 @@ def diff_specs(a: dict, b: dict) -> list[str]:
             out.append(f"{moved} unidad(es) reubicada(s)")
     if sa["tramos"] != sb["tramos"]:
         out.append(f"Tramos cortados: {sa['tramos']} → {sb['tramos']}")
+    if sa["perimeter"] != sb["perimeter"]:
+        out.append("Perímetro dibujado" if sb["perimeter"] and not sa["perimeter"] else "Perímetro quitado" if not sb["perimeter"] else "Perímetro modificado")
+    if len(sa["notes"]) != len(sb["notes"]):
+        out.append(f"Notas: {len(sa['notes'])} → {len(sb['notes'])}")
     if sa["preset"] != sb["preset"]:
         out.append(f"Escenario «¿qué pasa si…?»: {sa['preset'] or '—'} → {sb['preset'] or '—'}")
     for k, v in sb["hypothesis"].items():

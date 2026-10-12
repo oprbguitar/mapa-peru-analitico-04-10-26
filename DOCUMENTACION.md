@@ -1,5 +1,12 @@
 # Documentación — Mapa Perú Analítico
 
+## Estrategia: perímetro, notas y medición (§5) · 12 de octubre de 2026
+
+En **Operativo**: **⬠ Perímetro** (polígono irregular de 3–200 vértices; las llamadas sintéticas caen dentro por muestreo de
+rechazo, verificado punto en polígono), **✎ Nota** (referencia, evidencia o riesgo; hasta 100; viajan con el escenario y
+salen en el informe) y **↔ Medir** (km en línea recta). Los cambios de perímetro y notas aparecen en «Desarrollo del
+escenario». Pasos 14–15 de la guía. Pruebas en `tests/test_operations.py`, `tests/test_reports.py` y `tests/e2e/simulation-ops.mjs`.
+
 ## Informes (§10) y cámaras en vivo (§7) · 12 de octubre de 2026
 
 **Informes** (`peru_intel/reports.py`, `apps/web/js/reports.js`): botón **Informe** en la barra del operativo (informe del

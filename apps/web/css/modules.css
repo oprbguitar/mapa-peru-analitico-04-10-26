@@ -562,3 +562,13 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .cam-check span, .cam-check small { display: block; color: var(--ink-soft); }
 .cam-check li[data-state="ok"] b { color: var(--ok); }
 .cam-check li[data-state="falla"] b { color: var(--danger); }
+
+/* Estrategia (§5): notas, perímetro y medición en el mapa */
+.ops-note { width: var(--sp-5); height: var(--sp-5); border-radius: var(--radius); border: var(--rule) solid var(--void); padding: 0; cursor: pointer;
+  font: 700 var(--fs-ui) var(--font-mono); background: var(--info); color: var(--void); box-shadow: var(--shadow); }
+.ops-note[data-cat="evidencia"] { background: var(--ok); }
+.ops-note[data-cat="riesgo"] { background: var(--warn); }
+.ops-note-form { display: grid; gap: var(--sp-2); min-width: 220px; }
+.ops-note-form select, .ops-note-form textarea { background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); padding: var(--sp-1); font: inherit; }
+.ops-measure-label { font: 700 var(--fs-caption) var(--font-mono); background: var(--glass-strong); color: var(--ink); padding: calc(var(--sp-1) / 2) var(--sp-2);
+  border: var(--border) solid var(--line-strong); border-radius: var(--radius); white-space: nowrap; }

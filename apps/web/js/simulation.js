@@ -12,7 +12,7 @@ import { openReport, timelineHtml } from './reports.js'
 import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
-import { clearAll, finishTramo, hasUnits, hideOps, initOps, loadSpec, onOpsClick, onReplayClick, onReplayInput, opsKeyHtml,
+import { clearAll, clearPerimeter, finishTramo, hasUnits, hideOps, initOps, loadSpec, onOpsClick, onReplayClick, onReplayInput, opsKeyHtml,
   opsSpec, opsTool, replayHtml, setTool, showOps, showResult, toolbarHtml } from './sim-ops.js'
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -276,7 +276,8 @@ function onHudClick(e) {
   const tool = t.closest('[data-ops-tool]')
   if (tool) {
     const a = tool.dataset.opsTool
-    if (a === 'tramo') setTool(opsTool() === 'tramo' ? 'unit' : 'tramo')
+    if (['tramo', 'perimetro', 'nota', 'medir'].includes(a)) setTool(opsTool() === a ? 'unit' : a)
+    else if (a === 'noperim') clearPerimeter()
     else if (a === 'finish') { finishTramo(); setTool('unit') }   // terminar el tramo ya recalcula (onChange)
     else if (a === 'clear') { clearAll(); lastBy.ops = null; placeScore(false) }
     return renderHud()
@@ -578,7 +579,7 @@ export function onMapClick(e) {
   if (map.getLayer('sim-sites') && map.queryRenderedFeatures(e.point, { layers: ['sim-sites'] }).length) return true
   if (engine === 'ops' && getZone() && onOpsClick(e)) {
     hud?.querySelector('#sim-hint')?.setAttribute('hidden', '')
-    if (opsTool() !== 'tramo') simulate()
+    if (opsTool() === 'unit') simulate()   // tramos, perímetros y notas recalculan al terminarlos
     return true
   }
   const z = getZone()

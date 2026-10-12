@@ -94,6 +94,19 @@ independiente (B, C…) para probar otra distribución de unidades, otros tramos
 
 ![Comparar escenarios](img/simulador/13-comparar-escenarios.png)
 
+### 14 · Perímetro, notas y medición
+- **⬠ Perímetro**: clic en cada vértice y **Terminar perímetro** (o doble clic / Enter). Las llamadas hipotéticas caen solo
+  dentro del perímetro; **Quitar perímetro** vuelve al círculo.
+- **✎ Nota**: clic donde quieras anotar; elige **Referencia, Evidencia o Riesgo** y escribe el texto. Doble clic sobre la nota la quita.
+  Las notas se guardan con el escenario y salen en el informe.
+- **↔ Medir**: clic punto a punto; muestra los km en línea recta. Esc o cambiar de herramienta borra la medida.
+
+### 15 · Informe imprimible
+**INFORME** (barra del operativo) abre el documento del escenario en una pestaña: resumen ejecutivo, captura del mapa,
+resultados, unidades, supuestos, fuentes, evaluación JEV, marcas en el mapa, desarrollo por versiones y limitaciones.
+**Ctrl+P → Guardar como PDF**. En «Ver cifras» hay informe de una simulación y, en «Comparar», informe comparativo;
+«Desarrollo del escenario» permite **abrir cualquier versión anterior** en el mapa.
+
 > El operativo es un **ejercicio de mesa**: las llamadas son sintéticas (tasa y mezcla declaradas, ubicadas al azar en la
 > zona), no provienen de denuncias ni de personas, y el sistema no emite órdenes ni rutas sobre personas reales.
 

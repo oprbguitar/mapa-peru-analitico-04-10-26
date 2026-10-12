@@ -13,12 +13,14 @@ const SPEEDS = [[10, '×10'], [30, '×30'], [120, '×120']]   // minutos virtual
 const fc = (features) => ({ type: 'FeatureCollection', features })
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
+const NOTE_CAT = { referencia: { label: 'Referencia', glyph: 'i' }, evidencia: { label: 'Evidencia', glyph: '✓' }, riesgo: { label: 'Riesgo', glyph: '!' } }
 const st = {
-  units: [], tramos: [], draft: [], tool: 'unit', kind: 'patrulla', seq: 0,
+  units: [], tramos: [], draft: [], tool: 'unit', kind: 'patrulla', seq: 0, perimeter: [], notes: [], measure: [], noteMarkers: new Map(), measureLabel: null,
   result: null, t: 0, speed: 30, playing: false, frame: 0, markers: new Map(), onChange: () => {},
 }
 
-export const opsSpec = () => ({ units: st.units.map(({ id, kind, lat, lon }) => ({ id, kind, lat, lon })), tramos: st.tramos })
+export const opsSpec = () => ({ units: st.units.map(({ id, kind, lat, lon }) => ({ id, kind, lat, lon })), tramos: st.tramos,
+  perimeter: st.perimeter, notes: st.notes })
 export const hasUnits = () => st.units.length > 0
 export const opsTool = () => st.tool
 
@@ -28,6 +30,8 @@ export function loadSpec(spec) {
   clearMarkers()
   st.units = (spec.units || []).map((u) => ({ ...u }))
   st.tramos = (spec.tramos || []).map((t) => ({ ...t }))
+  st.perimeter = (spec.perimeter || []).map((q) => [...q])
+  st.notes = (spec.notes || []).map((n) => ({ ...n }))
   st.seq = st.units.length + st.tramos.length
   st.draft = []
   st.result = null
@@ -37,7 +41,10 @@ export function loadSpec(spec) {
 // ── capas ───────────────────────────────────────────────────────────────────
 function ensureLayers() {
   if (map.getSource('ops-tramos')) return
-  for (const id of ['ops-tramos', 'ops-draft', 'ops-routes', 'ops-calls', 'ops-moving']) map.addSource(id, { type: 'geojson', data: fc([]) })
+  for (const id of ['ops-tramos', 'ops-draft', 'ops-routes', 'ops-calls', 'ops-moving', 'ops-perimeter', 'ops-measure']) map.addSource(id, { type: 'geojson', data: fc([]) })
+  map.addLayer({ id: 'ops-perimeter-fill', type: 'fill', source: 'ops-perimeter', paint: { 'fill-color': cssVar('--warn'), 'fill-opacity': 0.08 } })
+  map.addLayer({ id: 'ops-perimeter', type: 'line', source: 'ops-perimeter', paint: { 'line-color': cssVar('--warn'), 'line-width': 3 } })
+  map.addLayer({ id: 'ops-measure', type: 'line', source: 'ops-measure', paint: { 'line-color': cssVar('--ink'), 'line-width': 2, 'line-dasharray': [1, 1] } })
   map.addLayer({ id: 'ops-routes', type: 'line', source: 'ops-routes', paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [1, 1.5], 'line-opacity': 0.9 } })
   map.addLayer({ id: 'ops-tramos', type: 'line', source: 'ops-tramos', layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: { 'line-color': cssVar('--danger'), 'line-width': 6, 'line-opacity': 0.9 } })
@@ -53,7 +60,7 @@ function ensureLayers() {
 }
 
 function vis(on) {
-  for (const id of ['ops-routes', 'ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-calls', 'ops-moving']) {
+  for (const id of ['ops-routes', 'ops-tramos', 'ops-tramos-x', 'ops-draft', 'ops-calls', 'ops-moving', 'ops-perimeter', 'ops-perimeter-fill', 'ops-measure']) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
   }
 }
@@ -75,6 +82,52 @@ function unitEl(u) {
 function clearMarkers() {
   for (const m of st.markers.values()) m.remove()
   st.markers.clear()
+  for (const m of st.noteMarkers.values()) m.remove()
+  st.noteMarkers.clear()
+  st.measureLabel?.remove()
+}
+
+function noteEl(n) {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.className = 'ops-note'
+  el.dataset.cat = n.cat
+  el.textContent = NOTE_CAT[n.cat].glyph
+  el.title = `${NOTE_CAT[n.cat].label}: ${n.text} · doble clic para quitar`
+  el.setAttribute('aria-label', el.title)
+  el.addEventListener('dblclick', (e) => { e.stopPropagation(); st.notes = st.notes.filter((x) => x.id !== n.id); paintMarks(); st.onChange() })
+  return el
+}
+
+const kmBetween = (a, b) => Math.hypot((b[0] - a[0]) * 111.32 * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), (b[1] - a[1]) * 111.32)
+
+function paintMeasure() {
+  map.getSource('ops-measure')?.setData(fc(st.measure.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: st.measure } }] : []))
+  st.measureLabel?.remove()
+  st.measureLabel = null
+  if (st.measure.length < 2) return
+  const km = st.measure.slice(1).reduce((acc, q, i) => acc + kmBetween(st.measure[i], q), 0)
+  const el = Object.assign(document.createElement('div'), { className: 'ops-measure-label', textContent: `${fmt(km, 2)} km en línea recta` })
+  st.measureLabel = new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [8, -6] }).setLngLat(st.measure.at(-1)).addTo(map)
+}
+
+/** Formulario de nota en el punto elegido (sin diálogos del navegador). */
+function askNote(p) {
+  const form = document.createElement('form')
+  form.className = 'ops-note-form'
+  form.innerHTML = `<select aria-label="Tipo de nota">${Object.entries(NOTE_CAT).map(([k, c]) => `<option value="${k}">${c.label}</option>`).join('')}</select>
+    <textarea rows="2" maxlength="240" required aria-label="Texto de la nota" placeholder="p. ej., paso a desnivel inundable"></textarea>
+    <div class="tool-row"><button class="btn btn-primary" type="submit">Guardar nota</button><button class="btn btn-ghost" type="button" data-cancel>Cancelar</button></div>`
+  const pop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: '280px' }).setLngLat(p).setDOMContent(form).addTo(map)
+  form.querySelector('textarea').focus()
+  form.querySelector('[data-cancel]').onclick = () => pop.remove()
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+    st.notes.push({ id: `n${++st.seq}`, cat: form.querySelector('select').value, text: form.querySelector('textarea').value.trim(), lon: p[0], lat: p[1] })
+    pop.remove()
+    paintMarks()
+    st.onChange()
+  })
 }
 
 function paintMarks() {
@@ -95,7 +148,11 @@ function paintMarks() {
     m.getElement().dataset.ghost = String(!!st.result)
   }
   map.getSource('ops-tramos').setData(fc(st.tramos.map((t) => ({ type: 'Feature', properties: { id: t.id }, geometry: { type: 'LineString', coordinates: t.coords } }))))
-  map.getSource('ops-draft').setData(fc(st.draft.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: st.draft } }] : []))
+  map.getSource('ops-draft').setData(fc(st.draft.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: st.tool === 'perimetro' ? [...st.draft, st.draft[0]] : st.draft } }] : []))
+  map.getSource('ops-perimeter').setData(fc(st.perimeter.length >= 3 ? [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[...st.perimeter, st.perimeter[0]]] } }] : []))
+  for (const [id, m] of st.noteMarkers) if (!st.notes.some((n) => n.id === id)) { m.remove(); st.noteMarkers.delete(id) }
+  for (const n of st.notes) if (!st.noteMarkers.has(n.id)) st.noteMarkers.set(n.id, new maplibregl.Marker({ element: noteEl(n) }).setLngLat([n.lon, n.lat]).addTo(map))
+  paintMeasure()
 }
 
 function removeUnit(id) {
@@ -108,18 +165,24 @@ function removeUnit(id) {
 let keysBound = false
 
 export function setTool(tool, kind) {
-  if (st.tool === 'tramo' && tool !== 'tramo') finishTramo()
+  if ((st.tool === 'tramo' || st.tool === 'perimetro') && tool !== st.tool) finishTramo()
+  if (st.tool === 'medir' && tool !== 'medir') { st.measure = []; paintMeasure() }
   st.tool = tool
   if (kind) st.kind = kind
   map.getCanvas().style.cursor = 'crosshair'
   // mientras se dibuja un tramo, el doble clic lo termina en vez de acercar el mapa
-  if (tool === 'tramo') map.doubleClickZoom.disable()
+  if (['tramo', 'perimetro', 'medir'].includes(tool)) map.doubleClickZoom.disable()
   else map.doubleClickZoom.enable()
   if (keysBound) return
   keysBound = true
-  map.on('dblclick', () => { if (st.tool === 'tramo' && st.draft.length >= 2) { st.draft.pop(); finishTramo() } })
+  map.on('dblclick', () => {
+    const min = st.tool === 'perimetro' ? 3 : 2
+    if ((st.tool === 'tramo' || st.tool === 'perimetro') && st.draft.length >= min) { st.draft.pop(); finishTramo() }
+  })
   document.addEventListener('keydown', (e) => {
-    if (st.tool !== 'tramo' || e.target.closest('input, textarea, select')) return
+    if (e.target.closest('input, textarea, select')) return
+    if (st.tool === 'medir' && e.key === 'Escape') { st.measure = []; paintMeasure(); return }
+    if (st.tool !== 'tramo' && st.tool !== 'perimetro') return
     if (e.key === 'Enter') finishTramo()
     if (e.key === 'Escape') { st.draft = []; paintMarks() }
   })
@@ -134,15 +197,29 @@ export function onOpsClick(e) {
     st.onChange()
     return true
   }
-  if (st.tool === 'tramo') {
+  if (st.tool === 'tramo' || st.tool === 'perimetro') {
     st.draft.push(p)
     paintMarks()
     return true
   }
+  if (st.tool === 'nota') { askNote(p); return true }
+  if (st.tool === 'medir') { st.measure.push(p); paintMeasure(); return true }
   return false
 }
 
 export function finishTramo() {
+  if (st.tool === 'perimetro') {
+    if (st.draft.length >= 3) {
+      st.perimeter = st.draft
+      st.draft = []
+      paintMarks()
+      st.onChange()
+      return true
+    }
+    st.draft = []
+    paintMarks()
+    return false
+  }
   if (st.draft.length >= 2) {
     st.tramos.push({ id: `t${++st.seq}`, coords: st.draft })
     st.draft = []
@@ -158,6 +235,9 @@ export function finishTramo() {
 export function clearAll() {
   st.units = []
   st.tramos = []
+  st.perimeter = []
+  st.notes = []
+  st.measure = []
   st.draft = []
   st.result = null
   pause()
@@ -309,7 +389,11 @@ export function toolbarHtml(scenarioName) {
   return `<div class="seg" role="group" aria-label="Unidad a colocar">${Object.entries(UNIT_KINDS).map(([k, u]) =>
       `<button type="button" data-ops-kind="${k}" aria-pressed="${st.tool === 'unit' && st.kind === k}"><i class="ops-dot" style="--unit:var(${u.color})">${u.short}</i>${u.label}</button>`).join('')}</div>
     <button type="button" class="btn" data-ops-tool="tramo" aria-pressed="${st.tool === 'tramo'}">╱ Tramo cortado</button>
-    ${st.tool === 'tramo' ? '<button type="button" class="btn btn-primary" data-ops-tool="finish">Terminar tramo</button>' : ''}
+    <button type="button" class="btn" data-ops-tool="perimetro" aria-pressed="${st.tool === 'perimetro'}" title="Las llamadas caen dentro del perímetro">⬠ Perímetro</button>
+    <button type="button" class="btn" data-ops-tool="nota" aria-pressed="${st.tool === 'nota'}">✎ Nota</button>
+    <button type="button" class="btn" data-ops-tool="medir" aria-pressed="${st.tool === 'medir'}">↔ Medir</button>
+    ${st.tool === 'tramo' || st.tool === 'perimetro' ? `<button type="button" class="btn btn-primary" data-ops-tool="finish">Terminar ${st.tool === 'tramo' ? 'tramo' : 'perímetro'}</button>` : ''}
+    ${st.perimeter.length ? '<button type="button" class="btn btn-ghost" data-ops-tool="noperim">Quitar perímetro</button>' : ''}
     <button type="button" class="btn btn-ghost" data-ops-tool="clear">Borrar todo</button>
     <span class="ops-scn"><b title="Escenario actual">${esc(scenarioName)}</b>
       <button type="button" class="btn" data-scn="save">Guardar</button><button type="button" class="btn" data-scn="dup">Duplicar</button>
@@ -329,8 +413,14 @@ export function replayHtml(horizonMin = 480) {
     </div>`
 }
 
+export function clearPerimeter() {
+  st.perimeter = []
+  paintMarks()
+  st.onChange()
+}
+
 export function opsKeyHtml() {
   return Object.values(UNIT_KINDS).map((u) => `<span><i style="background:var(${u.color})"></i>${u.label}</span>`).join('') +
     Object.values(CALL_STATE).map(([v, l]) => `<span><i style="background:var(${v})"></i>llamada ${l}</span>`).join('') +
-    '<span><i style="background:var(--danger);border-radius:0"></i>tramo cortado</span>'
+    '<span><i style="background:var(--danger);border-radius:0"></i>tramo cortado</span><span><i style="background:var(--warn);border-radius:0"></i>perímetro</span>'
 }

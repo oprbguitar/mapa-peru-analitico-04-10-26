@@ -59,6 +59,15 @@ function versionsSection(versions) {
       <td>${v.metrics?.within_target_pct == null ? '—' : `${fmt(v.metrics.within_target_pct, 1)} %`}</td></tr>`).join('')}</tbody></table>`
 }
 
+const NOTE_LABEL = { referencia: 'Referencia', evidencia: 'Evidencia', riesgo: 'Riesgo' }
+
+function notesSection(sum) {
+  if (!sum || (!sum.notes?.length && !sum.perimeter)) return ''
+  return `<h2>Marcas en el mapa</h2>${sum.perimeter ? `<p>Perímetro dibujado con ${sum.perimeter} vértices: las llamadas hipotéticas caen dentro de él.</p>` : ''}
+    ${sum.notes?.length ? `<table><thead><tr><th>Tipo</th><th>Nota</th><th>Ubicación</th></tr></thead><tbody>${sum.notes.map((n) =>
+      `<tr><td>${esc(NOTE_LABEL[n.cat] || n.cat)}</td><td>${esc(n.text)}</td><td>${fmt(n.lat, 5)}, ${fmt(n.lon, 5)}</td></tr>`).join('')}</tbody></table>` : ''}`
+}
+
 function compareSection(rows) {
   if (!rows) return ''
   return `<h2>Escenarios comparados</h2><table><thead><tr><th>Escenario</th><th>Versión</th><th>Unidades</th><th>Tramos</th><th>«¿Qué pasa si…?»</th><th>A tiempo</th><th>Resp. p50</th></tr></thead><tbody>
@@ -97,6 +106,7 @@ ${img ? `<img class="map" src="${img}" alt="Captura del mapa con la zona simulad
 ${m.kind === 'comparacion' ? compareSection(m.rows) : ''}
 ${m.run ? `<h2>Resultados</h2>${runSection(m.run)}` : ''}
 ${m.jev ? `<h2>Evaluación JEV</h2>${jevSection(m.jev)}` : ''}
+${notesSection(m.versions?.at(-1)?.summary)}
 ${versionsSection(m.versions)}
 <h2>Limitaciones</h2><ul>${m.limitations.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
 <p class="meta">Ejercicio de análisis: no genera órdenes operativas ni se refiere a personas o hechos reales. La decisión es de la persona responsable.</p>

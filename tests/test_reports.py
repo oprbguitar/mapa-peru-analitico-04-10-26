@@ -77,6 +77,9 @@ class ReportsTest(unittest.TestCase):
         self.assertIn("1 unidad(es) reubicada(s)", ch)
         self.assertIn("rate_per_h: 2 → 4", ch)
         self.assertIn("Radio: 5 → 8 km", ch)
+        ch2 = reports.diff_specs({"units": [P1]}, {"units": [P1], "perimeter": [[0, 0], [1, 0], [1, 1]], "notes": [{"cat": "riesgo", "text": "x"}]})
+        self.assertIn("Perímetro dibujado", ch2)
+        self.assertIn("Notas: 0 → 1", ch2)
 
 
 if __name__ == "__main__":
