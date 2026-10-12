@@ -313,7 +313,7 @@ export function toolbarHtml(scenarioName) {
     <button type="button" class="btn btn-ghost" data-ops-tool="clear">Borrar todo</button>
     <span class="ops-scn"><b title="Escenario actual">${esc(scenarioName)}</b>
       <button type="button" class="btn" data-scn="save">Guardar</button><button type="button" class="btn" data-scn="dup">Duplicar</button>
-      <button type="button" class="btn" data-scn="compare">Comparar</button></span>`
+      <button type="button" class="btn" data-scn="compare">Comparar</button><button type="button" class="btn" data-scn="report">Informe</button></span>`
 }
 
 export function replayHtml(horizonMin = 480) {

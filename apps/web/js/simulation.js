@@ -8,6 +8,7 @@ import { setPanel } from './chrome.js'
 import { map } from './map.js'
 import { cssVar, esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js'
 import { dataHtml, runsHtml, scenariosHtml, signed } from './sim-data.js'
+import { openReport, timelineHtml } from './reports.js'
 import { setRain, stopRain } from './sim-rain.js'
 import { centerSwipeOn, hideSwipe, showSwipe } from './sim-swipe.js'
 import { fitZone, getZone, hideZone, initZone, setZone, showZone } from './sim-zone.js'
@@ -407,7 +408,13 @@ function simulate() {
 function openData(section) {
   document.dispatchEvent(new CustomEvent('sim-open-panel'))
   const box = document.getElementById('panel-body')
-  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine] })}</div>`
+  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine], scenarioId: scenario.id })}</div>`
+  const tl = document.getElementById('sim-timeline')
+  if (tl) tl.addEventListener('toggle', async () => {
+    if (!tl.open) return
+    const box2 = document.getElementById('sim-tl')
+    try { box2.innerHTML = await timelineHtml(scenario.id) } catch (err) { box2.innerHTML = `<p class="note">${esc(err.message)}</p>` }
+  })
   const num = (id, key, int = false) => {
     const el = document.getElementById(id)
     if (el) el.onchange = () => { cfg[key] = int ? Math.round(Number(el.value)) : Number(el.value); simulate() }
@@ -460,6 +467,13 @@ function openData(section) {
     if (run) loadRun(run.dataset.run)
     const scn = e.target.closest('[data-load-scn]')
     if (scn) loadScenario(scn.dataset.loadScn)
+    const ver = e.target.closest('[data-open-version]')
+    if (ver && scenario.id) loadScenario(scenario.id, Number(ver.dataset.openVersion))
+    const rep = e.target.closest('[data-report]')
+    if (rep) {
+      const k = rep.dataset.report
+      openReport(k === 'run' ? `/api/v1/reports/run/${rep.dataset.runId}` : `/api/v1/reports/compare?ids=${encodeURIComponent(rep.dataset.ids)}`)
+    }
   })
 }
 
@@ -512,14 +526,22 @@ async function scenarioAction(a) {
       scenario = { id: d.id, name: d.name }
       toast(`Ahora editas «${d.name}», copia independiente. Cambia unidades, tramos o el «¿qué pasa si…?».`)
     } else if (a === 'compare') return openData('compare')
+    else if (a === 'report') {
+      if (!scenario.id) await scenarioAction('save')
+      if (scenario.id) openReport(`/api/v1/reports/scenario/${scenario.id}`)
+      return
+    }
     renderHud()
   } catch (e) { toast(e.message) }
 }
 
-export async function loadScenario(id) {
+/** Abre un escenario guardado (o una versión concreta, para revisar cómo evolucionó) y lo vuelve a simular. */
+export async function loadScenario(id, version) {
   try {
     const s = await getJSON(`/api/v1/sim/scenarios/${id}`)
-    const spec = s.versions.at(-1).spec
+    const v = (version && s.versions.find((x) => x.v === version)) || s.versions.at(-1)
+    const spec = v.spec
+    if (version) toast(`«${s.name}» · versión ${v.v} (${v.at.replace('T', ' ').slice(0, 16)}). Guardar creará una versión nueva.`)
     scenario = { id: s.id, name: s.name }
     engine = 'ops'
     Object.assign(cfg, CALM, spec.hypothesis || {}, { preset: spec.preset || 'propio', seed: spec.seed ?? cfg.seed, ops: { ...cfg.ops, ...(spec.ops || {}) } })

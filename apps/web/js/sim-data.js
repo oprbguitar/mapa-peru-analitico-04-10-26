@@ -17,7 +17,8 @@ function assumptions(r, tail) {
 }
 
 const runLine = (r, extra) => `<p class="src-meta">Ejecución <code>${esc(r.run_id)}</code> · semilla ${r.params.seed} · ${esc(r.params.engine_version)} ·
-  ${extra} · ${r.reused ? 'recuperada del registro' : `${fmt(r.elapsed_s, 2)} s`}</p>`
+  ${extra} · ${r.reused ? 'recuperada del registro' : `${fmt(r.elapsed_s, 2)} s`}</p>
+  <div class="tool-row"><button class="btn" type="button" data-report="run" data-run-id="${esc(r.run_id)}">Informe imprimible</button></div>`
 
 function accessHtml(r) {
   const { A, B, diff } = r.results
@@ -92,6 +93,7 @@ export async function scenariosHtml() {
       <td>${m(s, 'units', '')}</td><td>${m(s, 'tramos', '')}</td>
       <td><button class="btn btn-ghost" type="button" data-load-scn="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table>
     <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.</p>
+    <div class="tool-row"><button class="btn" type="button" data-report="compare" data-ids="${esc(ops.map((s) => s.id).join(','))}">Informe comparativo</button></div>
     ${await jevCompareHtml(ops)}`
 }
 
@@ -134,7 +136,7 @@ function jevSection(j) {
     ${j.fallback ? `<p class="note">${esc(j.fallback)}</p>` : ''}</div></details>`
 }
 
-export function dataHtml({ last, cfg, meta, engine, scenario, jev }) {
+export function dataHtml({ last, cfg, meta, engine, scenario, jev, scenarioId }) {
   const head = `<div class="panel-head"><div class="eyebrow">Laboratorio · cifras de la simulación</div>
     <h2>${engine === 'ops' ? 'Operativo simulado' : engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
     <p class="sub">Hoy frente a «${esc(scenario)}». Todo es ${kindBadge('estimacion')} exploratoria con supuestos editables.</p></div>`
@@ -142,6 +144,7 @@ export function dataHtml({ last, cfg, meta, engine, scenario, jev }) {
     : last.params.engine === 'operations' ? opsHtml(last)
       : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
   return `${head}${jevSection(jev)}${body}${settingsHtml(cfg, meta, engine)}
+    ${engine === 'ops' && scenarioId ? '<details class="why" id="sim-timeline"><summary>Desarrollo del escenario (versiones)</summary><div class="why-body" id="sim-tl"></div></details>' : ''}
     ${engine === 'ops' ? '<details class="why" id="sim-compare"><summary>Comparar escenarios A / B / C</summary><div class="why-body" id="sim-cmp"></div></details>' : ''}
     <details class="why" id="sim-history"><summary>Simulaciones anteriores</summary><div class="why-body" id="sim-runs"></div></details>
     <details class="why"><summary>Motores del plan maestro</summary><div class="why-body"><dl class="kv">

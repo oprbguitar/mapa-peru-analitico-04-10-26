@@ -542,3 +542,8 @@ body[data-role="participante"] #open-cameras, body[data-role="participante"] [da
 .conn-kv dd { font-family: var(--font-body); overflow-wrap: anywhere; }
 body[data-role="coordinador"] #open-connections, body[data-role="participante"] #open-connections { display: none; }
 @media (max-width: 767px) { .conn-grid { grid-template-columns: 1fr; } }
+
+/* Desarrollo del escenario (§10): versiones con sus cambios */
+.scn-timeline { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-2); font-size: var(--fs-caption); }
+.scn-timeline span, .scn-timeline small { display: block; color: var(--ink-soft); }
+.scn-timeline .btn { margin-top: var(--sp-1); }

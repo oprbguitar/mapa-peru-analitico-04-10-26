@@ -83,6 +83,18 @@ try {
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.panel')).opacity === '1', null, { timeout: 5000 })
     if (out) await page.screenshot({ path: `${out}/operativo-comparar-${w}.png` })
 
+    // informe imprimible del escenario: pestaña nueva con resumen, versiones y captura del mapa
+    if (w > 767) {
+      const [rep] = await Promise.all([page.context().waitForEvent('page'), page.locator('[data-scn="report"]').click()])
+      await rep.waitForFunction(() => document.body?.innerText.includes('Resumen ejecutivo'), null, { timeout: 20000 })
+      const txt = await rep.locator('body').innerText()
+      assert.match(txt, /Desarrollo del escenario/)
+      assert.match(txt, /no es una probabilidad/)
+      assert.ok(await rep.locator('img.map').count() === 1, 'captura del mapa')
+      if (out) await rep.screenshot({ path: `${out}/informe-escenario.png`, fullPage: true })
+      await rep.close()
+    }
+
     await page.locator('[data-mode="mapa"]').click()
     await page.waitForFunction(() => document.getElementById('sim-hud').hidden)
     assert.equal(await page.locator('.ops-unit').count(), 0, 'salir quita las unidades del mapa')
