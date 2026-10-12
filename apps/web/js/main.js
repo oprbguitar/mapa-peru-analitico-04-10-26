@@ -26,6 +26,7 @@ import { initNotifications } from './notifications.js'
 import { initUsers } from './users.js'
 import { initConnections } from './connections.js'
 import { initCinematic } from './cinematic.js'
+import { initMunicipal, initMunicipalUi } from './municipal.js'
 import { clearImagery, initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
@@ -604,6 +605,8 @@ async function boot() {
   initChrome()
   initDialogs()
   initConnections()
+  initMunicipalUi()
+  initMunicipal()
   bindTheme()
   bindSearch()
   document.getElementById('open-admin').addEventListener('click', openAdmin)

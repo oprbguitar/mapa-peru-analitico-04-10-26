@@ -45,6 +45,7 @@
       <button class="btn btn-ghost" type="button" id="open-sources" aria-haspopup="dialog">Fuentes</button>
       <button class="btn btn-ghost" type="button" id="open-admin" aria-haspopup="dialog" title="Administrador de IA: modos, proveedores, voz y presupuesto">IA</button>
       <button class="btn btn-ghost" type="button" id="open-settings" aria-haspopup="dialog">Claves</button>
+      <button class="btn btn-ghost" type="button" id="open-municipal" aria-haspopup="dialog" title="Edición municipal: marca, territorio y kit de presentación">Municipal</button>
       <button class="btn btn-ghost" type="button" id="open-connections" aria-haspopup="dialog" title="Consola de conexiones: estado, prueba y asignación de componentes">Conexiones</button>
       </div></details>
       <button class="btn btn-ghost user-chip" type="button" id="open-user" hidden>Uso personal</button>
@@ -131,6 +132,13 @@
     <div class="drawer-body" id="admin-body"></div>
   </dialog>
 
+  <dialog class="drawer" id="municipal-dialog" aria-labelledby="municipal-title">
+    <div class="drawer-head">
+      <h2 id="municipal-title">Edición municipal</h2>
+      <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Cerrar">✕</button>
+    </div>
+    <div class="drawer-body" id="municipal-body"></div>
+  </dialog>
   <dialog class="drawer drawer-wide" id="connections-dialog" aria-labelledby="connections-title">
     <div class="drawer-head">
       <h2 id="connections-title">Conexiones · API, fuentes y modelos</h2>

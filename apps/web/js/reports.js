@@ -117,11 +117,25 @@ ${versionsSection(m.versions)}
 }
 
 /** Abre el informe en una pestaña nueva. La pestaña se abre en el mismo clic (sin bloqueo de ventanas emergentes). */
+async function municipalHeader() {
+  try {
+    const m = await getJSON('/api/v1/municipal')
+    if (!m.configured) return ''
+    let logo = ''
+    if (m.has_logo) {
+      const blob = await (await fetch('/api/v1/municipal/logo')).blob()
+      logo = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob) })
+    }
+    return `<div style="display:flex;gap:14px;align-items:center;border-bottom:2px solid #14181d;padding-bottom:10px;margin-bottom:12px">
+      ${logo ? `<img src="${logo}" alt="" style="max-height:56px;max-width:140px">` : ''}<div><b>${esc(m.name)}</b>${m.responsable ? `<br><span class="meta">${esc(m.responsable)}</span>` : ''}</div></div>`
+  } catch { return '' }
+}
+
 export async function openReport(url) {
   const win = window.open('', '_blank')
   try {
-    const [model, img] = await Promise.all([getJSON(url), snapshotMap()])
-    const blob = new Blob([reportHtml(model, img)], { type: 'text/html' })
+    const [model, img, head] = await Promise.all([getJSON(url), snapshotMap(), municipalHeader()])
+    const blob = new Blob([reportHtml(model, img).replace('<p class="hint">', `${head}<p class="hint">`)], { type: 'text/html' })
     const href = URL.createObjectURL(blob)
     if (win) win.location.href = href
     else window.open(href, '_blank')

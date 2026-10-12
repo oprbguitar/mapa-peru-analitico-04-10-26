@@ -33,3 +33,4 @@ data/notifications/
 .coverage*
 htmlcov/
 *.tar
+data/branding/

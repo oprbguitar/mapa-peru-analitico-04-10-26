@@ -48,9 +48,7 @@ class MunicipalError(ValueError):
 
 
 def _dir():
-    d = config.DATA / "branding"
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+    return config.DATA / "branding"   # se crea solo al guardar: consultar no deja carpetas vacías
 
 
 def get_config() -> dict:
@@ -97,9 +95,11 @@ def save_config(body: dict, by: str) -> dict:
             raise MunicipalError("Logo: máximo 300 KB")
         if not (raw[:8] == b"\x89PNG\r\n\x1a\n" or raw[:3] == b"\xff\xd8\xff"):
             raise MunicipalError("El archivo no es una imagen PNG o JPEG válida")
+        _dir().mkdir(parents=True, exist_ok=True)
         for e in ("png", "jpg"):
             (_dir() / f"logo.{e}").unlink(missing_ok=True)
         (_dir() / f"logo.{'png' if m[1] == 'png' else 'jpg'}").write_bytes(raw)
+    _dir().mkdir(parents=True, exist_ok=True)
     (_dir() / "municipal.json").write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding="utf-8")
     return get_config()
 

@@ -141,6 +141,16 @@ En Simular se muestran retícula central, **coordenadas bajo el cursor** (grados
 ruta, ámbar en escena, punteado de retorno); el **Registro** lista llamadas, despachos, llegadas y cierres al minuto virtual;
 **clic en una unidad** dibuja sus **anillos de alcance** de 5, 10 y 15 minutos con la velocidad efectiva del escenario.
 
+### 20 · Edición municipal y kit de presentación
+Herramientas (⋯) → **Municipal** (administración): nombre de la municipalidad, distrito o provincia (buscador), área
+responsable, contacto y logo (PNG/JPEG ≤ 300 KB). Desde ahí: el nombre y logo aparecen en la barra, el mapa **arranca en su
+territorio**, el simulador propone su distrito como zona y los informes llevan su encabezado. **Kit de presentación** abre
+un documento imprimible para la propuesta comercial: el territorio con **cifras publicadas y sus fuentes**, lo que la
+plataforma hace, requisitos, privacidad y una propuesta con alcance, plazo e **inversión «a definir»** (nunca se inventan
+precios ni impactos).
+
+![Kit municipal](img/simulador/20-kit-municipal.png)
+
 > El operativo es un **ejercicio de mesa**: las llamadas son sintéticas (tasa y mezcla declaradas, ubicadas al azar en la
 > zona), no provienen de denuncias ni de personas, y el sistema no emite órdenes ni rutas sobre personas reales.
 

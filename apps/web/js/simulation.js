@@ -743,6 +743,14 @@ export async function renderSimulation() {
   initTactical()
   setPanel('panel', false)
   map.getCanvas().style.cursor = 'crosshair'
+  if (!getZone()) {
+    const m = await getJSON('/api/v1/municipal').catch(() => ({}))
+    const b = m.territory?.bbox
+    if (b) {   // edición municipal: la zona inicial es el territorio de la municipalidad
+      const km = Math.hypot((b[2] - b[0]) * 111.32 * Math.cos(((b[1] + b[3]) / 2) * Math.PI / 180), (b[3] - b[1]) * 111.32) / 2
+      setZone({ lat: (b[1] + b[3]) / 2, lon: (b[0] + b[2]) / 2, radius_km: Math.min(30, Math.max(1, Math.round(km * 2) / 2)) })
+    }
+  }
   renderHud()
   showZone()
   setRain(cfg.rain, getZone())

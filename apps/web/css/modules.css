@@ -649,3 +649,13 @@ body.sim-on .tac { display: block; }
 .cine-rec { background: var(--danger); border-color: var(--danger); color: var(--void); }
 .cine-rec:hover { background: var(--danger); filter: brightness(1.1); }
 #btn-cine[aria-pressed="true"] { color: var(--accent); }
+
+/* Edición municipal */
+.muni-tag { display: inline-flex; align-items: center; gap: var(--sp-1); padding-left: var(--sp-2); margin-left: var(--sp-1);
+  border-left: var(--border) solid var(--line-strong); font: 700 var(--fs-caption) var(--font-mono); color: var(--ink-soft); max-width: 26ch; }
+.muni-tag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muni-tag img { height: var(--sp-5); width: auto; border-radius: var(--radius); background: var(--ink); }
+.muni-results { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--sp-1) / 2); }
+.muni-results .btn { width: 100%; justify-content: flex-start; text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
+.muni-logo-preview { max-height: var(--sp-8); max-width: 160px; background: var(--ink); border-radius: var(--radius); padding: var(--sp-1); }
+@media (max-width: 1279px) { .muni-tag span { display: none; } }

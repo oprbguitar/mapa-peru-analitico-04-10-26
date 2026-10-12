@@ -426,7 +426,7 @@ function startLocalOverview() {
   }
   if (active) frame = requestAnimationFrame(turn)
   navigator.geolocation?.getCurrentPosition(({ coords }) => {
-    if (interacted) return // No cambiar la vista después de una interacción.
+    if (interacted || document.body.dataset.municipal) return // No cambiar la vista tras interactuar ni en la edición municipal.
     map.flyTo({ center: [coords.longitude, coords.latitude], zoom: 10, pitch: 35,
       duration: reduced.matches ? 0 : 900, essential: false })
   }, () => {}, { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 })

@@ -1,5 +1,18 @@
 # Documentación — Mapa Perú Analítico
 
+## Edición municipal (venta a municipalidades) · 12 de octubre de 2026
+
+`peru_intel/municipal.py`, `apps/web/js/municipal.js`, Herramientas → **Municipal** (rol con permiso de ajustes; solo local).
+Configura nombre, ubigeo (distrito o provincia del paquete territorial), responsable, cargo, correo y logo (PNG/JPEG
+validado por firma, ≤ 300 KB) en `data/branding/` (no se versiona ni va a la imagen de la nube). Efectos: marca en la barra,
+arranque en el territorio (la geolocalización no lo pisa), zona inicial del simulador e encabezado en informes.
+**Perfil** con cifras publicadas y su procedencia (población INEI/MININTER, denuncias SIDPOL del último año y comparación,
+hospitales y establecimientos RENIPRESS, bomberos/comisarías/serenazgo OSM marcados como colaborativos). **Kit de
+presentación** imprimible: perfil, captura del territorio, capacidades implementadas, requisitos, privacidad y propuesta con
+alcance, plazo e inversión **a definir**. API: `GET|POST /api/v1/municipal`, `GET /api/v1/municipal/logo`,
+`GET /api/v1/municipal/profile?ubigeo=`, `GET /api/v1/municipal/kit`. Pruebas: `tests/test_municipal.py` y
+`tests/e2e/municipal.mjs` (se niega a correr si ya hay una edición real y borra la de prueba al terminar).
+
 ## Imprevistos combinables, capa táctica y recorrido 3D con grabación · 12 de octubre de 2026
 
 - **Imprevistos** (lluvia intensa, hora punta, huaico, sedes cerradas, más llamadas): cada ficha se activa/desactiva con un
