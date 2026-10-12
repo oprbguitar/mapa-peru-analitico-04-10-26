@@ -28,6 +28,8 @@ data/vision/
 data/tiles/
 data/cache/
 data/simulation/
+data/users/
+data/notifications/
 .coverage*
 htmlcov/
 *.tar

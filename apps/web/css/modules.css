@@ -479,3 +479,48 @@ body.sim-on .spine, body.sim-on .edge-tab--spine, body.sim-on .legend, body.sim-
   .ops-live { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .ops-unit { transition: none; } }
+
+/* Avisos (§9) y evaluación JEV en el marcador */
+.notify-btn { position: relative; }
+.notify-count { position: absolute; top: calc(var(--sp-1) * -1); right: calc(var(--sp-1) * -1); min-width: var(--sp-4); height: var(--sp-4);
+  padding: 0 var(--sp-1); border-radius: var(--sp-2); background: var(--danger); color: var(--void); font: 700 var(--fs-caption) / var(--sp-4) var(--font-mono); }
+.notify-count[hidden] { display: none; }
+.notify-panel { position: fixed; z-index: 15; top: calc(var(--topbar-h) + var(--gap) * 2); right: var(--gap); width: min(420px, calc(100% - var(--gap) * 2));
+  max-height: calc(100% - var(--topbar-h) - var(--gap) * 4); overflow-y: auto; padding: var(--sp-3); display: grid; gap: var(--sp-2); }
+.notify-panel[hidden] { display: none; }
+.notify-head { display: flex; justify-content: space-between; align-items: center; }
+.notify-head h2 { font-size: var(--fs-h3); }
+.notify-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.notify-item { border-left: var(--rule) solid var(--tone); padding: var(--sp-1) var(--sp-2); background: var(--surface-2); border-radius: var(--radius); }
+.notify-item[data-read="true"] { opacity: .65; }
+.notify-item p { margin: 0; }
+.notify-meta { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--tone); }
+.notify-title { font-weight: 600; }
+.notify-detail { font-size: var(--fs-caption); color: var(--ink-soft); }
+.notify-item details { font-size: var(--fs-caption); color: var(--ink-soft); }
+.sim-jev { margin: var(--sp-1) 0 0; padding-top: var(--sp-1); border-top: var(--border) solid var(--line); font-size: var(--fs-caption); color: var(--ink-soft); }
+.sim-jev b { font-family: var(--font-mono); color: var(--ink); }
+.sim-jev[data-tone="peor"] b { color: var(--danger); }
+.sim-jev[data-tone="mejor"] b { color: var(--ok); }
+.sim-jev .btn { pointer-events: auto; min-height: var(--sp-5); padding: 0 var(--sp-2); margin-left: var(--sp-1); }
+.jev-facts, .jev-actions { margin: var(--sp-2) 0; padding-left: var(--sp-5); font-size: var(--fs-caption); }
+.jev-actions small { color: var(--ink-muted); }
+
+/* Usuarios (§8): botón de cuenta, inicio de sesión, actividades y vista restringida */
+.user-chip { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chip[hidden] { display: none; }
+.login-screen { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: var(--gap); background: var(--scrim); }
+.login-screen[hidden] { display: none; }
+.login-card { width: min(380px, 100%); padding: var(--sp-5); display: grid; gap: var(--sp-3); }
+.user-panel .user-body { display: grid; gap: var(--sp-3); }
+.act-form { display: grid; gap: var(--sp-2); padding-bottom: var(--sp-3); border-bottom: var(--border) solid var(--line); }
+.act-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.act-item { padding: var(--sp-2); background: var(--surface-2); border-radius: var(--radius); border-left: var(--rule) solid var(--warn); display: grid; gap: var(--sp-1); }
+.act-item p { margin: 0; }
+.act-item[data-status="en_curso"] { border-left-color: var(--info); }
+.act-item[data-status="hecha"] { border-left-color: var(--ok); opacity: .75; }
+.act-item[data-status="bloqueada"] { border-left-color: var(--danger); }
+.act-item details { font-size: var(--fs-caption); color: var(--ink-soft); }
+body[data-role="participante"] #open-admin, body[data-role="participante"] #open-settings,
+body[data-role="participante"] #open-cameras, body[data-role="participante"] [data-mode="simular"] { display: none; }
+@media (max-width: 767px) { .user-chip { max-width: 10ch; } }

@@ -1,5 +1,35 @@
 # Documentación — Mapa Perú Analítico
 
+## JEV, avisos y usuarios con roles · 11 de octubre de 2026
+
+**JEV (§2 / §9.1)** — `peru_intel/jev/`. Evaluador desacoplado del motor: recibe una ejecución y devuelve una
+**puntuación interna** (la métrica principal tal cual, 0–100; `probability` siempre `null`), **incertidumbre** (precisión
+de la mediana ±1,96·σ/√n), **variabilidad** entre repeticiones, **calidad de datos** (fuentes colaborativas, antigüedad,
+avisos del motor) y una **decisión**: aceptable para explorar · más iteraciones · más datos · otro modelo · revisión
+humana, con hechos numerados. `compare` ordena escenarios y marca **empates técnicos** (rangos solapados).
+No se encontró el JEV original en las carpetas del usuario: rige `jev-ref-0.1` (reglas en `reference.py`) y un adaptador
+HTTP opcional (`jev_url`) que debe cumplir el contrato; si falla, vuelve a `jev-ref` y lo declara.
+En el mapa: línea «JEV · ±precisión · variabilidad · decisión» en el marcador, con **Aplicar** cuando pide más repeticiones.
+
+**Avisos (§9)** — `peru_intel/notify.py`, campana 🔔. Tipos: observado · técnico (capas en vivo con error o vencidas,
+sin repetir) · predictivo (de JEV, siempre con incertidumbre y hechos) · actividad (escenarios, tareas). Destinatarios:
+todos, un rol o una persona; «leído» por usuario. `data/notifications/` (no se versiona).
+
+**Usuarios, roles y actividades (§8)** — `peru_intel/users.py`, `peru_intel/activities.py`, botón de cuenta.
+Sin usuarios rige el **uso personal** (nada cambia). «Activar usuarios» crea el primer administrador y desde ahí se pide
+iniciar sesión (PIN con scrypt; cookie HttpOnly SameSite=Strict; 5 intentos/5 min). Roles: administrador (todo),
+coordinador (simular, escenarios, asignar actividades), participante (sus actividades y avisos; sin Simular ni claves).
+El servidor aplica los permisos; la interfaz solo oculta. Actividades con escenario vinculado, fecha límite, estados
+(pendiente, en curso, hecha, bloqueada) e historial; cada cambio queda en la auditoría (`audit_log`) y avisa.
+Todo esto es solo local: en la nube no se ofrece. `data/users/` no se versiona ni se copia a la imagen.
+
+API: `GET /api/v1/jev/contract`, `POST /api/v1/jev/evaluate {run_id}`, `POST /api/v1/jev/compare {run_ids|scenario_ids}`,
+`GET /api/v1/notifications?type=`, `POST /api/v1/notifications/read {ids|all}`, `GET /api/v1/auth/me`,
+`POST /api/v1/auth/login|logout`, `GET|POST /api/v1/users`, `POST /api/v1/users/<id>/role|remove`,
+`GET /api/v1/users/directory`, `GET|POST /api/v1/activities`, `POST /api/v1/activities/<id>/status`.
+Pruebas: `tests/test_jev_notify.py`, `tests/test_users.py` (incluye el servidor HTTP real con cookie) y
+`tests/e2e/users-roles.mjs` (**solo contra un servidor aislado**: `PI_DATA_DIR=<carpeta vacía> python -m peru_intel serve --port 8362`).
+
 ## Operativo simulado y escenarios A/B/C · 11 de octubre de 2026
 
 Tercer motor del simulador (**Operativo**), pasos 10–13 de [docs/GUIA-SIMULADOR.md](docs/GUIA-SIMULADOR.md):

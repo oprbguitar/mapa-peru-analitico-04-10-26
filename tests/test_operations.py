@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 
+from peru_intel.storage import sqlite_store
 from peru_intel import config
 from peru_intel.backend import api
 from peru_intel.simulation import operations as ops
@@ -74,11 +75,14 @@ class ScenarioTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.data = patch.object(config, "DATA", Path(self.tmp.name))
         self.data.start()
+        self.audit = patch.object(sqlite_store, "audit", lambda *a, **k: None)   # la auditoría de pruebas no toca el catálogo real
+        self.audit.start()
         for k in ("RENDER", "PI_PUBLIC_ACCESS_PASSWORD"):
             os.environ.pop(k, None)
 
     def tearDown(self):
         self.data.stop()
+        self.audit.stop()
         self.tmp.cleanup()
 
     def test_versions_duplicate_and_api(self):

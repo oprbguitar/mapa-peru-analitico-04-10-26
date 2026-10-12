@@ -22,6 +22,8 @@ import { esc, getJSON, setState, state, toast } from './util.js'
 import { initVision, openCameras, pickHandler as visionPick, refreshLayer as refreshCameras } from './vision.js'
 import { bindSuggested, loadCatalog, setOverlay, setOverlayOpacity, setPointMode, weatherAt } from './weather.js'
 import { setFxMode, setWeatherFx } from './wxfx.js'
+import { initNotifications } from './notifications.js'
+import { initUsers } from './users.js'
 import { clearImagery, initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
@@ -639,6 +641,8 @@ async function boot() {
     },
   })
   mapStartup.then(initImagery).catch((error) => console.error(error))
+  mapStartup.then(initNotifications).catch(() => {})
+  initUsers()
   // el laboratorio de simulación solo existe en la instalación local
   mapStartup.then(() => getJSON('/api/v1/sim/engines')).then((s) => {
     if (s.local) document.querySelector('[data-mode="simular"]').hidden = false

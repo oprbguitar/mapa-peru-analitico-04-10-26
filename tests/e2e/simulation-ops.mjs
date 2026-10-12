@@ -78,6 +78,7 @@ try {
     await page.waitForSelector('#sim-cmp table')
     await page.waitForFunction(() => document.body.dataset.panel === 'open' && document.getElementById('sim-cmp').offsetParent !== null, null, { timeout: 5000 })
     assert.ok(await page.locator('#sim-cmp tbody tr').count() >= 2, 'al menos A y B en la comparación')
+    await page.waitForFunction(() => /JEV:/.test(document.getElementById('sim-cmp').innerText), null, { timeout: 10000 })
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'sin desplazamiento horizontal')
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.panel')).opacity === '1', null, { timeout: 5000 })
     if (out) await page.screenshot({ path: `${out}/operativo-comparar-${w}.png` })

@@ -18,3 +18,5 @@ data/catalog/*.sqlite*
 data/normalized/_*
 *.tar
 data/simulation
+data/users
+data/notifications

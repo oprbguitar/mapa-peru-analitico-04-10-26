@@ -1,8 +1,11 @@
 // Utilidades compartidas: red, formato es-PE, DOM y estado.
 
+const needLogin = (r, data) => { if (r.status === 401 && data.login) document.dispatchEvent(new CustomEvent('need-login')) }
+
 export async function getJSON(url, { signal } = {}) {
   const r = await fetch(url, { signal, headers: { Accept: 'application/json' } })
   const data = await r.json().catch(() => ({}))
+  needLogin(r, data)
   if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
   return data
 }
@@ -10,6 +13,7 @@ export async function getJSON(url, { signal } = {}) {
 export async function postJSON(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const data = await r.json().catch(() => ({}))
+  needLogin(r, data)
   if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
   return data
 }

@@ -39,6 +39,8 @@ try {
     assert.ok(await page.evaluate(() => window.__piMap.getSource('sim-sites').serialize().data.features.length > 0), 'sedes visibles sin pedirlas')
     assert.equal(await page.locator('.sim-swipe').isVisible(), true, 'cortina hoy ⟷ hipótesis')
     assert.equal(await page.locator('.sim-rain').getAttribute('data-level'), 'intensa', 'la lluvia de la hipótesis se ve en la zona')
+    await page.waitForSelector('.sim-score .sim-jev', { timeout: 10000 })
+    assert.match(await page.locator('.sim-jev').innerText(), /JEV .*variabilidad/i, 'consejo JEV en el marcador')
 
     // 2 · escenario de un toque: hora punta, sin lluvia; el marcador se actualiza solo
     await page.locator('[data-sim-preset="punta"]').click()
@@ -83,6 +85,12 @@ try {
     await page.locator('#sim-data').click()
     await page.waitForSelector('#sim-data-panel table')
     assert.match(await page.locator('#sim-data-panel').innerText(), /acc-[0-9a-f]{12}/)
+    assert.match(await page.locator('#sim-data-panel').innerText(), /no es una probabilidad/i, 'JEV declara que su puntuación no es probabilidad')
+    // avisos: la campana abre el centro con tipos diferenciados
+    await page.locator('#open-notify').click()
+    await page.waitForSelector('#notify-panel:not([hidden]) .notify-head')
+    assert.match(await page.locator('#notify-panel').innerText(), /Resultado predictivo|Actividad|Sin avisos/i)
+    await page.keyboard.press('Escape')
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'sin desplazamiento horizontal')
 
     // 7 · salir deja el mapa limpio

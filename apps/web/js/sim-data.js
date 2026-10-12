@@ -1,6 +1,6 @@
 // Panel lateral del laboratorio: solo cuando se piden las cifras (tablas A/B, supuestos, ajustes finos, historial).
 // La experiencia principal ocurre en el mapa (simulation.js); aquí está el detalle verificable.
-import { esc, fmt, getJSON, kindBadge } from './util.js'
+import { esc, fmt, getJSON, kindBadge, postJSON } from './util.js'
 
 export const signed = (v, u) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${fmt(Math.abs(v), 1)}${u}`
 const pct = (q) => `${fmt(q.p50, 1)} % <small>${fmt(q.p5, 0)}–${fmt(q.p95, 0)}</small>`
@@ -70,6 +70,16 @@ function opsHtml(r) {
     ${runLine(r, `${fmt(r.sample.replications, 0)} réplicas`)}`
 }
 
+async function jevCompareHtml(ops) {
+  const ids = ops.filter((s) => s.run_id).map((s) => s.id)
+  if (ids.length < 2) return ''
+  try {
+    const c = await postJSON('/api/v1/jev/compare', { scenario_ids: ids })
+    const name = Object.fromEntries(c.rows.map((r) => [r.run_id, r.label]))
+    return `<p class="note"><b>JEV:</b> ${esc(c.note)}${c.ties.length ? ` Empate técnico con el primero: ${c.ties.map((t) => esc(name[t] || t)).join(', ')}.` : ''}</p>`
+  } catch { return '' }
+}
+
 export async function scenariosHtml() {
   const { scenarios } = await getJSON('/api/v1/sim/scenarios')
   const ops = scenarios.filter((s) => s.engine === 'operations')
@@ -81,7 +91,8 @@ export async function scenariosHtml() {
       <td>${m(s, 'within_target_pct', ' %')}</td><td>${m(s, 'response_p50_min', ' min')}</td><td>${m(s, 'unattended', '')}</td>
       <td>${m(s, 'units', '')}</td><td>${m(s, 'tramos', '')}</td>
       <td><button class="btn btn-ghost" type="button" data-load-scn="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table>
-    <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.</p>`
+    <p class="src-meta">Ordenado por última edición. El mayor «a tiempo» se resalta como referencia: la decisión es tuya, con sus supuestos.</p>
+    ${await jevCompareHtml(ops)}`
 }
 
 function settingsHtml(cfg, meta, engine) {
@@ -94,6 +105,7 @@ function settingsHtml(cfg, meta, engine) {
       ${n('ops-service', 'Tiempo en escena (min)', cfg.ops.service_min, 'min="1" max="240"')}
       ${n('ops-target', 'Objetivo de respuesta (min)', cfg.ops.target_min, 'min="1" max="120"')}
       ${n('ops-detour', 'Rodeo por tramo cortado cruzado (%)', cfg.ops.detour_per_tramo_pct ?? 60, 'min="0" max="300"')}
+      ${n('ops-reps', 'Réplicas (más = rango más estrecho)', cfg.opsReplications, 'min="1" max="60"')}
       <p class="src-meta">Las llamadas son sintéticas y se reparten al azar en el área: no provienen de denuncias ni de personas.</p>`
     : cap ? `${n('sim-rate', 'Llamadas por hora (supuesto)', cfg.rate_per_h, `min="0.1" max="${meta.queue?.limits?.rate_per_h ?? 120}" step="any"`)}
       ${n('sim-capacity', 'Unidades o camas por sede', cfg.capacity, `min="1" max="${meta.queue?.limits?.capacity ?? 50}"`)}
@@ -107,14 +119,29 @@ function settingsHtml(cfg, meta, engine) {
   </div></details>`
 }
 
-export function dataHtml({ last, cfg, meta, engine, scenario }) {
+const ACTION_LABEL = { mas_iteraciones: 'Más iteraciones', mas_datos: 'Más datos', otro_modelo: 'Otro modelo', revision_humana: 'Revisión humana' }
+
+function jevSection(j) {
+  if (!j) return ''
+  return `<details class="why section-gap" open><summary>Evaluación JEV · ${esc(j.decision_label)}</summary><div class="why-body">
+    <p class="src-meta"><b>Puntuación interna ${j.score ?? '—'}</b> (es la métrica principal: ${esc(j.subject)}; <b>no es una probabilidad</b>) ·
+      incertidumbre ${esc(j.uncertainty.level)}${j.uncertainty.precision != null ? ` (±${fmt(j.uncertainty.precision, 1)} puntos en la mediana)` : ''} ·
+      variabilidad ${esc(j.variability?.level || '—')} ·
+      datos: ${esc(j.data_quality.level)} · motor ${esc(j.engine)}</p>
+    <ol class="jev-facts">${j.facts.map((f) => `<li>${esc(f.text)}</li>`).join('')}</ol>
+    ${j.actions.length ? `<ul class="jev-actions">${j.actions.map((a) => `<li><b>${esc(ACTION_LABEL[a.action] || a.action)}</b> ${esc(a.detail || '')}
+      <small>(hechos ${a.why.join(', ')})</small></li>`).join('')}</ul>` : '<p class="src-meta">Sin observaciones: apto para explorar, no para decidir solo con esto.</p>'}
+    ${j.fallback ? `<p class="note">${esc(j.fallback)}</p>` : ''}</div></details>`
+}
+
+export function dataHtml({ last, cfg, meta, engine, scenario, jev }) {
   const head = `<div class="panel-head"><div class="eyebrow">Laboratorio · cifras de la simulación</div>
     <h2>${engine === 'ops' ? 'Operativo simulado' : engine === 'cap' ? 'Capacidad de las sedes' : 'Tiempo de llegada'}</h2>
     <p class="sub">Hoy frente a «${esc(scenario)}». Todo es ${kindBadge('estimacion')} exploratoria con supuestos editables.</p></div>`
   const body = !last ? '<p class="src-meta">Aún no hay resultado: elige una zona en el mapa.</p>'
     : last.params.engine === 'operations' ? opsHtml(last)
       : last.params.engine === 'queue' ? capacityHtml(last, meta.queue?.within_min ?? 30) : accessHtml(last)
-  return `${head}${body}${settingsHtml(cfg, meta, engine)}
+  return `${head}${jevSection(jev)}${body}${settingsHtml(cfg, meta, engine)}
     ${engine === 'ops' ? '<details class="why" id="sim-compare"><summary>Comparar escenarios A / B / C</summary><div class="why-body" id="sim-cmp"></div></details>' : ''}
     <details class="why" id="sim-history"><summary>Simulaciones anteriores</summary><div class="why-body" id="sim-runs"></div></details>
     <details class="why"><summary>Motores del plan maestro</summary><div class="why-body"><dl class="kv">

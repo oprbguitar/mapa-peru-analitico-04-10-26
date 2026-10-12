@@ -22,7 +22,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .. import config
+from .. import config, simulation, users
 from ..live import bus
 from ..map import basemaps, ofm_proxy
 from ..weather import overlays as wx_overlays
@@ -161,10 +161,21 @@ class Handler(BaseHTTPRequestHandler):
         })
         return False
 
+    def _identify(self, path: str) -> bool:
+        """Usuario local de la petición (§8). Con usuarios creados, la API exige sesión salvo salud y autenticación."""
+        user = users.resolve(self.headers.get("Cookie"))
+        users.current.set(user)
+        if user is None and path.startswith("/api/") and path != "/api/v1/health" and not path.startswith("/api/v1/auth/"):
+            self._json(401, {"error": "Inicia sesión para continuar", "login": True})
+            return False
+        return True
+
     def do_GET(self):
         url = urlparse(self.path)
         path = url.path
         if not self._authorized(path, self.command):
+            return
+        if not self._identify(path):
             return
         try:
             if path == "/api/v1/stream":
@@ -223,7 +234,7 @@ class Handler(BaseHTTPRequestHandler):
                 cache = "max-age=31536000, immutable" if path.endswith((".pbf", ".png")) else "no-cache"
                 return self._send(200, r[0], r[1], cache)
             return self._static(path)
-        except api.ApiError as e:
+        except (api.ApiError, users.AuthError) as e:
             self._json(e.status, {"error": str(e)})
         except (BrokenPipeError, ConnectionResetError):
             pass
@@ -233,6 +244,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self._authorized(urlparse(self.path).path, self.command):
+            return
+        if not self._identify(urlparse(self.path).path):
             return
         try:
             origin = self.headers.get("Origin")
@@ -273,8 +286,19 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
             if not isinstance(body, dict):
                 return self._json(400, {"error": "se esperaba un objeto JSON"})
+            if path == "/api/v1/auth/login":
+                if not simulation.is_local():
+                    return self._json(403, {"error": "Disponible solo en la instalación local"})
+                token, user = users.login(body.get("name"), body.get("pin"))
+                cookie = f"pi_session={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={users.SESSION_TTL}"
+                return self._send(200, json.dumps({"user": user}, ensure_ascii=False).encode(), "application/json; charset=utf-8",
+                                  extra_headers={"Set-Cookie": cookie})
+            if path == "/api/v1/auth/logout":
+                users.logout(self.headers.get("Cookie"))
+                return self._send(200, b'{"ok": true}', "application/json; charset=utf-8",
+                                  extra_headers={"Set-Cookie": "pi_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"})
             self._json(200, api.route_post(urlparse(self.path).path, body))
-        except api.ApiError as e:
+        except (api.ApiError, users.AuthError) as e:
             self._json(e.status, {"error": str(e)})
         except ValueError as e:
             self._json(400, {"error": f"JSON inválido: {e}"})

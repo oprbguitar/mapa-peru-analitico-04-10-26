@@ -34,6 +34,7 @@ from ..simulation import accessibility as sim_access
 from ..simulation import queue as sim_queue
 from ..simulation import operations as sim_ops
 from ..simulation import scenarios as sim_scen
+from .. import activities, jev, notify, users
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -77,6 +78,7 @@ def route_get(path: str, q: dict):
         registry.sync()
         return {"sources": registry.all_sources(), "kinds": KINDS}
     if p == ["meta", "status"]:
+        _technical_notices()
         return {"live": all_status(), "ai": router.status(), "traffic": {"configured": TRAFFIC.configured()},
                 "layers": ADAPTER.get_available_layers(), "data": _data_status()}
     if p == ["meta", "settings"]:
@@ -85,6 +87,25 @@ def route_get(path: str, q: dict):
         return _territorial_get(p, q)
     if p[:1] == ["sim"]:
         return _sim_get(p[1:], q)
+    if p == ["jev", "contract"]:
+        return jev.contract()
+    if p == ["notifications"]:
+        me = users.require("notifications")
+        return notify.listing(user=me["id"], audiences=users.audiences(me), kind=_one(q, "type"), limit=_int(q, "limit", 50))
+    if p == ["auth", "me"]:
+        me = users.current.get()
+        local = simulation.is_local()
+        return {"enabled": local and users.enabled(), "user": users.public(me) if local else None, "roles": users.ROLES,
+                "perms": sorted(users.PERMS.get(me["role"], ())) if me else [], "local": local}
+    if p == ["users"]:
+        _local_only()
+        return {"users": users.listing(), "roles": users.ROLES}
+    if p == ["users", "directory"]:
+        _local_only()
+        return {"users": [users.public(users.PERSONAL)] if not users.enabled() else users.directory()}
+    if p == ["activities"]:
+        _local_only()
+        return {"items": activities.listing(), "states": activities.STATES}
     if p == ["intel", "weather", "clouds"]:
         from ..weather import clouds
         return _provider_call(clouds.manifest)
@@ -272,6 +293,7 @@ def route_post(path: str, body: dict):
             raise ApiError(400, "ubigeo inválido")
         return agents.ask(ub, str(body.get("question") or "")[:500])
     if p[:3] == ["admin", "engineering", "ai"] and len(p) == 4:
+        users.require("admin")
         try:
             return gateway.admin(p[3], body)
         except gateway.GatewayError as e:
@@ -318,13 +340,70 @@ def route_post(path: str, body: dict):
             return sim_runs.run_operations(body)
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
+    if p == ["jev", "evaluate"]:
+        _sim_local()
+        rec = sim_runs.get_run(str(body.get("run_id") or ""))
+        if not rec or rec.get("state") != "finalizado":
+            raise ApiError(404, "ejecución no encontrada o sin terminar")
+        out = jev.evaluate(rec)
+        if out["decision"] != "aceptable_para_exploracion":
+            notify.emit("predictivo", f"JEV: {out['decision_label']}", f"{out['subject']}: {out['score']} (puntuación interna, no probabilidad)",
+                        ref=rec["run_id"], source=out["engine"], uncertainty=out["uncertainty"]["level"], facts=out["facts"],
+                        dedupe=f"jev:{rec['run_id']}:{out['decision']}")
+        return out
+    if p == ["jev", "compare"]:
+        _sim_local()
+        ids = [str(x) for x in (body.get("run_ids") or [])][:12]
+        for sid in [str(x) for x in (body.get("scenario_ids") or [])][:12]:
+            try:
+                last = sim_scen.get(sid)["versions"][-1]
+            except sim_access.SimError:
+                continue
+            if last.get("run_id"):
+                ids.append(last["run_id"])
+        recs = []
+        for rid in ids:
+            rec = sim_runs.get_run(rid)
+            if rec and rec.get("state") == "finalizado":
+                label = next((s["name"] for s in sim_scen.list_all() if s.get("run_id") == rid), None)
+                recs.append(rec | {"label": label or rid})
+        if len(recs) < 2:
+            raise ApiError(400, "Se necesitan al menos dos escenarios con ejecución terminada")
+        return jev.compare(recs)
+    if p == ["notifications", "read"]:
+        me = users.require("notifications")
+        visible = [e["id"] for e in notify.listing(user=me["id"], audiences=users.audiences(me), limit=200)["items"]] if body.get("all") else None
+        return {"marked": notify.mark_read(me["id"], body.get("ids"), visible)}
+    if p == ["users"]:
+        _local_only()
+        return users.create(body.get("name"), body.get("role"), body.get("pin"))
+    if len(p) == 3 and p[0] == "users" and p[2] == "role":
+        _local_only()
+        return users.set_role(p[1], str(body.get("role") or ""))
+    if len(p) == 3 and p[0] == "users" and p[2] == "remove":
+        _local_only()
+        users.remove(p[1])
+        return {"ok": True}
+    if p == ["activities"]:
+        _local_only()
+        return activities.create(body)
+    if len(p) == 3 and p[0] == "activities" and p[2] == "status":
+        _local_only()
+        return activities.set_status(p[1], str(body.get("status") or ""), str(body.get("note") or ""))
     if p[:2] == ["sim", "scenarios"]:
         _sim_local()
         try:
             if len(p) == 2:
-                return sim_scen.save(body)
+                s = sim_scen.save(body, by=users.actor())
+                sqlite_store.audit(users.actor(), "escenario.guardar", {"id": s["id"], "version": s["versions"][-1]["v"]})
+                v = s["versions"][-1]
+                notify.emit("actividad", f"Escenario «{s['name']}» guardado (v{v['v']})", v.get("note") or "", ref=s["id"], source="escenarios")
+                return s
             if len(p) == 4 and p[3] == "duplicate":
-                return sim_scen.duplicate(p[2], body.get("name"))
+                d = sim_scen.duplicate(p[2], body.get("name"), by=users.actor())
+                sqlite_store.audit(users.actor(), "escenario.duplicar", {"id": d["id"], "parent": d["parent"]})
+                notify.emit("actividad", f"Escenario «{d['name']}» creado como copia", d["versions"][0]["note"], ref=d["id"], source="escenarios")
+                return d
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
         raise ApiError(404, "ruta no encontrada")
@@ -337,6 +416,7 @@ def route_post(path: str, body: dict):
         except sim_access.SimError as e:
             raise ApiError(400, str(e))
     if p == ["meta", "settings"]:
+        users.require("settings")
         allowed = {"aisstream_key", "tomtom_key", "firms_key", "senamhi_csv_url", "ollama_url", "ollama_model",
                    "external_base_url", "external_api_key", "external_model", "ai_allow_external",
                    "weatherapi_key", "visualcrossing_key", "openweather_key", "tomorrow_key", "weather_order", "go2rtc_url", "mapillary_token"}
@@ -350,14 +430,30 @@ def route_post(path: str, body: dict):
 
 
 # ── auxiliares ──────────────────────────────────────────────────────────────
+def _technical_notices() -> None:
+    """Un aviso técnico por proveedor activo con error o datos vencidos (sin repetir mientras siga igual)."""
+    for st in all_status():
+        if st.get("active") and st["status"] in ("error", "desactualizado"):
+            what = "no responde" if st["status"] == "error" else f"datos de hace {round((st.get('age_s') or 0) / 60)} min"
+            notify.emit("tecnico", f"Capa «{st['layer']}»: {what}", st.get("error") or "Se muestran los últimos datos disponibles con su antigüedad.",
+                        ref=st["layer"], source=st.get("source_id") or st["layer"],
+                        dedupe=f"tec:{st['layer']}:{st['status']}:{str(st.get('error'))[:40]}")
+
+def _local_only():
+    if not simulation.is_local():
+        raise ApiError(403, "Disponible solo en la instalación local (INICIAR-MAPA.bat)")
+
+
 def _sim_local():
     if not simulation.is_local():
         raise ApiError(403, "El laboratorio de simulación solo funciona en la instalación local (INICIAR-MAPA.bat)")
+    users.require("sim")
 
 
 def _sim_get(p: list[str], q: dict) -> dict:
     if p == ["engines"]:
-        return {"local": simulation.is_local(), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
+        # «local» habilita el laboratorio en la interfaz: solo si es la instalación local y el rol puede simular
+        return {"local": simulation.is_local() and users.can(users.current.get(), "sim"), "engine_version": simulation.ENGINE_VERSION, "engines": simulation.ENGINES,
                 "services": {k: v["label"] for k, v in sim_access.SERVICES.items()}, "rain": list(sim_access.RAIN),
                 "defaults": sim_access.DEFAULTS, "limits": sim_access.LIMITS,
                 "queue": {"available": sim_queue.available(), "defaults": sim_queue.DEFAULTS, "limits": sim_queue.LIMITS,

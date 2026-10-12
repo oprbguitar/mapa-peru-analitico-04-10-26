@@ -128,3 +128,22 @@ BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · 
 | POST | `/api/v1/sim/scenarios/<esc-id>/duplicate` | Copia independiente `{name?}` que recuerda su origen. |
 | GET | `/api/v1/sim/runs?limit=` | Últimas ejecuciones registradas (`engine`: `accessibility` o `queue`). |
 | GET | `/api/v1/sim/runs/<run_id>` | Ejecución completa (parámetros, semilla, versión del motor, resultados). |
+
+## JEV, avisos, usuarios y actividades (solo instalación local salvo `auth/me`)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/jev/contract` | Contrato v1, decisiones posibles y motor activo (`jev-ref-0.1` o externo). |
+| POST | `/api/v1/jev/evaluate` | `{run_id}` → puntuación interna (no probabilidad), incertidumbre, variabilidad, calidad de datos, decisión, acciones y hechos. |
+| POST | `/api/v1/jev/compare` | `{run_ids}` o `{scenario_ids}` → ranking, empates técnicos y nota; la decisión es humana. |
+| GET | `/api/v1/notifications?type=&limit=` | Avisos visibles para el usuario (todos, su rol, él mismo) y no leídos. |
+| POST | `/api/v1/notifications/read` | `{ids}` o `{all: true}`. |
+| GET | `/api/v1/auth/me` | `{enabled, user, roles, perms, local}`. |
+| POST | `/api/v1/auth/login` · `/api/v1/auth/logout` | `{name, pin}` → cookie `pi_session` (HttpOnly, SameSite=Strict). |
+| GET · POST | `/api/v1/users` | Lista (administración) · crea `{name, role, pin}` (el primero debe ser administrador). |
+| POST | `/api/v1/users/<id>/role` · `/remove` | Cambia rol · quita (siempre queda un administrador). |
+| GET | `/api/v1/users/directory` | Nombres y roles para asignar actividades (coordinación). |
+| GET · POST | `/api/v1/activities` | Lista (propias para participantes) · crea `{title, assignee, scenario_id?, due?, detail?}`. |
+| POST | `/api/v1/activities/<id>/status` | `{status: pendiente|en_curso|hecha|bloqueada, note?}`. |
+
+Con usuarios activados, toda la API salvo `/api/v1/health` y `/api/v1/auth/*` responde 401 sin sesión.

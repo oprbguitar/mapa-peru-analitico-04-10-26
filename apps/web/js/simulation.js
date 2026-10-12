@@ -45,10 +45,11 @@ let liveTimer = 0
 let layersBound = false
 let lastError = ''
 const lastBy = { acc: null, cap: null, ops: null }
+const jevBy = { acc: null, cap: null, ops: null }   // evaluación JEV del último resultado de cada motor
 let scenario = { id: null, name: 'Escenario A' }
 const cfg = { service: 'hospital', preset: 'lluvia', iterations: 400, seed: 2026, speed_kmh: 30, closed: new Set(),
   rate_per_h: 6, capacity: 2, service_min: 45, horizon_h: 24, replications: 30,
-  ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, ...CALM, ...PRESETS[0].h }
+  ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, opsReplications: 20, ...CALM, ...PRESETS[0].h }
 
 const last = () => lastBy[engine]
 const presetById = (id) => PRESETS.find((p) => p.id === id)
@@ -182,12 +183,13 @@ function placeScore(busy = false) {
     const el = document.createElement('div')
     el.className = 'sim-score hud hud-frame'
     el.setAttribute('aria-live', 'polite')
+    el.addEventListener('click', (e) => { if (e.target.closest('[data-jev="more"]')) { e.stopPropagation(); applyMoreIterations() } })
     score = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -12] })
   }
   const el = score.getElement()
   el.dataset.busy = String(busy)
   if (busy) lastError = ''
-  if (!busy || !last()) el.innerHTML = scoreHtml()
+  if (!busy || !last()) el.innerHTML = scoreHtml() + (busy ? '' : jevHtml())
   score.setLngLat([z.lon, z.lat + z.radius_km / 111.32]).addTo(map)
   if (!busy) countUp(el)
 }
@@ -334,13 +336,42 @@ function payload() {
     hypothesis: { rain: cfg.rain, congestion_pct: cfg.congestion_pct, out_of_service_pct: cfg.out_of_service_pct, detour_pct: cfg.detour_pct,
       closed_ids: [...cfg.closed] } }
   if (engine === 'ops') {
-    return ['/api/v1/sim/operations/run', { area: common.area, base: common.base, seed: cfg.seed, replications: 20,
+    return ['/api/v1/sim/operations/run', { area: common.area, base: common.base, seed: cfg.seed, replications: cfg.opsReplications,
       hypothesis: { ...common.hypothesis, closed_ids: [] }, ...opsSpec(), ops: cfg.ops }]
   }
   return engine === 'cap'
     ? ['/api/v1/sim/queue/run', { ...common, replications: cfg.replications, hypothesis: { ...common.hypothesis, demand_pct: cfg.demand_pct },
       queue: { rate_per_h: cfg.rate_per_h, capacity: cfg.capacity, service_min: cfg.service_min, horizon_h: cfg.horizon_h } }]
     : ['/api/v1/sim/accessibility/run', { ...common, iterations: cfg.iterations }]
+}
+
+const JEV_TONE = { aceptable_para_exploracion: 'mejor', mas_iteraciones: 'igual', otro_modelo: 'igual', mas_datos: 'peor', revision_humana: 'peor' }
+
+async function evaluateJev(forEngine, r, seq) {
+  try {
+    const j = await postJSON('/api/v1/jev/evaluate', { run_id: r.run_id })
+    if (lastBy[forEngine]?.run_id !== r.run_id) return
+    jevBy[forEngine] = j
+    if (forEngine === engine && seq === runSeq) placeScore(false)
+    document.dispatchEvent(new CustomEvent('notify-refresh'))
+  } catch { /* JEV es opcional: el resultado se muestra igual */ }
+}
+
+function jevHtml() {
+  const j = jevBy[engine]
+  if (!j) return ''
+  const more = j.actions.find((a) => a.action === 'mas_iteraciones')
+  return `<p class="sim-jev" data-tone="${JEV_TONE[j.decision] || 'igual'}"><b>JEV ${j.score ?? '—'}</b> · ±${j.uncertainty.precision ?? '—'} · variabilidad ${esc(j.variability?.level || '—')}
+    · ${esc(j.decision_label)}${more ? ' <button type="button" class="btn btn-ghost" data-jev="more">Aplicar</button>' : ''}</p>`
+}
+
+/** Consejo de JEV «más iteraciones»: sube repeticiones o réplicas al siguiente escalón y recalcula. */
+function applyMoreIterations() {
+  if (engine === 'ops') cfg.opsReplications = Math.min(60, cfg.opsReplications * 2)
+  else if (engine === 'cap') cfg.replications = Math.min(100, cfg.replications * 2)
+  else cfg.iterations = Math.min(2000, Math.max(500, cfg.iterations * 2))
+  toast(engine === 'acc' ? `Repeticiones: ${cfg.iterations}` : `Réplicas: ${engine === 'ops' ? cfg.opsReplications : cfg.replications}`)
+  simulate()
 }
 
 /** Cada cambio recalcula solo, tras una pausa corta; una respuesta vieja nunca pisa a la más reciente. */
@@ -357,6 +388,8 @@ function simulate() {
       const r = await postJSON(url, body)
       if (seq !== runSeq || !active) return
       lastBy[forEngine] = r
+      jevBy[forEngine] = null
+      evaluateJev(forEngine, r, seq)
       if (forEngine === 'ops') showResult(r)
       drawResult()
       placeScore(false)
@@ -374,7 +407,7 @@ function simulate() {
 function openData(section) {
   document.dispatchEvent(new CustomEvent('sim-open-panel'))
   const box = document.getElementById('panel-body')
-  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName() })}</div>`
+  box.innerHTML = `<div id="sim-data-panel">${dataHtml({ last: last(), cfg, meta, engine, scenario: scenarioName(), jev: jevBy[engine] })}</div>`
   const num = (id, key, int = false) => {
     const el = document.getElementById(id)
     if (el) el.onchange = () => { cfg[key] = int ? Math.round(Number(el.value)) : Number(el.value); simulate() }
@@ -394,6 +427,8 @@ function openData(section) {
   opsNum('ops-service', 'service_min')
   opsNum('ops-target', 'target_min')
   opsNum('ops-detour', 'detour_per_tramo_pct')
+  const reps = document.getElementById('ops-reps')
+  if (reps) reps.onchange = () => { cfg.opsReplications = Math.round(Number(reps.value)); simulate() }
   const cmp = document.getElementById('sim-compare')
   if (cmp) {
     const load = async () => {
@@ -509,7 +544,7 @@ initZone({
 function frameZone() {
   const top = hud?.querySelector('.sim-top')?.getBoundingClientRect().bottom ?? 0
   const bottomEl = hud?.querySelector('.sim-bottom')?.getBoundingClientRect()
-  const pad = { top: top + 160, bottom: (bottomEl ? innerHeight - bottomEl.top : 0) + 16, left: 24, right: 24 }
+  const pad = { top: top + 200, bottom: (bottomEl ? innerHeight - bottomEl.top : 0) + 16, left: 24, right: 24 }
   const free = innerHeight - pad.top - pad.bottom
   if (free < 120) { const k = (innerHeight - 120) / (pad.top + pad.bottom); pad.top *= k; pad.bottom *= k }
   fitZone(pad)
