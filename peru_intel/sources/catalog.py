@@ -320,6 +320,12 @@ SOURCES: list[dict] = [
      "license": "ODbL", "update_frequency": "a demanda (ingest instituciones --download)", "geographic_level": "punto",
      "notes": "Cartografía colaborativa: la ubicación es aproximada y puede faltar o sobrar alguna sede. No existe un "
               "dataset abierto oficial con coordenadas de todas las sedes PNP, serenazgo, Ministerio Público y Poder Judicial."},
+    {"source_id": "osm_infraestructura", "name": "Aeropuertos, puertos, bases militares/navales y mercados (ubicación aproximada)",
+     "institution": "OpenStreetMap (Overpass API)", "url": "https://wiki.openstreetmap.org/wiki/Key:military",
+     "adapter": "peru_intel.ingestion.infrastructure", "official": 0, "kind": "vivo_tercero", "type": "api",
+     "license": "ODbL", "update_frequency": "a demanda (ingest infraestructura --download)", "geographic_level": "punto",
+     "notes": "Apoyos del simulador de operativos conjuntos. Cartografía colaborativa: ubicación aproximada; puede faltar "
+              "o sobrar alguna instalación. No es un inventario oficial de las Fuerzas Armadas ni de MTC/APN."},
     # ── Emergencias, vías y servicios ──────────────────────────────────────
     {"source_id": "indeci_sinpad", "name": "Emergencias y daños registrados (SINPAD)", "institution": "INDECI",
      "url": "https://geosinpad.indeci.gob.pe/indeci/rest/services/Emergencias", "adapter": "peru_intel.ingestion.emergencies",

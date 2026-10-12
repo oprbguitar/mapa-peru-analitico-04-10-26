@@ -1,5 +1,20 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Operativos conjuntos · 12 de octubre de 2026
+
+design-pick (`Operativos conjuntos`, operate) propuso command bar + tabla maestra · tinta + ámbar · Archivo/Public Sans/JetBrains
+Mono · radio 4–6 px · motion mínimo. Se conserva la carcasa HUD y la tipografía del producto (continuidad entre modos) y se
+adopta del selector: **ámbar `--ops-accent`** como acento de acción y estado del modo, **tabla densa** de recursos y
+**cronograma** como segundo visor. Direcciones evaluadas: (a) tablero separado del mapa con mapa pequeño — descartada, el
+usuario pidió «todo en el mapa»; (b) **escena sobre el mapa: plan a la izquierda, dos visores a la derecha y barra de
+reproducción abajo** (como las referencias) — elegida; (c) pantalla completa tipo juego con HUD únicamente — disponible solo en
+el video exportado. Color: cada recurso tiene `--ops-k-*` **y sigla** (P, M, UE, AP, D, S, A, B, F, E, N, H, L, X); cada apoyo
+`--ops-f-*` **y glifo**; cada operativo `--ops-op-1…12` y número. La prioridad se codifica con radio y trazo del anillo
+(continuo/rayado/punteado) y texto, **no** con un semáforo. Motion: solo datos (unidades, rastro, pulso de operativo activo,
+destello de llegada); con `prefers-reduced-motion` no hay pulsos ni destellos. Responsive: ≥1024 tres zonas; <1024 selector
+Plan · Mapa · Visores; 375 px sin desplazamiento horizontal.
+
+
 ## El Niño explicado, cobertura y paneles flotantes · 12 de octubre de 2026
 
 Se conserva la identidad HUD (pizarra/cian, Space Grotesk/Noto Sans/Space Mono, radio 4 px). Direcciones evaluadas para

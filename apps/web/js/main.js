@@ -286,7 +286,8 @@ async function setMode(m) {
   if (mode === 'vuelos') (await import('./flight-replay.js')).hideFlightReplay()
   if (mode === 'calle') (await import('./street-imagery.js')).hideStreetImagery()
   if (mode === 'simular' && m !== 'simular') (await import('./simulation.js')).hideSimulation()
-  const mediaModes = ['ninio', 'satelite', 'vuelos', 'calle']
+  if (mode === 'operativos' && m !== 'operativos') (await import('./joint-ops.js')).hideJointOps()
+  const mediaModes = ['ninio', 'satelite', 'vuelos', 'calle', 'operativos']
   if (mediaModes.includes(m) !== mediaModes.includes(mode)) {
     if (mediaModes.includes(m)) choroplethBeforeMedia = state.hideChoropleth
     state.hideChoropleth = mediaModes.includes(m) ? true : choroplethBeforeMedia
@@ -301,7 +302,7 @@ async function setMode(m) {
     renderLevels()
   }
   for (const b of document.querySelectorAll('#modes [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === m))
-  if (m !== 'simular') showPanel()
+  if (m !== 'simular' && m !== 'operativos') showPanel()
   if (m === 'satelite') {
     panelView = 'imagery'
     return openImagery(document.getElementById('panel-body'))
@@ -318,6 +319,10 @@ async function setMode(m) {
     panelView = 'sim'
     await (await import('./simulation.js')).renderSimulation()
     return openSheet('map')   // la simulación ocurre en el mapa; las cifras se abren a pedido
+  }
+  if (m === 'operativos') {
+    panelView = 'ops'
+    return (await import('./joint-ops.js')).renderJointOps()
   }
   if (m === 'mapa') {
     panelView = 'overview'
@@ -615,7 +620,7 @@ async function boot() {
     const b = e.target.closest('[data-mode]')
     if (!b) return
     await mapStartup
-    if (!['mapa', 'satelite', 'vuelos', 'calle', 'simular'].includes(b.dataset.mode)) await metadataReady
+    if (!['mapa', 'satelite', 'vuelos', 'calle', 'simular', 'operativos'].includes(b.dataset.mode)) await metadataReady
     setMode(b.dataset.mode)
   })
   initAssistant(assistantActions)
@@ -628,6 +633,7 @@ async function boot() {
       if (isDrawingImagery() || ['satelite', 'vuelos', 'calle'].includes(mode)) return
       if (routePick(e.lngLat) || visionPick(e.lngLat)) return
       if (mode === 'simular') return import('./simulation.js').then((s) => s.onMapClick(e))
+      if (mode === 'operativos') return import('./joint-ops.js').then((s) => s.onMapClick(e))
       if (state.live.has('sun')) {
         if (map.getZoom() < 16) return toast('Acerca más: el análisis solar trabaja a nivel de casa (zoom 16 o más)')
         showPanel()

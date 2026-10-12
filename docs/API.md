@@ -115,6 +115,15 @@ Las respuestas OSIPTEL incluyen año, checksum, licencia y transformación. OSM 
 Errores del gateway: `AI_DISABLED · INVALID_REQUEST · INVALID_MODE · CAPABILITY_UNSUPPORTED · PRIVACY_DENIED · RESOURCE_DENIED ·
 BUDGET_DENIED · DEADLINE_EXCEEDED · PROVIDER_UNAVAILABLE · OUTPUT_INVALID · CANCELLED · TOOL_DENIED`.
 
+## Operativos conjuntos (en línea y local)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/intel/ops/catalog` | Tipos de recurso (modo, sede de salida, personas, alistamiento, velocidad o factor), incidencias, instituciones de costo, perfil horario de tráfico (supuesto), tarifario de **ejemplo** (no oficial), conteo de apoyos y límites. |
+| GET | `/api/v1/intel/ops/facilities?bbox=o,s,e,n&cat=&limit=` | Apoyos dentro del recuadro: comisaría, serenazgo, fiscalía, judicial (OSM), hospital y salud (RENIPRESS), bomberos (OSM), aeropuerto, puerto, base_militar, base_naval, mercado (OSM). Con `provenance`. |
+| GET | `/api/v1/intel/ops/nearest?lat=&lon=&cat=&n=3&max_km=400` | Apoyos más cercanos por categoría con distancia en línea recta. |
+| POST | `/api/v1/intel/ops/plan` | `{operations:[{id,lat,lon,incident,start?,onsite?,complexity?,resources:[{kind,qty?,crew?,prep?,delay?,force_fail?,origin?{lat,lon,name}}]}], hypothesis?{start_hour,day,rain,congestion?,p_fail,fail_delay,sigma,return,runs,seed,routing:osrm\|recta,use_tomtom}, tariff?{kind:{km,hora,persona_hora,fijo}}, tariff_origin?}` → por recurso: sede de salida, ruta, tiempos (sale, listo, llega, termina, vuelve), P50/P90, km, horas y costo; por operativo: primera llegada y llegada de todos; totales, costo por institución y por tipo, eventos, avisos, `method`, `kind: estimacion` y `provenance`. Máx. 12 operativos, 80 recursos y 30 rutas OSRM por plan. 400 si faltan datos. |
+
 ## Simulación (solo instalación local)
 
 | Método | Ruta | Descripción |

@@ -90,6 +90,19 @@ def route_get(path: str, q: dict):
     if p == ["meta", "models"]:
         from ..ai import model_keys
         return model_keys.public()
+    if p[:2] == ["intel", "ops"] and len(p) == 3:
+        from ..simulation import joint_ops
+        if p[2] == "catalog":
+            return joint_ops.catalog()
+        cats = [c for c in (_one(q, "cat") or "").split(",") if c] or None
+        try:
+            if p[2] == "facilities":
+                return joint_ops.facilities(_bbox_values(q) if _one(q, "bbox") else None, cats, _int(q, "limit", 4000))
+            if p[2] == "nearest":
+                return joint_ops.nearest(float(_one(q, "lat")), float(_one(q, "lon")), cats, _int(q, "n", 3),
+                                         float(_one(q, "max_km", 400) or 400))
+        except (TypeError, ValueError) as e:
+            raise ApiError(400, f"lat y lon numéricos: {e}")
     if p[:2] == ["intel", "coverage"] and len(p) == 3:
         from ..analytics import coverage
         try:
@@ -346,6 +359,12 @@ def route_get(path: str, q: dict):
 
 def route_post(path: str, body: dict):
     p = [x for x in path.split("/") if x][2:]
+    if p == ["intel", "ops", "plan"]:
+        from ..simulation import joint_ops
+        try:
+            return joint_ops.plan(body)
+        except joint_ops.PlanError as e:
+            raise ApiError(400, str(e))
     if p == ["intel", "ai", "ask"]:
         ub = str(body.get("ubigeo") or "")
         if len(ub) not in (2, 4, 6) or not ub.isdigit():

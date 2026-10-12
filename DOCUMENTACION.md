@@ -1,5 +1,42 @@
 # Documentación — Mapa Perú Analítico
 
+## Operativos conjuntos sobre el mapa · 12 de octubre de 2026
+
+Modo **Operativos** en la barra superior (en línea y local). Guía de uso: [docs/GUIA-OPERATIVOS.md](docs/GUIA-OPERATIVOS.md).
+
+### Qué se hizo
+
+| Pedido | Resultado |
+|---|---|
+| Simular operativos en conjunto y en simultáneo, en varias regiones | Hasta 12 operativos por plan, cada uno con número, color, incidencia, prioridad, hora de inicio, minutos en sitio y complejidad. Se crean con clic en el mapa, se arrastran y se ven todos a la vez (chips + «Vista conjunta»). **Ejemplo** carga 4 operativos en Lima, Callao, Iquitos y Piura. |
+| Ver apoyos locales (comisarías, hospitales, fiscalías, mercados, aeropuertos, puertos, bases militares y navales) y conectarlos | Capa de apoyos por categoría (12 tipos) y pestaña **Apoyos** con los 3 más cercanos de cada tipo; **Conectar** dibuja el enlace al operativo y queda en el plan. Nueva fuente `osm_infraestructura` (124 aeropuertos, 28 puertos, 153 instalaciones militares, 28 navales, 1 915 mercados) por `SourceHarvester`. |
+| Elegir vehículos, personal, intervenciones; cada uno con color y gráfico | 14 tipos de recurso (patrullero, motorizado, unidad especial, agentes a pie, dron, serenazgo, ambulancia, bomberos, fiscal, Ejército, Marina, helicóptero, camión logístico, colaboración externa), cada uno con **color y sigla** propios, cantidad, personas, demora de salida, origen automático o fijado en el mapa y «ensayar falla». Plantillas por incidencia. |
+| Recorrido animado y tiempo según tráfico, incidencia y fallas | Al **Calcular**, cada recurso sale de su sede, sigue la ruta OSRM por calles (aire y agua en línea recta) y llega; se ven alistamiento, rumbo, rastro recorrido, falla (⚠, parada), unidades en sitio alrededor del punto y retorno. Tiempo = OSRM × factor del recurso × tráfico (perfil horario supuesto, TomTom si hay clave o factor fijo) ÷ lluvia × complejidad; Monte Carlo con semilla → **P50/P90**. |
+| Costo logístico, operativo y fiscal; Policía, Fuerzas Armadas y colaboraciones externas | Desglose por institución (PNP, municipal, salud, bomberos, Ministerio Público, FF. AA., logística, externos) y por tipo (personal, vehículos, despliegue). Solo con el **tarifario que ingresa el usuario**; «Cargar ejemplo» trae valores ilustrativos rotulados **EJEMPLO · no oficial**. Aeronaves cobran solo horas de vuelo. |
+| Dos visores en paralelo que se actualizan en tiempo real | **Visor 1 · Tablero en vivo** (reloj T+ y hora, unidades por fase, personal en sitio, km, costo acumulado, llegadas por operativo, costo por institución). **Visor 2 · Cronograma y bitácora** (Gantt por recurso con P90 y cursor arrastrable; eventos del minuto). Editar el plan recalcula solo (0,7 s). |
+| Descargar, grabar video, guardar | **● Grabar video** (MP4/WebM 720p o 1080p) del operativo animado de principio a fin con HUD táctico (DTG, UTM, T+, totales, leyenda, «SIMULACIÓN · RECURSOS HIPOTÉTICOS»); **PNG** del cuadro; **CSV** con el desglose por recurso, método y fuentes; **JSON** del plan. **Guardados**: biblioteca en el navegador y apertura de archivos. |
+
+### Naturaleza de cada dato
+
+- **Oficial:** hospitales y establecimientos de salud (RENIPRESS).
+- **En vivo de tercero:** comisarías, serenazgo, fiscalía, judicial, bomberos, aeropuertos, puertos, bases y mercados (OpenStreetMap, ubicación aproximada); tráfico TomTom si hay clave.
+- **Calculado:** rutas OSRM, distancias, km recorridos.
+- **Estimación:** tiempos de llegada (P50/P90), fallas, costos. Todo supuesto (perfil horario, velocidades, minutos por incidencia, probabilidad de falla) es visible y editable. El tarifario de ejemplo no es oficial.
+- No usa información reservada ni dotaciones reales; los recursos son hipotéticos (ejercicio de mesa).
+
+### Archivos
+
+`peru_intel/simulation/joint_ops.py` (motor), `peru_intel/ingestion/infrastructure.py` (fuente nueva),
+`apps/web/js/joint-ops.js` · `joint-ops-model.js` · `joint-ops-view.js` · `joint-ops-media.js`, `apps/web/css/joint-ops.css`,
+tokens `--ops-*` en `tokens.css`, `tests/test_joint_ops.py`. API en [docs/API.md](docs/API.md#operativos-conjuntos-en-línea-y-local).
+
+### Verificación
+
+192 pruebas Python aprobadas (9 nuevas). `design-lint` APROBADO (0/20). Navegador real a 1440 px y 375 px: ejemplo de 4
+operativos con 21 recursos y 13 rutas OSRM; animación con rastro y siglas; costo por institución con tarifas de ejemplo;
+video MP4 de 3,1 MB y PNG de 370 KB generados; sin desplazamiento horizontal en móvil.
+
+
 ## El Niño explicado, cobertura de comisarías, clima, calle, satélite y claves de modelos · 12 de octubre de 2026
 
 ### Qué se hizo

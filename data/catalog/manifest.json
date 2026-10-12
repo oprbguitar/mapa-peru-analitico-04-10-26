@@ -185,6 +185,16 @@
     "schema_changed": false,
     "status": "ok"
   },
+  "osm_infraestructura": {
+    "checksum": "163793ca77992474ace465069d04c271634bd3b5e9fe28a50ea289173ece8332",
+    "last_downloaded": "2026-10-12T01:20:33-0500",
+    "normalized_path": "data/normalized/infraestructura.json",
+    "origin": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A240%5D%3B%0A%28%0A%20nwr%5B%22aeroway%22%3D%22aerodrome%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22aeroway%22%3D%22heliport%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22industrial%22%3D%22port%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22landuse%22%3D%22port%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22harbour%22%3D%22yes%22%5D%5B%22name%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22man_made%22%3D%22pier%22%5D%5B%22name%22~%22%5BMm%5Duelle%7C%5BPp%5Duerto%7C%5BEe%5Dmbarcadero%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22military%22~%22base%7Cnaval_base%7Cairfield%7Cbarracks%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22landuse%22%3D%22military%22%5D%5B%22name%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%20nwr%5B%22amenity%22%3D%22marketplace%22%5D%28-18.4%2C-81.4%2C-0.03%2C-68.6%29%3B%0A%29%3B%0Aout%20center%20tags%3B",
+    "raw_path": "raw/osm_infraestructura/2026-10-12/infraestructura-osm.json",
+    "schema_changed": false,
+    "status": "ok",
+    "transform": "Overpass (aeroway, puertos/muelles, military, marketplace) → clasificación por etiquetas → punto-en-polígono distrital INEI; se descartan puntos fuera del Perú y duplicados a ~100 m."
+  },
   "osm_instituciones": {
     "checksum": "f7e9f2a6fb7e752f236fe76a5c84671ad9f4d7089438b88f3bbcf564a6dcf010",
     "last_downloaded": "2026-10-04T18:09:41-0500",

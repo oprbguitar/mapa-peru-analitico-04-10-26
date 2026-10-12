@@ -64,6 +64,19 @@
   /* El Niño / océano */
   --enso-warm: #ff5a3c; --enso-cold: #3aa0ff; --enso-neutral: #5d6d7c;
 
+  /* operativos conjuntos: ámbar de acción del modo (design-pick «tinta + ámbar»), color por recurso (siempre con sigla)
+     y por apoyo (siempre con glifo). Identidad categórica, NO es una codificación de riesgo ni una norma de señalización. */
+  --ops-accent: #ffa630; --ops-accent-ink: #1a1000; --ops-accent-dim: rgba(255, 166, 48, .16);
+  --ops-k-patrullero: #4dabf7; --ops-k-motorizado: #74c0fc; --ops-k-unidad_especial: #5c7cfa; --ops-k-agentes: #a5d8ff;
+  --ops-k-dron: #e599f7; --ops-k-serenazgo: #ffd43b; --ops-k-ambulancia: #3ddc84; --ops-k-bomberos: #ff6b2b;
+  --ops-k-fiscal: #ff5c8a; --ops-k-ejercito: #a9e34b; --ops-k-marina: #22d3c5; --ops-k-helicoptero: #f783ac;
+  --ops-k-logistica: #ffa94d; --ops-k-externo: #ced4da;
+  --ops-f-comisaria: #3d8bfd; --ops-f-serenazgo: #ffc233; --ops-f-fiscalia: #ff5c6c; --ops-f-judicial: #b197fc;
+  --ops-f-hospital: #ff8787; --ops-f-salud: #8fd19e; --ops-f-bomberos: #ff6b2b; --ops-f-aeropuerto: #e6f1f7;
+  --ops-f-puerto: #22d3c5; --ops-f-base_militar: #a9e34b; --ops-f-base_naval: #4dd4e8; --ops-f-mercado: #ffa94d;
+  --ops-op-1: #ff5c6c; --ops-op-2: #4dabf7; --ops-op-3: #3ddc84; --ops-op-4: #ffa630; --ops-op-5: #b197fc; --ops-op-6: #22d3c5;
+  --ops-op-7: #f783ac; --ops-op-8: #ffd43b; --ops-op-9: #a9e34b; --ops-op-10: #74c0fc; --ops-op-11: #ff8787; --ops-op-12: #e599f7;
+
   /* tipografía */
   --font-display: "Space Grotesk", "Noto Sans", sans-serif;
   --font-body: "Noto Sans", "Segoe UI", sans-serif;
@@ -134,5 +147,15 @@
   --street-cov: #03994a; --street-sel: #0b84b8;
   --hot: #d6283a; --fx-sun: #f0a500; --fx-rain: #1971c2; --fx-storm: #6a45c9; --fx-cloud: #7d8a96; --fx-wind: #3d4a57; --fx-frost: #0b7285; --fx-fog: #7d8a96;
   --enso-warm: #d6402b; --enso-cold: #1971c2; --enso-neutral: #8a96a3;
+  --ops-accent: #b35c00; --ops-accent-ink: #ffffff; --ops-accent-dim: rgba(179, 92, 0, .12);
+  --ops-k-patrullero: #1971c2; --ops-k-motorizado: #1c7ed6; --ops-k-unidad_especial: #3b5bdb; --ops-k-agentes: #4dabf7;
+  --ops-k-dron: #ae3ec9; --ops-k-serenazgo: #c98a00; --ops-k-ambulancia: #2b8a3e; --ops-k-bomberos: #e8590c;
+  --ops-k-fiscal: #d6336c; --ops-k-ejercito: #5c940d; --ops-k-marina: #0c8599; --ops-k-helicoptero: #c2255c;
+  --ops-k-logistica: #d9480f; --ops-k-externo: #495057;
+  --ops-f-comisaria: #1c64d8; --ops-f-serenazgo: #c98a00; --ops-f-fiscalia: #d6283a; --ops-f-judicial: #6a45c9;
+  --ops-f-hospital: #c92a2a; --ops-f-salud: #2b8a3e; --ops-f-bomberos: #e8590c; --ops-f-aeropuerto: #343a40;
+  --ops-f-puerto: #0c8599; --ops-f-base_militar: #5c940d; --ops-f-base_naval: #1098ad; --ops-f-mercado: #d9480f;
+  --ops-op-1: #c92a2a; --ops-op-2: #1971c2; --ops-op-3: #2b8a3e; --ops-op-4: #d9480f; --ops-op-5: #6741d9; --ops-op-6: #0c8599;
+  --ops-op-7: #c2255c; --ops-op-8: #b08400; --ops-op-9: #5c940d; --ops-op-10: #1c7ed6; --ops-op-11: #e03131; --ops-op-12: #ae3ec9;
   --shadow: 0 8px 24px rgba(18, 24, 31, .16);
 }
