@@ -547,3 +547,18 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .scn-timeline { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-2); font-size: var(--fs-caption); }
 .scn-timeline span, .scn-timeline small { display: block; color: var(--ink-soft); }
 .scn-timeline .btn { margin-top: var(--sp-1); }
+
+/* Cámaras en vivo (§7): modo por celda, estado y lista de verificación */
+.cam-cell video { width: 100%; height: 100%; object-fit: contain; display: block; background: var(--void); }
+.cam-cell video[hidden], .cam-cell img[hidden] { display: none; }
+.cam-cell .cam-mode { left: auto; right: var(--sp-1); }
+.cam-cell[data-mode="webrtc"] .cam-mode { color: var(--danger); }
+.cam-cell[data-mode="foto"] .cam-mode { color: var(--warn); }
+.cam-cell[data-mode="simulado"] .cam-mode { color: var(--kind-ia); }
+.cam-cell .cam-stat { top: auto; bottom: var(--sp-1); font-weight: 400; max-width: calc(100% - var(--sp-2)); }
+.cam-cell .cam-stat:empty { display: none; }
+.cam-viewer-head { cursor: move; touch-action: none; }
+.cam-check { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-1); font-size: var(--fs-caption); }
+.cam-check span, .cam-check small { display: block; color: var(--ink-soft); }
+.cam-check li[data-state="ok"] b { color: var(--ok); }
+.cam-check li[data-state="falla"] b { color: var(--danger); }

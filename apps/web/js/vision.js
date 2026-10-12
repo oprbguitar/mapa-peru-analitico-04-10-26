@@ -2,10 +2,10 @@
 // Sin go2rtc el visor muestra fotos del grabador (~1 por segundo); con go2rtc corriendo, las toma del flujo (más fluido).
 import { ensurePointLayer, map, mapReady, ptFeature, setPoints } from './map.js'
 import { esc, getJSON, postJSON, toast } from './util.js'
+import * as player from './cam-player.js'
 
 let data = null
 let placing = null      // { cam, ch }
-let viewer = { cam: null, chans: [], timer: null, paused: false }
 const body = () => document.getElementById('cameras-body')
 
 async function load() {
@@ -53,6 +53,10 @@ async function render(editId) {
     <div class="ai-actions" style="padding:0"><button class="btn" type="button" id="cam-discover">Buscar en mi red (ONVIF)</button>
       <span class="src-meta">go2rtc: ${d.go2rtc.running ? `<b>activo</b> en ${esc(d.go2rtc.url)}` : `no detectado (<a href="${esc(d.guide.go2rtc)}" target="_blank" rel="noopener">descargar</a>)`}</span>
       ${d.cameras.length ? '<button class="btn" type="button" id="cam-go2rtc">Generar go2rtc.yaml</button>' : ''}</div>
+    <details class="why" id="cam-selftest" open><summary>Video en vivo · lista de verificación para la prueba con tu equipo</summary>
+      <div class="why-body" id="cam-check"><p class="loading">Comprobando</p></div>
+      <div class="ai-actions" style="padding:0"><button class="btn" type="button" id="cam-recheck">Volver a comprobar</button>
+        <button class="btn" type="button" id="cam-sim">Probar el visor con señal simulada</button></div></details>
     <div id="cam-found"></div>
     ${d.cameras.map(camTable).join('')}
     ${form(editing || {})}`
@@ -109,6 +113,14 @@ function bind() {
     } catch (err) {
       toast(err.message, 7000)
     }
+  })
+  const check = async () => { document.getElementById('cam-check').innerHTML = await selftestHtml() }
+  check()
+  document.getElementById('cam-recheck').addEventListener('click', check)
+  document.getElementById('cam-sim').addEventListener('click', () => {
+    document.getElementById('cameras-dialog').close()
+    const demo = { id: 'demo', name: 'Prueba del visor', channels: [1, 2, 3, 4].map((ch) => ({ ch, name: `simulado ${ch}` })) }
+    openViewer(demo, [1, 2, 3, 4], 'simulado')
   })
   document.getElementById('cam-go2rtc')?.addEventListener('click', async () => {
     const r = await postJSON('/api/v1/intel/vision/go2rtc', {})
@@ -178,37 +190,20 @@ export async function refreshLayer(visible) {
   return d.features.length
 }
 
-function openViewer(cam, chans) {
-  clearInterval(viewer.timer)
-  viewer = { cam, chans, timer: null, paused: false }
-  const el = document.getElementById('cam-viewer')
-  const cols = chans.length > 4 ? 3 : chans.length > 1 ? 2 : 1
-  el.hidden = false
-  el.innerHTML = `<div class="cam-viewer-head"><b>${esc(cam.name)}</b><span class="src-meta">${chans.length > 1 ? 'Mosaico' : `Canal ${chans[0]}`} · foto cada ~1 s</span>
-    <span><button class="btn" type="button" id="cv-pause" aria-pressed="false">❚❚</button> <button class="btn btn-ghost btn-icon" type="button" id="cv-close" aria-label="Cerrar el visor">✕</button></span></div>
-    <div class="cam-grid" style="--cols:${cols}">${chans.map((ch) => `<button type="button" class="cam-cell" data-cell="${ch}" aria-label="Canal ${ch}"><img alt="Canal ${ch}"><span>CH ${ch} · ${esc(cam.channels.find((c) => c.ch === ch)?.name || '')}</span><span class="live">● EN VIVO</span></button>`).join('')}</div>`
-  el.querySelector('#cv-close').onclick = () => { clearInterval(viewer.timer); el.hidden = true }
-  el.querySelector('#cv-pause').onclick = (e) => { viewer.paused = !viewer.paused; e.currentTarget.setAttribute('aria-pressed', String(viewer.paused)) }
-  el.querySelectorAll('[data-cell]').forEach((c) => c.addEventListener('click', () => chans.length > 1 && openViewer(cam, [+c.dataset.cell])))
-  const tick = () => {
-    if (viewer.paused || document.hidden) return
-    for (const ch of chans) {
-      const cell = el.querySelector(`[data-cell="${ch}"]`)
-      const img = cell.querySelector('img')
-      if (img.dataset.busy) continue
-      img.dataset.busy = '1'
-      const next = new Image()
-      next.onload = () => { img.src = next.src; delete img.dataset.busy; cell.dataset.state = 'ok'; cell.querySelector('.err')?.remove() }
-      next.onerror = () => {
-        delete img.dataset.busy
-        cell.dataset.state = 'error'
-        if (!cell.querySelector('.err')) cell.insertAdjacentHTML('beforeend', '<span class="err">sin imagen: revisa la conexión</span>')
-      }
-      next.src = `/api/v1/intel/vision/snap/${cam.id}/${ch}.jpg?t=${Date.now()}`
-    }
-  }
-  tick()
-  viewer.timer = setInterval(tick, chans.length > 4 ? 2000 : 1000)
+/** Visor flotante: WebRTC si go2rtc está activo, si no fotos; «simulado» prueba el visor sin equipo. */
+function openViewer(cam, chans, mode = 'auto') {
+  player.openViewer({ cam, chans, go2rtc: !!data?.go2rtc?.running, mode, onPick: (ch) => openViewer(cam, [ch], mode) })
+}
+
+const STEP_STATE = { ok: '✓', pendiente: '○', falla: '✕' }
+
+async function selftestHtml() {
+  try {
+    const t = await getJSON('/api/v1/intel/vision/selftest')
+    return `<ol class="cam-check">${t.steps.map((x) => `<li data-state="${esc(x.state)}"><b>${STEP_STATE[x.state] || '○'} ${esc(x.label)}</b>
+      <span>${esc(x.detail)}</span>${x.state !== 'ok' && x.action ? `<small>${esc(x.action)}</small>` : ''}</li>`).join('')}</ol>
+      <p class="src-meta">${t.ready_for_live ? 'Listo para video en vivo: abre un canal.' : esc(t.note)}</p>`
+  } catch (e) { return `<p class="note">${esc(e.message)}</p>` }
 }
 
 export async function openCameras() {

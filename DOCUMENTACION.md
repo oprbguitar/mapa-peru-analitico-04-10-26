@@ -1,5 +1,25 @@
 # Documentación — Mapa Perú Analítico
 
+## Informes (§10) y cámaras en vivo (§7) · 12 de octubre de 2026
+
+**Informes** (`peru_intel/reports.py`, `apps/web/js/reports.js`): botón **Informe** en la barra del operativo (informe del
+escenario con su desarrollo por versiones), **Informe imprimible** en «Ver cifras» (una ejecución) e **Informe comparativo**
+en «Comparar escenarios». Documento HTML autónomo en pestaña nueva (Ctrl+S guarda, Ctrl+P → PDF) con captura del mapa,
+resumen ejecutivo construido con reglas a partir de las cifras (sin IA), resultados con rangos, unidades, supuestos,
+fuentes con fecha de descarga, evaluación JEV y limitaciones. «Desarrollo del escenario» lista cada versión con sus cambios
+exactos y **Abrir esta versión** la recupera en el mapa. Limitación: los marcadores HTML (letras de las unidades) no salen
+en la captura; sí la zona, tramos, llamadas y mosaicos. API: `GET /api/v1/reports/run/<run_id>`,
+`/api/v1/reports/scenario/<esc-id>`, `/api/v1/reports/compare?ids=a,b`.
+
+**Cámaras en vivo** (`peru_intel/vision/live.py`, `apps/web/js/cam-player.js`): por canal, WebRTC vía go2rtc (la oferta
+SDP pasa por el servidor, que la reenvía a go2rtc local o de la red; el navegador no se conecta directo a otro puerto) y
+fotos (~1 s) como respaldo automático con el motivo visible. Cada celda muestra modo (EN VIVO · WebRTC / FOTO / SIMULADO),
+retraso aproximado (búfer de jitter + mitad del RTT), última imagen y cortes. Ventana flotante movible y mosaico.
+**Lista de verificación** en Cámaras (grabador, canales, ubicación, go2rtc, flujos, señal, WebRTC) y **señal simulada**
+para probar el visor sin equipo. Prueba con el equipo real: **pendiente**, pasos en [docs/PRUEBA-CAMARAS.md](docs/PRUEBA-CAMARAS.md).
+API: `GET /api/v1/intel/vision/selftest`, `GET /api/v1/intel/vision/streams`, `POST /api/v1/intel/vision/webrtc {cam, ch, sdp}`.
+Pruebas: `tests/test_vision_live.py` (contra un go2rtc simulado) y `tests/e2e/cameras-live.mjs` (no abre canales reales).
+
 ## Consola de conexiones (§3) · 11 de octubre de 2026
 
 Herramientas (⋯) → **Conexiones** (solo administración, solo local). Una ficha por cada una de las 60 fuentes del catálogo
