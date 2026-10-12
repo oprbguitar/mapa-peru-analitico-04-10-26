@@ -34,7 +34,7 @@ from ..simulation import accessibility as sim_access
 from ..simulation import queue as sim_queue
 from ..simulation import operations as sim_ops
 from ..simulation import scenarios as sim_scen
-from .. import activities, connections, jev, notify, users
+from .. import activities, connections, jev, notify, reports, users
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -100,6 +100,18 @@ def route_get(path: str, q: dict):
     if p == ["users"]:
         _local_only()
         return {"users": users.listing(), "roles": users.ROLES}
+    if p[:1] == ["reports"]:
+        _sim_local()
+        try:
+            if len(p) == 3 and p[1] == "run":
+                return reports.run_report(p[2])
+            if len(p) == 3 and p[1] == "scenario":
+                return reports.scenario_report(p[2])
+            if p == ["reports", "compare"]:
+                return reports.compare_report([x for x in (_one(q, "ids") or "").split(",") if x])
+        except ValueError as e:
+            raise ApiError(404, str(e))
+        raise ApiError(404, "ruta no encontrada")
     if p == ["admin", "connections"]:
         _local_only()
         users.require("admin")
