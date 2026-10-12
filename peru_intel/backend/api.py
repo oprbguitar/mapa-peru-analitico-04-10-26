@@ -428,6 +428,19 @@ def route_post(path: str, body: dict):
                 v = s["versions"][-1]
                 notify.emit("actividad", f"Escenario «{s['name']}» guardado (v{v['v']})", v.get("note") or "", ref=s["id"], source="escenarios")
                 return s
+            if len(p) == 4 and p[3] == "state":
+                to = str(body.get("state") or "")
+                if to in sim_scen.REVIEW_STATES:
+                    users.require("activities.manage")   # validar, revisar y archivar: coordinación o administración
+                sc = sim_scen.set_state(p[2], to, users.actor(), str(body.get("note") or ""))
+                sqlite_store.audit(users.actor(), "escenario.estado", {"id": p[2], "state": to})
+                notify.emit("actividad", f"Escenario «{sc['name']}»: {sim_scen.STATES[to]}", str(body.get("note") or ""),
+                            ref=p[2], source="escenarios", audience="rol:coordinador")
+                return sc
+            if p == ["sim", "scenarios", "import"]:
+                sc = sim_scen.import_(body.get("payload"), users.actor())
+                sqlite_store.audit(users.actor(), "escenario.importar", {"id": sc["id"], "from": sc["imported_from"]})
+                return sc
             if len(p) == 4 and p[3] == "duplicate":
                 d = sim_scen.duplicate(p[2], body.get("name"), by=users.actor())
                 sqlite_store.audit(users.actor(), "escenario.duplicar", {"id": d["id"], "parent": d["parent"]})
@@ -494,6 +507,11 @@ def _sim_get(p: list[str], q: dict) -> dict:
         return {"runs": sim_runs.list_runs(_int(q, "limit", 20))}
     if p == ["scenarios"]:
         return {"scenarios": sim_scen.list_all(_int(q, "limit", 50))}
+    if len(p) == 3 and p[0] == "scenarios" and p[2] == "export":
+        try:
+            return sim_scen.export(p[1])
+        except sim_access.SimError as e:
+            raise ApiError(404, str(e))
     if len(p) == 2 and p[0] == "scenarios":
         try:
             return sim_scen.get(p[1])

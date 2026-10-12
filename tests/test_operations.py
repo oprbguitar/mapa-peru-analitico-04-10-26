@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -114,6 +115,47 @@ class ScenarioTest(unittest.TestCase):
             api.route_get("/api/v1/sim/scenarios/../../x", {})
         with self.assertRaises(api.ApiError):
             api.route_post("/api/v1/sim/scenarios", {"name": "<script>", "spec": spec})
+
+    def test_lifecycle_states_and_permissions(self):
+        from peru_intel import users
+        draft = api.route_post("/api/v1/sim/scenarios", {"name": "Vacío", "spec": {"engine": "operations"}})
+        self.assertEqual(draft["state"], "borrador")
+        spec = {"engine": "operations", "area": AREA, "units": [UNIT]}
+        conf = api.route_post("/api/v1/sim/scenarios", {"id": draft["id"], "spec": spec})
+        self.assertEqual(conf["state"], "configurado")
+        val = api.route_post(f"/api/v1/sim/scenarios/{draft['id']}/state", {"state": "validado_para_simular"})
+        self.assertEqual(val["state"], "validado_para_simular")
+        with self.assertRaises(api.ApiError):   # revisar exige estar finalizado
+            api.route_post(f"/api/v1/sim/scenarios/{draft['id']}/state", {"state": "revisado", "note": "ok ok ok"})
+        fin = api.route_post("/api/v1/sim/scenarios", {"id": draft["id"], "spec": spec, "run_id": "ops-1", "metrics": {"within_target_pct": 80}})
+        self.assertEqual(fin["state"], "finalizado")
+        with self.assertRaises(api.ApiError):   # la revisión requiere nota
+            api.route_post(f"/api/v1/sim/scenarios/{draft['id']}/state", {"state": "revisado"})
+        rev = api.route_post(f"/api/v1/sim/scenarios/{draft['id']}/state", {"state": "revisado", "note": "Coherente con la capacidad real"})
+        self.assertEqual([h["to"] for h in rev["states"]], ["configurado", "validado_para_simular", "finalizado", "revisado"])
+        self.assertTrue(all("by" in h and "at" in h for h in rev["states"]))
+        with patch.object(users, "_load", return_value=[{"id": "u-9", "name": "Cira", "role": "participante"}]):
+            users.current.set({"id": "u-9", "name": "Cira", "role": "participante"})
+            with self.assertRaises(users.AuthError):
+                api.route_post(f"/api/v1/sim/scenarios/{draft['id']}/state", {"state": "archivado"})
+        users.current.set(users.PERSONAL)
+
+    def test_export_import_roundtrip_and_tamper_detection(self):
+        spec = {"engine": "operations", "area": AREA, "units": [UNIT]}
+        s = api.route_post("/api/v1/sim/scenarios", {"name": "Exportable", "spec": spec, "run_id": "ops-1", "metrics": {"within_target_pct": 70}})
+        pkg = api.route_get(f"/api/v1/sim/scenarios/{s['id']}/export", {})
+        self.assertEqual(pkg["format"], "mapa-peru-escenario")
+        imp = api.route_post("/api/v1/sim/scenarios/import", {"payload": pkg})
+        self.assertNotEqual(imp["id"], s["id"])
+        self.assertEqual(imp["imported_from"]["id"], s["id"])
+        self.assertIsNone(imp["versions"][0]["run_id"], "las ejecuciones se repiten en la PC que importa")
+        self.assertEqual(imp["state"], "configurado")
+        tampered = json.loads(json.dumps(pkg))
+        tampered["scenario"]["versions"][0]["spec"]["units"] = []
+        with self.assertRaises(api.ApiError):
+            api.route_post("/api/v1/sim/scenarios/import", {"payload": tampered})
+        with self.assertRaises(api.ApiError):
+            api.route_post("/api/v1/sim/scenarios/import", {"payload": {"format": "otro"}})
 
     def test_operations_api_is_local_only(self):
         with patch.dict(os.environ, {"RENDER": "true"}):
