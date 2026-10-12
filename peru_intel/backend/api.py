@@ -35,7 +35,7 @@ from ..simulation import accessibility as sim_access
 from ..simulation import queue as sim_queue
 from ..simulation import operations as sim_ops
 from ..simulation import scenarios as sim_scen
-from .. import activities, connections, jev, notify, reports, users
+from .. import activities, connections, jev, municipal, notify, reports, users
 from ..simulation import runs as sim_runs
 from ..storage import sqlite_store
 
@@ -113,6 +113,21 @@ def route_get(path: str, q: dict):
         except ValueError as e:
             raise ApiError(404, str(e))
         raise ApiError(404, "ruta no encontrada")
+    if p == ["municipal"]:
+        if not simulation.is_local():
+            return {"configured": False}
+        return municipal.get_config()
+    if p[:1] == ["municipal"] and p[1:] in (["profile"], ["kit"]):
+        _local_only()
+        ub = _one(q, "ubigeo") or municipal.get_config().get("ubigeo") or ""
+        try:
+            crime_data = route_get(f"/api/v1/intel/regions/{ub}/crime", {}) if ub else None
+        except ApiError:
+            crime_data = None
+        try:
+            return municipal.profile(ub, crime_data) if p[1] == "profile" else municipal.kit(crime_data)
+        except municipal.MunicipalError as e:
+            raise ApiError(400, str(e))
     if p == ["admin", "connections"]:
         _local_only()
         users.require("admin")
@@ -400,6 +415,15 @@ def route_post(path: str, body: dict):
     if p == ["users"]:
         _local_only()
         return users.create(body.get("name"), body.get("role"), body.get("pin"))
+    if p == ["municipal"]:
+        _local_only()
+        users.require("settings")
+        try:
+            out = municipal.save_config(body, users.actor())
+        except municipal.MunicipalError as e:
+            raise ApiError(400, str(e))
+        sqlite_store.audit(users.actor(), "municipal.configurar", {"name": out["name"], "ubigeo": out["ubigeo"]})
+        return out
     if len(p) == 4 and p[:2] == ["admin", "connections"] and p[3] == "test":
         _local_only()
         users.require("admin")

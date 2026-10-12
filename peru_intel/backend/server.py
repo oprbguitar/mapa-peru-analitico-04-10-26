@@ -212,6 +212,10 @@ class Handler(BaseHTTPRequestHandler):
                 if r is None:
                     return self._send(404, b"", "text/plain")
                 return self._send(200 if r[0] else 204, r[0], r[1], "max-age=900")
+            if path == "/api/v1/municipal/logo":
+                from .. import municipal
+                lg = municipal.logo() if simulation.is_local() else None
+                return self._send(200, lg[0], lg[1], "no-cache", compress=False) if lg else self._send(404, b"", "text/plain")
             m = SNAP_RX.match(path)
             if m:
                 data, ctype = api.vision_snapshot(m[1], int(m[2]))
