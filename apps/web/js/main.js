@@ -25,6 +25,7 @@ import { setFxMode, setWeatherFx } from './wxfx.js'
 import { initNotifications } from './notifications.js'
 import { initUsers } from './users.js'
 import { initConnections } from './connections.js'
+import { initCinematic } from './cinematic.js'
 import { clearImagery, initImagery, openImagery, hideImagery, isDrawingImagery } from './imagery.js'
 
 const LEVELS = [['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito']]
@@ -644,6 +645,7 @@ async function boot() {
   })
   mapStartup.then(initImagery).catch((error) => console.error(error))
   mapStartup.then(initNotifications).catch(() => {})
+  mapStartup.then(initCinematic).catch(() => {})
   initUsers()
   // el laboratorio de simulación solo existe en la instalación local
   mapStartup.then(() => getJSON('/api/v1/sim/engines')).then((s) => {

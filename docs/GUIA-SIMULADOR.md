@@ -123,6 +123,24 @@ En «Ver cifras» → **Estado y archivo del escenario**: el escenario pasa solo
 la coordinación puede **validarlo**, **marcarlo revisado** (con nota) o **archivarlo**. **Exportar archivo** descarga un JSON con
 huella de integridad; **Importar escenario** lo carga en otra PC (si el archivo fue modificado, se rechaza).
 
+### 18 · Recorrido 3D cinematográfico y grabación
+Botón **🎬 Recorrido** (junto a 3D · Relieve · N; funciona en cualquier modo). Activa **Relieve 3D** y/o **Satélite**, y:
+- **Añadir toma (vista actual)**: mueve el mapa (zoom, inclinación con clic derecho + arrastrar, rumbo) y guarda la toma;
+  ajusta en cada una el tiempo de **viaje** y la **pausa**; ◎ va a la toma, ↑ la sube, ✕ la quita.
+- **Prefabricados**: **Órbita 360°** alrededor del centro, **Acercamiento** desde todo el Perú y **Sobrevuelo** de la zona.
+- **▶ Vista previa** y **● Grabar video**: graba el recorrido a **MP4** (o WebM según el navegador) en 1280×720 o 1920×1080 y lo
+  guarda en tu carpeta **Descargas**. Con **HUD en video** se incrustan el título, DTG Zulu, rumbo, UTM, retícula y el rótulo
+  «datos hipotéticos · no operativo» si es una simulación. Las etiquetas de unidades, notas y puntos se dibujan en el video.
+- **Guardar guion** / **Abrir guion**: el recorrido en JSON para repetirlo exactamente.
+
+![Fotograma de un video grabado](img/simulador/18-recorrido-video.png)
+
+### 19 · Capa táctica en operaciones
+En Simular se muestran retícula central, **coordenadas bajo el cursor** (grados y **UTM**), **rumbo**, reloj **DTG Zulu** y
+**Cuadrícula 1 km** (tecla G). En Operativo, las unidades llevan **indicativo** (P-01, A-01…) y su estado en vivo (borde azul en
+ruta, ámbar en escena, punteado de retorno); el **Registro** lista llamadas, despachos, llegadas y cierres al minuto virtual;
+**clic en una unidad** dibuja sus **anillos de alcance** de 5, 10 y 15 minutos con la velocidad efectiva del escenario.
+
 > El operativo es un **ejercicio de mesa**: las llamadas son sintéticas (tasa y mezcla declaradas, ubicadas al azar en la
 > zona), no provienen de denuncias ni de personas, y el sistema no emite órdenes ni rutas sobre personas reales.
 

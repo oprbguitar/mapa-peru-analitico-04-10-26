@@ -634,3 +634,18 @@ body.sim-on .tac { display: block; }
 @media (max-width: 1023px) { .tac-log { display: none; } }
 @media (max-width: 767px) { .tac-readout, .tac-tools, .tac-top { display: none; } }
 .tac-z { font-family: var(--font-display); }
+
+/* Recorrido 3D cinematográfico y grabación */
+.cine-panel { left: var(--gap); right: auto; top: calc(var(--topbar-h) + var(--gap) * 2 + var(--tap) + var(--sp-2)); width: min(380px, calc(100% - var(--gap) * 2)); }
+.cine-shots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); max-height: 30vh; overflow-y: auto; }
+.cine-shots li { display: grid; grid-template-columns: auto 1fr auto; gap: calc(var(--sp-1) / 2) var(--sp-2); align-items: center; padding: var(--sp-1);
+  background: var(--surface-2); border-radius: var(--radius); font-size: var(--fs-caption); }
+.cine-shots li > b { font-family: var(--font-mono); color: var(--accent); }
+.cine-shots small { grid-column: 2 / -1; color: var(--ink-muted); font-family: var(--font-mono); }
+.cine-shots label { font-family: var(--font-mono); color: var(--ink-soft); }
+.cine-shots input { width: 6ch; background: var(--surface); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }
+.cine-row { grid-column: 1 / -1; display: flex; gap: var(--sp-1); justify-content: flex-end; }
+.cine-panel progress { width: 100%; accent-color: var(--accent); }
+.cine-rec { background: var(--danger); border-color: var(--danger); color: var(--void); }
+.cine-rec:hover { background: var(--danger); filter: brightness(1.1); }
+#btn-cine[aria-pressed="true"] { color: var(--accent); }

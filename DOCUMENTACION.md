@@ -1,5 +1,18 @@
 # Documentación — Mapa Perú Analítico
 
+## Imprevistos combinables, capa táctica y recorrido 3D con grabación · 12 de octubre de 2026
+
+- **Imprevistos** (lluvia intensa, hora punta, huaico, sedes cerradas, más llamadas): cada ficha se activa/desactiva con un
+  clic y se combinan (lluvia: la más fuerte; porcentajes: el mayor). «Todos» activa o apaga el conjunto; sin ninguna, «sin
+  imprevistos». El escenario guarda la combinación (`preset` = ids unidos por «+»).
+- **Capa táctica** (`apps/web/js/sim-tactical.js`): retícula, lat/lon (DMS) y **UTM WGS84** bajo el cursor (verificado: Lima
+  18L, Arequipa 19K, Iquitos 18M), rumbo, **DTG Zulu**, cuadrícula de 1 km, indicativos con estado por unidad, registro de
+  eventos del tiempo virtual y anillos de alcance 5/10/15 min (línea recta ÷ rodeo × velocidad efectiva).
+- **Recorrido 3D** (`apps/web/js/cinematic.js`): tomas con pose, viaje y pausa (suavizado cúbico, rumbo por arco corto),
+  prefabricados (órbita, acercamiento, sobrevuelo), relieve 3D y satélite, **grabación** con `MediaRecorder` de un lienzo
+  compuesto (mapa + marcadores + HUD) a MP4/WebM descargado en la PC, y guion JSON. Inspirado en el «director» de God's Eye
+  View; código propio. Prueba: `tests/e2e/cinematic.mjs` (graba y verifica un MP4 real).
+
 ## Evacuación con agentes sintéticos (S4) · 12 de octubre de 2026
 
 Cuarto motor del simulador (**Evacuación**; `peru_intel/simulation/agents.py`, `apps/web/js/sim-agents.js`). Agentes
