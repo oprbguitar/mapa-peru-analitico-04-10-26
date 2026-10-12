@@ -34,9 +34,10 @@ y cuánto cambia la llegada típica. Si el escenario tiene lluvia, la verás cae
 
 ![Resultado con lluvia](img/simulador/04-resultado-lluvia.png)
 
-### 5 · Cambia el «¿qué pasa si…?» con una ficha
-Abajo: **Lluvia intensa · Hora punta · Huaico · Sedes cerradas · Todo junto** (y **Más llamadas** en Capacidad).
-Un toque y el mapa se recalcula solo. Arriba eliges el servicio: hospitales, centros de salud, bomberos o comisarías.
+### 5 · Activa y combina imprevistos
+Abajo: **Lluvia intensa · Hora punta · Huaico · Sedes cerradas** (y **Más llamadas** en Capacidad). Cada ficha es un
+interruptor: un clic la **activa** (punto encendido), otro la **desactiva**, y se pueden **combinar** varias (p. ej., lluvia + hora punta).
+**Todos** activa o apaga todas a la vez; sin ninguna activa, la hipótesis es «sin imprevistos». El mapa se recalcula solo. Arriba eliges el servicio: hospitales, centros de salud, bomberos o comisarías.
 
 ![Fichas de escenario](img/simulador/05-fichas-escenario.png)
 

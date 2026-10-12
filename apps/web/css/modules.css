@@ -590,3 +590,11 @@ body[data-role="coordinador"] #open-connections, body[data-role="participante"] 
 .agt-n { display: inline-flex; align-items: center; gap: var(--sp-1); font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; }
 .agt-n select { min-height: 30px; background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }
 .sim-sites input[type="number"] { width: 9ch; min-height: 28px; background: var(--surface-2); color: var(--ink); border: var(--border) solid var(--line-strong); border-radius: var(--radius); }
+
+/* Imprevistos combinables: interruptor visible en cada ficha */
+.sim-card { position: relative; }
+.sim-card-on { position: absolute; top: var(--sp-1); right: var(--sp-1); width: var(--sp-2); height: var(--sp-2); border-radius: 50%;
+  border: var(--border) solid var(--line-strong); }
+.sim-card[aria-pressed="true"] .sim-card-on { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
+.sim-card[aria-pressed="false"] { opacity: .78; }
+.sim-card-all { border-style: dashed; }

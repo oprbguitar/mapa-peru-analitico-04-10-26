@@ -64,7 +64,7 @@ try {
   await mark('5', 'Toca otra ficha para cambiar el «¿qué pasa si…?»: se recalcula solo', '.sim-cards')
   await shot('05-fichas-escenario.png')
 
-  await page.locator('[data-sim-preset="todo"]').click()
+  await page.locator('[data-sim-preset="todos"]').click()
   await settled()
   await idle()
   await mark('6', 'Arrastra la cortina: a la izquierda HOY, a la derecha la HIPÓTESIS', '.sim-swipe-grip')

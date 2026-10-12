@@ -42,10 +42,23 @@ try {
     await page.waitForSelector('.sim-score .sim-jev', { timeout: 10000 })
     assert.match(await page.locator('.sim-jev').innerText(), /JEV .*variabilidad/i, 'consejo JEV en el marcador')
 
-    // 2 · escenario de un toque: hora punta, sin lluvia; el marcador se actualiza solo
+    // 2 · imprevistos combinables: activar hora punta SUMA a la lluvia; apagar la lluvia la quita del mapa
     await page.locator('[data-sim-preset="punta"]').click()
     await settled(page)
+    assert.match(await score(page).innerText(), /Lluvia intensa \+ Hora punta/i)
+    assert.equal(await page.locator('[data-sim-preset="lluvia"]').getAttribute('aria-pressed'), 'true')
+    await page.locator('[data-sim-preset="lluvia"]').click()
+    await settled(page)
+    assert.equal(await page.locator('[data-sim-preset="lluvia"]').getAttribute('aria-pressed'), 'false')
     assert.match(await score(page).innerText(), /Hora punta/i)
+    await page.locator('[data-sim-preset="todos"]').click()
+    await settled(page)
+    assert.equal(await page.locator('.sim-cards [aria-pressed="false"]').count(), 0, '«Todos» activa todas las fichas')
+    await page.locator('[data-sim-preset="todos"]').click()
+    await settled(page)
+    assert.match(await score(page).innerText(), /sin imprevistos/i)
+    await page.locator('[data-sim-preset="punta"]').click()
+    await settled(page)
     assert.equal(await page.locator('.sim-rain').getAttribute('data-level'), 'ninguna')
     assert.equal(await rainInk(page), 0, 'sin lluvia en hora punta')
 

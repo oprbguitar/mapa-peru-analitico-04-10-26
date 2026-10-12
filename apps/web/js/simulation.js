@@ -25,15 +25,16 @@ const SERVICE = {
   bomberos: { label: 'Bomberos', one: 'bomberos' }, comisaria: { label: 'Comisarías', one: 'una comisaría' },
 }
 const CALM = { rain: 'ninguna', congestion_pct: 0, out_of_service_pct: 0, detour_pct: 0, demand_pct: 0 }
-// Escenarios de un toque: combinaciones HIPOTÉTICAS para explorar; ninguna está calibrada con un evento real.
+// Imprevistos HIPOTÉTICOS que se activan y desactivan con un clic y se combinan entre sí (ninguno está calibrado con un
+// evento real). Al combinar, cada factor toma el valor más exigente de los imprevistos activos.
 const PRESETS = [
   { id: 'lluvia', icon: '☂', label: 'Lluvia intensa', hint: '40 % más lento', h: { rain: 'intensa' } },
   { id: 'punta', icon: '⧗', label: 'Hora punta', hint: 'tráfico 40 %', h: { congestion_pct: 40 } },
   { id: 'huaico', icon: '⛰', label: 'Huaico', hint: 'vías cortadas, rodeos +40 %', h: { rain: 'moderada', detour_pct: 40 } },
   { id: 'sedes', icon: '✕', label: 'Sedes cerradas', hint: '30 % sin atender', h: { out_of_service_pct: 30 } },
   { id: 'demanda', icon: '▲', label: 'Más llamadas', hint: 'demanda +100 %', h: { demand_pct: 100 }, cap: true },
-  { id: 'todo', icon: '⚑', label: 'Todo junto', hint: 'lluvia, tráfico, cortes, sedes', h: { rain: 'intensa', congestion_pct: 30, out_of_service_pct: 15, detour_pct: 30, demand_pct: 50 } },
 ]
+const RAIN_RANK = { ninguna: 0, moderada: 1, intensa: 2 }
 
 let meta = null
 let hud = null
@@ -57,11 +58,27 @@ const NEXT = { configurado: ['validado_para_simular', 'archivado'], finalizado: 
 const ACTION = { validado_para_simular: 'Validar para simular', revisado: 'Marcar revisado', archivado: 'Archivar', borrador: 'Desarchivar' }
 const cfg = { service: 'hospital', preset: 'lluvia', iterations: 400, seed: 2026, speed_kmh: 30, closed: new Set(),
   rate_per_h: 6, capacity: 2, service_min: 45, horizon_h: 24, replications: 30,
-  ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, opsReplications: 20, ...CALM, ...PRESETS[0].h }
+  ops: { rate_per_h: 2, horizon_h: 8, service_min: 25, target_min: 15 }, opsReplications: 20, ...CALM, ...PRESETS[0].h,
+  active: new Set(['lluvia']) }
 
 const last = () => lastBy[engine]
 const presetById = (id) => PRESETS.find((p) => p.id === id)
-const scenarioName = () => (cfg.preset === 'propio' ? 'tu escenario' : presetById(cfg.preset)?.label || 'la hipótesis')
+const usable = () => PRESETS.filter((p) => !p.cap || engine === 'cap')
+const scenarioName = () => (cfg.preset === 'propio' ? 'tu escenario'
+  : cfg.active.size ? usable().filter((p) => cfg.active.has(p.id)).map((p) => p.label).join(' + ') || 'sin imprevistos' : 'sin imprevistos')
+
+/** Combina los imprevistos activos: lluvia, la más fuerte; porcentajes, el mayor. */
+function combineActive() {
+  const h = { ...CALM }
+  for (const p of usable()) {
+    if (!cfg.active.has(p.id)) continue
+    for (const [k, v] of Object.entries(p.h)) {
+      if (k === 'rain') { if (RAIN_RANK[v] > RAIN_RANK[h.rain]) h.rain = v } else h[k] = Math.max(h[k] || 0, v)
+    }
+  }
+  Object.assign(cfg, h)
+  cfg.preset = [...cfg.active].sort().join('+') || 'ninguno'
+}
 
 // ── capas del resultado ─────────────────────────────────────────────────────
 const LAYERS = ['sim-cells-a', 'sim-cells-b', 'sim-cells-d', 'sim-sites']
@@ -236,9 +253,11 @@ function hudHtml() {
       : 'Elige Patrullero, Serenazgo, Ambulancia o Bomberos arriba y haz clic en el mapa para colocar unidades · ╱ Tramo cortado: clic punto a punto y «Terminar tramo»'}</p>
     <div class="sim-bottom">
       ${engine === 'ops' ? replayHtml(cfg.ops.horizon_h * 60) : engine === 'agt' ? agt.replayHtml() : ''}
-      <div class="sim-cards" role="group" aria-label="¿Qué pasa si…?">${PRESETS.filter((p) => !p.cap || engine === 'cap').map((p) =>
-        `<button type="button" class="sim-card hud" data-sim-preset="${p.id}" aria-pressed="${cfg.preset === p.id}">
-          <span class="sim-card-i" aria-hidden="true">${p.icon}</span><b>${p.label}</b><small>${p.hint}</small></button>`).join('')}</div>
+      <div class="sim-cards" role="group" aria-label="Imprevistos: activa o desactiva y combina">${usable().map((p) =>
+        `<button type="button" class="sim-card hud" data-sim-preset="${p.id}" aria-pressed="${cfg.active.has(p.id)}" title="Clic para ${cfg.active.has(p.id) ? 'desactivar' : 'activar'}">
+          <span class="sim-card-i" aria-hidden="true">${p.icon}</span><b>${p.label}</b><small>${p.hint}</small><em class="sim-card-on" aria-hidden="true"></em></button>`).join('')}
+        <button type="button" class="sim-card sim-card-all hud" data-sim-preset="todos" aria-pressed="${usable().every((p) => cfg.active.has(p.id))}">
+          <span class="sim-card-i" aria-hidden="true">⚑</span><b>Todos</b><small>${usable().every((p) => cfg.active.has(p.id)) ? 'apagar todos' : 'activar todos'}</small></button></div>
       <div class="sim-bar hud" role="toolbar" aria-label="Vista">
         ${engine === 'acc' ? `<div class="seg" role="group" aria-label="Qué pintar">
           <button type="button" data-sim-view="swipe" aria-pressed="${view === 'swipe'}">Hoy ⟷ hipótesis</button>
@@ -275,7 +294,13 @@ function renderHud() {
 
 function syncHud() {
   if (!hud) return
-  for (const b of hud.querySelectorAll('[data-sim-preset]')) b.setAttribute('aria-pressed', String(b.dataset.simPreset === cfg.preset))
+  for (const b of hud.querySelectorAll('[data-sim-preset]')) {
+    const on = b.dataset.simPreset === 'todos' ? usable().every((p) => cfg.active.has(p.id)) : cfg.active.has(b.dataset.simPreset)
+    b.setAttribute('aria-pressed', String(on))
+    b.title = `Clic para ${on ? 'desactivar' : 'activar'}`
+  }
+  const allCard = hud.querySelector('.sim-card-all small')
+  if (allCard) allCard.textContent = usable().every((p) => cfg.active.has(p.id)) ? 'apagar todos' : 'activar todos'
   for (const b of hud.querySelectorAll('[data-sim-service]')) b.setAttribute('aria-pressed', String(b.dataset.simService === cfg.service))
   for (const b of hud.querySelectorAll('[data-sim-view]')) b.setAttribute('aria-pressed', String(b.dataset.simView === view))
   const key = hud.querySelector('#sim-key')
@@ -316,7 +341,7 @@ function onHudClick(e) {
     engine = eng.dataset.simEngine
     if (engine === 'ops') setTool('unit')
     if (engine === 'agt') { agtTool = 'safe'; setTool('unit'); setMarksOnly(true) }
-    if (engine === 'acc' && cfg.preset === 'demanda') applyPreset('lluvia', false)
+    if (engine !== 'cap') { cfg.active.delete('demanda'); combineActive() }
     renderHud()
     drawResult()
     placeScore(!last())
@@ -341,9 +366,14 @@ function onHudClick(e) {
   if (t.closest('#sim-data')) openData()
 }
 
+/** Activa o desactiva un imprevisto (o todos) y recalcula con la combinación resultante. */
 function applyPreset(id, run = true) {
-  Object.assign(cfg, CALM, presetById(id).h)
-  cfg.preset = id
+  if (id === 'todos') {
+    const all = usable().every((p) => cfg.active.has(p.id))
+    cfg.active = new Set(all ? [] : usable().map((p) => p.id))
+  } else if (cfg.active.has(id)) cfg.active.delete(id)
+  else cfg.active.add(id)
+  combineActive()
   syncHud()
   setRain(cfg.rain, getZone())
   if (view === 'swipe' && last() && engine === 'acc') showSwipe(scenarioName(), (lon) => { split = lon; applySplit() })
@@ -492,6 +522,7 @@ function openData(section) {
   if (dem) dem.oninput = () => {
     cfg.demand_pct = Number(dem.value)
     cfg.preset = 'propio'
+    cfg.active.clear()   // un ajuste manual reemplaza a las fichas
     document.getElementById('sim-demand_pct-v').textContent = signed(cfg.demand_pct, ' %')
     syncHud()
     simulate()
@@ -526,6 +557,7 @@ async function loadRun(id) {
     const p = r.params
     engine = p.engine === 'queue' ? 'cap' : 'acc'
     lastBy[engine] = r
+    cfg.active = new Set()
     Object.assign(cfg, { service: p.service, seed: p.seed, speed_kmh: p.base.speed_kmh, preset: 'propio', rain: p.hypothesis.rain,
       congestion_pct: p.hypothesis.congestion_pct, out_of_service_pct: p.hypothesis.out_of_service_pct, detour_pct: p.hypothesis.detour_pct,
       demand_pct: p.hypothesis.demand_pct ?? 0, closed: new Set(p.hypothesis.closed_ids) })
@@ -641,6 +673,7 @@ export async function loadScenario(id, version) {
     scenario = { id: s.id, name: s.name, state: s.state }
     engine = 'ops'
     Object.assign(cfg, CALM, spec.hypothesis || {}, { preset: spec.preset || 'propio', seed: spec.seed ?? cfg.seed, ops: { ...cfg.ops, ...(spec.ops || {}) } })
+    cfg.active = new Set(String(spec.preset || '').split('+').filter((x) => presetById(x)))
     if (spec.area) { setZone(spec.area); fitZone(80) }
     loadSpec(spec)
     renderHud()
