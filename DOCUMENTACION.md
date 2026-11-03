@@ -1,5 +1,56 @@
 # Documentación — Mapa Perú Analítico
 
+## Niño costero 2026–2027: lluvias, quebradas y huaicos sobre el mapa · 2 de noviembre de 2026
+
+**Qué se hizo.** En el modo **El Niño**, la ficha derecha abre con la banda **Niño costero 2026–2027** (replegable). Permite filtrar
+por mes (nov 2026 → jun 2027), elegir amenaza (huaicos y deslizamientos / inundación) y activar capas que el propio mapa dibuja:
+
+| Capa | Fuente y fecha | Naturaleza |
+|---|---|---|
+| Distritos en riesgo del mes | CENEPRED · SIGRID, escenarios por pronóstico trimestral 101 (oct–dic 2026) y 100 (verano 2027), actualización set. 2026; abr–jun 2027 sin escenario → base PMLL 2024-2026 | oficial |
+| Cauces que van al mar (Pacífico) y hacia la Amazonía/Titicaca | HydroRIVERS v1.0 (HydroSHEDS, CC BY 4.0): tramos en sentido del flujo, vertiente y km al mar calculados con `NEXT_DOWN` | calculado |
+| Tramos y puntos críticos | ANA (fichas vía SIGRID): coordenadas UTM de **inicio y fin** publicadas, convertidas a WGS84 | oficial |
+| Zonas críticas | INGEMMET (vía SIGRID) | oficial |
+| Susceptibilidad (mancha) | Entrega local «Data Niño 2026/» del PMLL 2024-2026 (UTM 18S) rasterizada en Web Mercator (~330 m/píxel) | oficial |
+
+Pronóstico citado por mes: **Comunicado Oficial ENFEN N.° 19-2026** (30/10/2026; próximo 13/11/2026): Niño 1+2 extraordinario hasta
+febrero 2027, descenso hasta junio; lluvias sobre lo normal en costa norte, sierra occidental, costa central y sierra central
+occidental (nov–ene) y en costa norte, costa central y sierra norte occidental en verano; caudales altos en Tumbes, Chira, Piura,
+La Leche y Jequetepeque y desde diciembre en Chillón, Rímac y Lurín. `config/enso_eventos.json` quedó actualizado a ese comunicado.
+
+**Animación por cercanía.** Vista nacional: líneas estáticas. **Nivel 7+**: guiones que avanzan aguas abajo en los cauces «activos»
+(distrito con nivel alto o muy alto en el mes, o punto crítico ANA a ≤ 2 km). **Nivel 9+** con «Simulación automática al acercar»:
+lluvia ilustrativa (inclinada con el viento real del centro, Open-Meteo), frente de huaico que recorre cada quebrada del Pacífico de
+distritos con nivel alto y un letrero **Simulación** en el inicio de la quebrada más cercana al centro, con su cuenca y km al mar, más
+un rótulo en su final («Desemboca en el mar» / «Sigue aguas abajo»). La lluvia se apaga fuera de la vertiente del Pacífico y en
+meses sin pronóstico de lluvias. Todo es nativo de MapLibre: funciona igual con **3D/relieve**. «Lectura con IA de esta vista» usa
+el asistente existente (cita ENFEN, Verifier); la IA no calcula cifras ni niveles. Clic en cualquier elemento abre su ficha y enlace.
+
+**Otros cambios.** Las secciones del panel El Niño (estado ENFEN, ICEN, comparación, historias, corrientes, IA, fuentes) son
+replegables; «El Niño 360» y la tarjeta «El Niño en el mapa» empiezan plegadas. **Noche/día ya no cambia el mapa**: solo encabezados,
+paneles y letras; el mapa base se cambia en «Capas». `GET /api/v1/intel/layers/waterways?bbox=` devuelve cauces OSM del área visible
+con destino (río, mar a ≤ 1,5 km de la costa OSM, fuera de vista) — Overpass estuvo saturado al construir esto, por eso la base
+nacional es HydroRIVERS.
+
+**Contraste.** CENEPRED publicó los **mismos niveles** distritales para oct–dic 2026 y verano 2027. Frente a la base PMLL 2024-2026,
+875 distritos suben de nivel en al menos una amenaza; los distritos con riesgo muy alto por movimientos en masa pasan de 262 a 686
+y por inundación de 78 a 112 (calculado sobre 1 824 distritos con geometría).
+
+**Regenerar** (los originales van a `data/raw/`, fuera de Git):
+
+```bash
+curl -L -o data/raw/cenepred/escenario_trimestral/100_tabla.zip https://sigrid.cenepred.gob.pe/sigridv3/storage/escenario_trimestral/100_tabla.zip
+curl -L -o data/raw/cenepred/escenario_trimestral/101_tabla.zip https://sigrid.cenepred.gob.pe/sigridv3/storage/escenario_trimestral/101_tabla.zip
+python scripts/build_nino_costero.py          # distritos, críticos, susceptibilidad (≈ 10 min por el raster) · --skip-raster
+python scripts/build_cauces.py                # HydroRIVERS_v10_sa_shp descomprimido en data/raw/hydrosheds/
+```
+
+Cada comunicado nuevo: actualizar `ENFEN` y `MONTHS` en `apps/web/js/nino-costero.js` y `config/enso_eventos.json`; con un escenario
+CENEPRED nuevo, cambiar los ids en `SCENARIOS` del script. **Límites:** HydroRIVERS tiene ~500 m de resolución y no calza con cada
+calle; la lluvia y el huaico son ilustrativos (sin milímetros, caudal ni alcance); los niveles nunca se reparten a centros poblados.
+Verificación: 203 pruebas (`PYTHONIOENCODING=utf-8`), `design-lint` APROBADO, navegador: z11 en Lima Este con letrero y frente de
+huaico, 3D con relieve, modo día sin cambio del mapa y 360 px sin desplazamiento horizontal.
+
 ## Radar de comisarías, limpiar ejemplos y un solo puerto con cierre · 12 de octubre de 2026
 
 | Pedido | Resultado |
@@ -680,3 +731,46 @@ máxima, posición y sombra a la hora elegida (slider + altura del objeto), tray
 21 jun invierno) y del equinoccio dibujadas alrededor del punto (más lejos = Sol más bajo), y horas de sol directo por fachada
 (8 orientaciones; verano dic–feb, invierno jun–ago, año) con recomendación de ventanas. Hora del Perú (UTC−5).
 No considera edificios vecinos, relieve ni nubosidad (naturaleza: calculado).
+
+## El Niño 360 · ampliación territorial (14 de octubre de 2026)
+
+Se amplió el módulo existente sin crear otra aplicación. Mantiene Python, MapLibre y los módulos ES sin compilación. Las imágenes del encargo se usaron como referencia de interacción; ninguna cifra ni trayectoria se extrajo de ellas.
+
+### Uso
+
+1. Abre **El Niño** y pulsa un punto del mapa o **Ampliar un territorio piloto**. El inspector consulta el Informador 360 existente, identifica el distrito publicado y muestra sus fuentes. Los marcadores `+` son referencias de navegación, no ubicaciones verificadas de quebradas.
+2. En **Qué ocurrió**, escoge un episodio y pulsa **Reproducir episodio en el mapa**. La línea inferior permite seleccionar capítulo, avanzar, retroceder, pausar y cambiar la velocidad de lectura. Cada capítulo conserva sus fuentes. Los registros del mapa, ranking y coropleta se acumulan hasta el mes seleccionado; **Ver todo** muestra el período completo. La comparación entre episodios mantiene los totales del período de cada episodio.
+3. El inspector filtra los registros disponibles por UBIGEO publicado. Un registro departamental no se distribuye entre distritos. Se advierte cuándo la posición es un centroide. Ausencia de registros no demuestra ausencia de emergencias.
+4. En **Qué podría pasar**, ingresa lluvia total, duración y condición inicial del suelo. **Preparar escenario conceptual** abre seis fases de revisión. Son una secuencia explicativa; no simulan propagación hidrológica ni tiempos de llegada.
+5. **Guardar localmente** conserva un escenario en este navegador (incluye ubicación). **Abrir guardado** lo recupera; **Exportar JSON** descarga parámetros, procedencia y método. **Fijar como A**, cambiar entradas y preparar B permite comparar los supuestos. No compara daños ni áreas inundadas.
+6. **Qué se necesitaría** muestra requisitos de información y una guía cualitativa. No cuantifica recursos, costos ni personas damnificadas sin un método y cartografía compatibles.
+
+### Cobertura y límites
+
+- Se reutilizan los episodios y los registros de `/api/v1/intel/enso`, `/enso/events/<id>` y el contexto territorial. No se incorporó una fuente nueva ni se alteró `data/raw`.
+- El reloj histórico representa el mes publicado; la cadencia 0,5×–4× es de lectura. No es velocidad física del fenómeno. Las capas NASA solo se sincronizan cuando existe cobertura del mismo mes; los meses antiguos sin cobertura no muestran imágenes actuales como si fueran históricas.
+- Los escenarios son **hipótesis del usuario**. El único cálculo del motor es lluvia total / duración, con su fórmula y procedencia. No hay un pronóstico climático nuevo.
+- Los seis pilotos son navegación orientativa (Costa/Lima Este, Sierra central, Sierra sur, Selva alta, Piura y Perú). No tienen modelos calibrados por cuenca, inventarios de exposición cruzados ni conectividad hidrológica aguas arriba/abajo.
+- Pendientes de las etapas D–F: geometrías verificadas de cauces y amenazas, agrupamiento espacial de puntos a escala nacional, DEM y parámetros por cuenca, calibración/validación, propagación hidráulica, exposición, funciones de daño, logística y costos con precios documentados, pronósticos dentro de su vigencia e informes territoriales. La comparación actual es de entradas, no una simulación nacional validada.
+
+### Decisiones de alcance y operación
+
+Objetivo y usuarios: exploración territorial y preparación de decisiones en Perú (DICHO en el encargo). Primera entrega útil: inspector, navegación, reproducción histórica y escenarios conceptuales locales (IMPLEMENTADO). Se preserva la identidad existente y se evita exigir infraestructura adicional. El responsable del proyecto mantiene catálogo y modelos; esta entrega no implica contratación, publicación, gasto ni uso de APIs de pago. Se revisará el alcance al disponer de modelos y fuentes con granularidad compatible.
+
+### Archivos y verificación reproducible
+
+Entrada: `apps/web/js/enso.js`; inspector: `enso-workspace.js`; modelo puro: `enso-scenario.js`; fases: `enso-scenario-player.js`; filtros: `enso-history.js`. Integración de clics y limpieza en `main.js`; sincronización NASA en `enso-explain.js`. Estilos y tokens bajo `apps/web/css/`.
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python -m unittest discover -s tests -q
+node --test --experimental-test-coverage tests/enso-history.test.mjs tests/enso-scenario.test.mjs
+# El E2E usa Google Chrome instalado y el módulo Playwright ya disponible:
+$env:PLAYWRIGHT_MODULE='<ruta al módulo playwright>'
+node tests/e2e/enso360.mjs
+node 'C:\Users\oprbg\Documents\Claude\AI-Design-Harness\bin\design-lint.mjs' .
+```
+
+Las capturas del E2E se guardan en `output/e2e/enso360-*.png`. No se realizó despliegue remoto.
+
+Validación local de esta entrega: 196/196 pruebas Python (con salida UTF-8 en Windows); 7/7 pruebas nuevas de lógica JS; cobertura de los dos módulos puros: 100 % de líneas y 88,46 % de ramas (no es cobertura global de la interfaz). Recorrido real en Chrome a 360/768/1280/1600 px: fases, comparación A/B, exportación, guardado/recuperación, episodios, ausencia de raster actual para 1982 y desbordamiento horizontal comprobados. Design-lint: APROBADO, 0/20. La suite Python inicialmente encontró el problema de codificación cp1252 del launcher preexistente; con PYTHONIOENCODING=utf-8 pasó sin modificar el launcher. Se conservó la eliminación ajena de INICIAR-CONTENEDOR.bat.

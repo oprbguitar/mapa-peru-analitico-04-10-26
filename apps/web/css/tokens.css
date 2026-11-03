@@ -63,6 +63,15 @@
   --fx-sun: #ffd23f; --fx-rain: #8ecdf8; --fx-storm: #d4b8ff; --fx-cloud: #c7d2db; --fx-wind: #e6f1f7; --fx-frost: #c9f0ff; --fx-fog: #aab7c2;
   /* El Niño / océano */
   --enso-warm: #ff5a3c; --enso-cold: #3aa0ff; --enso-neutral: #5d6d7c;
+  --enso-chapter-w: 12rem; --enso-select-w: 14rem; --enso-select-mobile-w: 10rem;
+  --enso-timeline-h: 45vh; --enso-timeline-mobile-h: 42vh;
+  /* Niño costero 2026-27 (capas del mapa): iguales en noche y día para que el tema no altere la lectura del mapa.
+     Niveles = rótulos publicados por CENEPRED (siempre con texto); no es una paleta normativa de señalización. */
+  --nc-accent: #d6336c; --nc-accent-dim: rgba(214, 51, 108, .14);
+  --nc-lv-2: #f2b134; --nc-lv-3: #e8622c; --nc-lv-4: #c2185b; --nc-edge: #f8e3ea;
+  --nc-flow: #38c6f4; --nc-flow-hi: #e6fbff; --nc-amazon: #4b7bd1; --nc-lake: #7ad0c4;
+  --nc-mud: #b8682a; --nc-mud-soft: rgba(184, 104, 42, .38); --nc-crit: #2fb7e8; --nc-zone: #b07cf0;
+  --nc-sign-bg: rgba(16, 20, 24, .92); --nc-sign-ink: #ffffff;
 
   /* operativos conjuntos: ámbar de acción del modo (design-pick «tinta + ámbar»), color por recurso (siempre con sigla)
      y por apoyo (siempre con glifo). Identidad categórica, NO es una codificación de riesgo ni una norma de señalización. */

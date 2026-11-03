@@ -6,9 +6,10 @@ import { lastContext, renderContext, renderObservatory } from './context360.js'
 import { initDialogs } from './dialogs.js'
 import { initSun, setSunMode, sunAt } from './sun.js'
 import { closeStory, ensoChoropleth, initStory, playStory, renderEnso, setEnsoRepaint } from './enso.js'
+import { probeEnsoTerritory, unmountEnsoWorkspace } from './enso-workspace.js'
 import { renderLegend } from './legend.js'
 import { initLive, refreshWindowed, statusStrip, toggle } from './live.js'
-import { fitBBox, flyTo, initMap, map, onStyleReady, paint, refreshThemeColors, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
+import { fitBBox, flyTo, initMap, map, onStyleReady, paint, resetNorth, setBase, setChoroplethOpacity, setExaggeration,
   setHotspots, setRelief, setSelected, setTerrain, showLevel, view } from './map.js'
 import { setOcean, setOceanColor } from './ocean.js'
 import { initTelecom, toggleCoverage, toggleOsm } from './telecom.js'
@@ -296,7 +297,7 @@ async function setMode(m) {
   }
   mode = m
   document.body.dataset.mode = m
-  if (m !== 'ninio') { closeStory(); import('./enso-explain.js').then((x) => x.stopExplain()) }
+  if (m !== 'ninio') { closeStory(); unmountEnsoWorkspace(); import('./enso-explain.js').then((x) => x.stopExplain()); import('./nino-costero.js').then((x) => x.unmountNinoCostero()) }
   ensoChoro = false
   if (mediaModes.includes(m)) {
     renderLegend(null)
@@ -421,11 +422,9 @@ async function toggleTheme(force) {
   if (toLight === !dark) return
   document.documentElement.dataset.theme = toLight ? 'light' : 'dark'
   try { localStorage.setItem('pi-theme', document.documentElement.dataset.theme) } catch { /* sin almacenamiento */ }
-  if (view.base === 'oscuro' && toLight) await setBase('calles')
-  else if (view.base === 'calles' && !toLight) await setBase('oscuro')
-  refreshThemeColors()
+  // noche/día cambia solo la interfaz (encabezados, paneles y letras): el mapa base y los colores de las capas se
+  // conservan para no alterar la lectura de los datos (NASA, escenarios, clima). El mapa base se cambia en «Capas».
   renderRail(meta)
-  if (state.choropleth) loadChoropleth()
 }
 
 async function onView(kind, value) {
@@ -668,7 +667,11 @@ async function boot() {
       }
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return
       const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|eonet|fires|satellites|datacenters|rt-)/.test(f.layer.id))
-      if (mode === 'ninio' && !hit) return import('./enso-explain.js').then((x) => x.probeExplain(e.lngLat))
+      if (mode === 'ninio' && !hit) {
+        showPanel()
+        probeEnsoTerritory(e.lngLat)
+        return import('./enso-explain.js').then((x) => x.probeExplain(e.lngLat))
+      }
       if (hit || mode === 'ninio') return   // en El Niño el mapa se queda: los clics son para los registros
       if (mode !== 'mapa') setMode('mapa')
       showContext(e.lngLat.lat, e.lngLat.lng)

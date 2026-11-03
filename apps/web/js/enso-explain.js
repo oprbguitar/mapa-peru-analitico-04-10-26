@@ -38,6 +38,9 @@ const CALLOUTS = [[-84.6, -2.2], [-84.8, -7.8], [-78.6, -5.0], [-77.4, -8.6], [-
 
 let on = false, card = null, legend = null, cmap = null, frames = [], fi = 0, step = 0
 let playTimer = 0, flowRaf = 0, popup = null, callouts = [], cityMarkers = []
+let historicalDate = null
+let probeGeneration = 0
+const uncoveredHistory = () => historicalDate && !frames.some((d) => d.slice(0, 7) === historicalDate.slice(0, 7))
 
 function addRaster(id, layer, date, opacity) {
   if (map.getSource(id)) { map.getSource(id).setTiles([TILE(layer, date)]); return }
@@ -110,6 +113,7 @@ function renderCard() {
 }
 
 function setFrame(i) {
+  if (uncoveredHistory()) return
   fi = Math.max(0, Math.min(frames.length - 1, i))
   const d = frames[fi]
   if (!d) return
@@ -196,7 +200,7 @@ function drawCallouts() {
 async function goStep(k, { fly = true } = {}) {
   step = k
   const s = STEPS[k]
-  if (s.precip) addRaster('ex-precip', 'precip', frames[fi], 0.9)
+  if (s.precip && !uncoveredHistory()) addRaster('ex-precip', 'precip', frames[fi], 0.9)
   else removeLayer('ex-precip')
   if (fly) map.flyTo({ center: [s.where[0], s.where[1]], zoom: s.where[2], duration: reduce() ? 0 : 1400, essential: true })
   renderCard()
@@ -226,13 +230,15 @@ function togglePlay() {
 
 /** Lee el valor de la anomalía en el punto: color exacto de la tesela NASA → intervalo de la paleta oficial. */
 export async function probeExplain(lngLat) {
+  if (uncoveredHistory()) return false
   if (!on || !cmap || !frames[fi]) return false
+  const date = frames[fi], owner = card, generation = ++probeGeneration, history = historicalDate
   const z = Math.max(0, Math.min(7, Math.floor(map.getZoom())))
   const n = 2 ** z
   const xf = (lngLat.lng + 180) / 360 * n
   const s = Math.sin(lngLat.lat * Math.PI / 180)
   const yf = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n
-  const url = TILE('ssta', frames[fi]).replace('{z}', z).replace('{x}', Math.floor(xf)).replace('{y}', Math.floor(yf))
+  const url = TILE('ssta', date).replace('{z}', z).replace('{x}', Math.floor(xf)).replace('{y}', Math.floor(yf))
   let txt
   try {
     const res = await fetch(url)
@@ -251,9 +257,10 @@ export async function probeExplain(lngLat) {
       txt += best.from !== null && best.from >= 0.5 ? ' · mar más cálido que su promedio' : best.to !== null && best.to <= -0.5 ? ' · mar más frío que su promedio' : ' · cerca de lo normal'
     }
   } catch { txt = 'No se pudo leer la imagen NASA en este punto.' }
+  if (!on || card !== owner || generation !== probeGeneration || frames[fi] !== date || historicalDate !== history || uncoveredHistory()) return false
   popup?.remove()
   popup = new maplibregl.Popup({ closeButton: true, maxWidth: '280px', className: 'ex-pop' }).setLngLat(lngLat)
-    .setHTML(`<b>${esc(txt)}</b><p class="src-meta">NASA GHRSST MUR · ${esc(frames[fi])} · paleta oficial GIBS (intervalos de 0,1 °C)</p>`).addTo(map)
+    .setHTML(`<b>${esc(txt)}</b><p class="src-meta">NASA GHRSST MUR · ${esc(date)} · paleta oficial GIBS (intervalos de 0,1 °C)</p>`).addTo(map)
   return true
 }
 
@@ -271,9 +278,10 @@ function onCard(e) {
 export async function startExplain() {
   if (on) return
   on = true
-  card = document.createElement('section')
+  const owner = document.createElement('section')
+  card = owner
   card.className = 'enso-explain hud hud-frame'
-  if (matchMedia('(max-width: 767px)').matches) card.classList.add('min')   // en móvil empieza plegada: el mapa primero
+  card.classList.add('min')   // empieza plegada: el mapa y el Niño costero primero; se despliega con un clic
   card.setAttribute('aria-label', 'Explicación de El Niño en el mapa')
   card.innerHTML = '<p class="loading">Cargando imágenes NASA</p>'
   document.body.appendChild(card)
@@ -288,20 +296,24 @@ export async function startExplain() {
   })
   try {
     const [range, cm] = await Promise.all([getJSON('/api/v1/intel/weather/gibs-range/ssta'), getJSON('/api/v1/intel/weather/colormap/ssta')])
-    if (!on) return
+    if (!on || card !== owner) return
     cmap = cm
     frames = monthlyFrames(range)
     fi = frames.length - 1
   } catch (err) {
+    if (!on || card !== owner) return
     card.innerHTML = `<p class="note">No se pudieron cargar las imágenes NASA: ${esc(err.message)}</p>`
     return
   }
   ensureFlows()
+  if (historicalDate) { renderCard(); foldExplain(); syncHistoricalDate(historicalDate); return }
   setFrame(fi)
   await goStep(0, { fly: true })
 }
 
 export function stopExplain() {
+  ++probeGeneration
+  historicalDate = null
   if (!on) return
   on = false
   clearInterval(playTimer); playTimer = 0
@@ -317,5 +329,26 @@ export function stopExplain() {
 }
 
 export const isExplaining = () => on
+
+/** Sincroniza únicamente meses cubiertos por NASA; nunca muestra el mar actual sobre un episodio antiguo. */
+export function syncHistoricalDate(date) {
+  ++probeGeneration
+  historicalDate = date
+  clearInterval(playTimer)
+  clearInterval(stepsTimer)
+  cancelAnimationFrame(flowRaf)
+  popup?.remove()
+  for (const id of FLOW_IDS) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none')
+  setOcean(false)
+  playTimer = 0
+  const index = frames.findIndex((d) => d.slice(0, 7) === date.slice(0, 7))
+  if (index < 0) {
+    removeLayer('ex-ssta')
+    removeLayer('ex-precip')
+    if (legend) legend.innerHTML = '<p class="src-meta">Sin cobertura NASA MUR para este mes histórico. Consulte el ICEN y las fuentes del capítulo.</p>'
+    return
+  }
+  setFrame(index)
+}
 /** Al abrir una historia, la explicación se pliega para dejar sitio. */
 export function foldExplain() { card?.classList.add('min') }

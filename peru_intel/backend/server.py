@@ -333,7 +333,7 @@ class Handler(BaseHTTPRequestHandler):
         ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
         if ctype.startswith("text/") or ctype in ("application/javascript",):
             ctype += "; charset=utf-8"
-        cache = "no-cache" if target.suffix in (".html", ".js", ".css") else "max-age=604800"
+        cache = "no-cache" if target.suffix in (".html", ".js", ".css", ".json", ".geojson") else "max-age=604800"
         st = target.stat()
         etag = f'"{st.st_mtime_ns:x}-{st.st_size:x}"'
         if self.headers.get("If-None-Match") == etag:  # recarga local: 304 sin volver a enviar el archivo

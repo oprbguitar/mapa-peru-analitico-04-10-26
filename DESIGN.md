@@ -1,5 +1,18 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Niño costero 2026–2027 · 2 de noviembre de 2026
+
+design-pick (`Niño costero 2026-27`, dashboard) propuso bandas a sangre · hielo + magenta técnico · Public Sans/IBM Plex Mono · bloque
+0 px · entrada escalonada. Se conserva la carcasa HUD (Space Grotesk/Noto Sans/Space Mono, radio 4 px) por continuidad entre modos y se
+adopta del selector el **magenta técnico `--nc-accent`** como identidad y estado del modo y la **banda a sangre** con regla gruesa en
+la ficha. Direcciones evaluadas: (a) modo nuevo separado de El Niño — descartada, duplica el observatorio; (b) **banda superior
+replegable en la ficha + capas nativas sobre el mapa + letreros en el territorio** — elegida; (c) escena a pantalla completa con
+reproducción automática — descartada, la animación debe depender de dónde mira la persona. Color: niveles `--nc-lv-2/3/4` siempre
+rotulados con el nombre publicado por CENEPRED (no es una paleta normativa); cauces `--nc-flow` (Pacífico) frente a `--nc-amazon`;
+lodo `--nc-mud`. Los tokens `--nc-*` no cambian con día/noche: el tema solo afecta la interfaz. Motion: guiones de flujo a ~18 fps
+desde z7 y frente de huaico, lluvia y letrero desde z9; con `prefers-reduced-motion` no hay guiones ni frentes y la lluvia es estática.
+Responsive: meses en 8 columnas, 4×2 bajo 768 px; 360 px sin desplazamiento horizontal.
+
 ## Operativos conjuntos · 12 de octubre de 2026
 
 design-pick (`Operativos conjuntos`, operate) propuso command bar + tabla maestra · tinta + ámbar · Archivo/Public Sans/JetBrains
@@ -162,3 +175,9 @@ dato validada en ambos modos con `validate_palette.js` (PASS).
 - `design-lint`: **0 / 20 — APROBADO** (v0.3, 30 archivos).
 - E2E Playwright (`tests/e2e/smoke.mjs`): 19/19 a 1280, 1600, 768 y 360 px — incluye clima por punto, capas SENAMHI/GIBS,
   satélite + relieve 3D y cambio noche/día conservando capas.
+
+## El Niño 360 · refinamiento territorial
+
+Se evaluaron tres estructuras: inspector sobre mapa con tiempo inferior, página analítica de tablas y lienzo a pantalla completa con modales. Se elige inspector + tiempo inferior porque mantiene la cartografía como contexto y conserva la arquitectura existente. Design-pick (`Mapa Perú Analítico El Niño 360`, dashboard) sugirió rail-workspace/bloque/acero-verde; se conserva rail-workspace y geometría de bloque, adaptando paleta y tipografía a los tokens HUD existentes por tratarse de un refinamiento expresamente solicitado. No se introduce otra identidad visual.
+
+Tipografía Space Grotesk / Noto Sans / Space Mono; superficies oscuras, cian para acciones y coral El Niño. Tokens de dimensiones temporales `--enso-*` en tokens.css antes de componer. Las fases no codifican un nivel oficial de riesgo. Las listas de episodios y eventos son desplazables; el inspector conserva navegación por teclado y estados selected/focus/disabled. En móvil el inspector tiene prioridad sobre la línea flotante para evitar interceptar sus controles; se vuelve al mapa mediante la pestaña Mapa. Movimiento reducido respetado. Cobertura visual requerida: 360, 768, 1280 y 1600 px. Capturas en output/e2e/enso360-*.png.

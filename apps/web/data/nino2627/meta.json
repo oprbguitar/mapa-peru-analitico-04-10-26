@@ -1,0 +1,167 @@
+{
+ "built": "2026-11-02T23:58:12Z",
+ "scenarios": {
+  "ond26": {
+   "id": 101,
+   "label": "Octubre–diciembre 2026",
+   "start": "2026-10",
+   "end": "2026-12",
+   "made": "2026-09"
+  },
+  "ver27": {
+   "id": 100,
+   "label": "Verano 2027 (enero–marzo)",
+   "start": "2027-01",
+   "end": "2027-03",
+   "made": "2026-09"
+  }
+ },
+ "counts": {
+  "i_ond26": {
+   "muy_alto": 112,
+   "alto": 395,
+   "medio": 523,
+   "bajo": 794
+  },
+  "m_ond26": {
+   "muy_alto": 686,
+   "alto": 704,
+   "medio": 213,
+   "bajo": 221
+  },
+  "i_ver27": {
+   "muy_alto": 112,
+   "alto": 395,
+   "medio": 523,
+   "bajo": 794
+  },
+  "m_ver27": {
+   "muy_alto": 686,
+   "alto": 704,
+   "medio": 213,
+   "bajo": 221
+  },
+  "i_base": {
+   "muy_alto": 78,
+   "alto": 411,
+   "medio": 667,
+   "bajo": 668
+  },
+  "m_base": {
+   "muy_alto": 262,
+   "alto": 935,
+   "medio": 418,
+   "bajo": 209
+  }
+ },
+ "raised_vs_base": 875,
+ "critical_features": 5668,
+ "rasters": {
+  "inund": {
+   "file": "susc-inund.png",
+   "coordinates": [
+    [
+     -81.6,
+     0.4
+    ],
+    [
+     -68.4,
+     0.4
+    ],
+    [
+     -68.4,
+     -18.6
+    ],
+    [
+     -81.6,
+     -18.6
+    ]
+   ],
+   "pixel_m": 334,
+   "width": 4400,
+   "height": 6445
+  },
+  "mm": {
+   "file": "susc-mm.png",
+   "coordinates": [
+    [
+     -81.6,
+     0.4
+    ],
+    [
+     -68.4,
+     0.4
+    ],
+    [
+     -68.4,
+     -18.6
+    ],
+    [
+     -81.6,
+     -18.6
+    ]
+   ],
+   "pixel_m": 334,
+   "width": 4400,
+   "height": 6445
+  }
+ },
+ "inputs": [
+  {
+   "file": "Dist_Riesgo_Inundacion_PPOND2026.xlsx",
+   "zip": "101_tabla.zip",
+   "sha256": "9b2198ee29472faa2037f5df8406ee25d0d162e984718e5c28a090890985dec5"
+  },
+  {
+   "file": "Dist_Riesgo_MMasa_PPOND2026.xlsx",
+   "zip": "101_tabla.zip",
+   "sha256": "9b2198ee29472faa2037f5df8406ee25d0d162e984718e5c28a090890985dec5"
+  },
+  {
+   "file": "Dist_Riesgo_Inundacion_PPVerano2027_ActSet26.xlsx",
+   "zip": "100_tabla.zip",
+   "sha256": "8bd8096101ade088471f7f6640c444c4d325b12cbe6f3fd63dfea42bca5a73eb"
+  },
+  {
+   "file": "Dist_Riesgo_MMasa_PPVerano2027_ActSet26.xlsx",
+   "zip": "100_tabla.zip",
+   "sha256": "8bd8096101ade088471f7f6640c444c4d325b12cbe6f3fd63dfea42bca5a73eb"
+  },
+  {
+   "file": "Data Niño 2026/Shape/Riesgo_Inundacion_Distritos.dbf",
+   "sha256": "abad4b87bc61620226dd609a142fbdd82fb912779e7f6d914776bae4e5c80e79"
+  },
+  {
+   "file": "Data Niño 2026/Shape/Riesgo_MMasa_Distritos.dbf",
+   "sha256": "526766bbeea37845c45fd9e0491a39fafc38ca5b0f3997bba9ae64e03b485526"
+  },
+  {
+   "file": "PuntosCriticos_ZonasCriticas_MMasa_Inundaciones.xlsx",
+   "zip": "100_tabla.zip",
+   "sha256": "8bd8096101ade088471f7f6640c444c4d325b12cbe6f3fd63dfea42bca5a73eb"
+  },
+  {
+   "file": "Data Niño 2026/Shape/susc_inund_pp.shp",
+   "sha256": "e8cd951cc99dd1a439bd269d7d413422e510b6c6b3711e478ee5f10a07f594f5"
+  },
+  {
+   "file": "Data Niño 2026/Shape/susc_mmasa_pp.shp",
+   "sha256": "5e32c9b760d51abfc9765c0679f86e3ba4f412a267612a5a56e21f1a1fd1999a"
+  }
+ ],
+ "cauces": {
+  "segments": 17286,
+  "by_slope": {
+   "P": 9524,
+   "A": 7272,
+   "T": 490
+  },
+  "min_upland_km2": {
+   "P": 20,
+   "A": 4000,
+   "T": 300
+  },
+  "source": "HydroRIVERS v1.0 (Lehner & Grill 2013, HydroSHEDS) · CC BY 4.0",
+  "url": "https://www.hydrosheds.org/products/hydrorivers"
+ }
+}

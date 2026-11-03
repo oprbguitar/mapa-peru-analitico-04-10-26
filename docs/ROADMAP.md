@@ -50,3 +50,21 @@ Leyenda: ✅ hecho y verificado · 🟡 parcial / requiere configuración · ⬜
 4. Entregar la carpeta 3SL para auditar la cartografía detallada.
 5. Programar `ingest all --download` mensual (SIDPOL e indicadores se actualizan cada mes).
 6. Empaquetar `data/peru` + teselas como PMTiles para la versión web.
+
+## El Niño 360 · entrega progresiva 14/10/2026
+
+- A: auditoría de los módulos y fuentes existentes; reutilización de historias y registros SINPAD/DesInventar.
+- B: inspector con tres momentos, consulta territorial y puntos orientativos para ampliar implementados. Agrupamiento geográfico y puntos de quebradas verificados pendientes.
+- C: capítulos con fecha, navegación, velocidad de lectura y filtro mensual sincronizado de registros implementados. Los meses sin cobertura NASA no se sustituyen con imágenes actuales.
+- D: accesos de navegación a Costa, Sierra central/sur y Selva alta; modelos locales y capas detalladas pendientes.
+- E: editor y persistencia de supuestos conceptuales; calibración hidrológica, huellas y exposición pendientes.
+- F: comparación de entradas A/B y exportación JSON implementadas; comparación de impactos, pronóstico integrado, necesidades cuantificadas e informes pendientes.
+
+Consultar el apartado «El Niño 360» de DOCUMENTACION.md para uso y límites. No considerar las etapas D–F completas por disponer de la interfaz.
+
+## Niño costero 2026–2027 · 2 de noviembre de 2026
+
+- ✅ Escenarios CENEPRED oct–dic 2026 y verano 2027 por distrito, base PMLL 2024-2026, puntos/tramos críticos ANA, zonas INGEMMET y susceptibilidad.
+- ✅ Cauces HydroRIVERS con vertiente y km al mar; flujo animado por cercanía, simulación ilustrativa de lluvia y huaico con letrero, 3D.
+- 🟡 Cauces OSM por vista (`/layers/waterways`) dependen de Overpass; aún sin botón en la interfaz.
+- ⬜ Avisos meteorológicos SENAMHI diarios y escenarios CENEPRED «con base en avisos» (lbam) como capa de corto plazo.

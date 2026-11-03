@@ -1,0 +1,15 @@
+/* Línea temporal de episodios: mismo HUD y escala de tokens del mapa. */
+.enso-timeline-on .enso-explain { display: none; }
+.story.enso-timeline { z-index: 11; width: auto; right: calc(var(--panel-space) + var(--gap)); max-height: var(--enso-timeline-h); }
+.enso-timeline .ev-list { display: flex; overflow-x: auto; padding-bottom: var(--sp-1); }
+.enso-timeline .ev-list li { flex: 1 0 var(--enso-chapter-w); }
+.enso-timeline .ev-list button { height: 100%; }
+.enso-timeline .story-nav label { display: flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-caption); min-width: 0; }
+.enso-timeline select { max-width: var(--enso-select-w); }
+.enso-timeline .story-src { flex-wrap: wrap; }
+@media (max-width: 768px) {
+  .story.enso-timeline { left: var(--gap); right: var(--gap); max-height: var(--enso-timeline-mobile-h); }
+  .enso-timeline .ev-list li { flex-basis: 75%; }
+  .enso-timeline .story-nav { align-items: stretch; }
+  .enso-timeline select { max-width: var(--enso-select-mobile-w); }
+}

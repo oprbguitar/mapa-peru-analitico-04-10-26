@@ -34,3 +34,6 @@ data/notifications/
 htmlcov/
 *.tar
 data/branding/
+
+# entrega local CENEPRED (shape/raster de ~800 MB): los derivados versionados están en apps/web/data/nino2627
+Data Niño 2026/

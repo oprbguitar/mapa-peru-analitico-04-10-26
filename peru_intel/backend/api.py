@@ -21,7 +21,7 @@ from ..vision import device as vdev
 from ..vision import discovery as vdisc
 from ..vision import events as vevents
 from ..vision import live as vlive
-from ..live import adsb, celestrak, eonet, firms, seismic, telecom, weather
+from ..live import adsb, celestrak, eonet, firms, seismic, telecom, waterways, weather
 from ..live import ais as ais_live
 from ..live.traffic import PROVIDER as TRAFFIC
 from ..live.worker import WORKERS, all_status
@@ -269,6 +269,11 @@ def route_get(path: str, q: dict):
             bounds = _bbox_values(q)
             return connectivity.coverage(_one(q, "operator", "all"), _one(q, "technology", "4g"),
                                          _one(q, "scope", "cg"), bounds, status=_one(q, "status", "covered"))
+        except ValueError as e:
+            raise ApiError(400, str(e))
+    if p == ["layers", "waterways"]:
+        try:
+            return waterways.within_view(_bbox_values(q))
         except ValueError as e:
             raise ApiError(400, str(e))
     if p == ["layers", "telecom"]:

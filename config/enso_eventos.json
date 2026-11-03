@@ -3,27 +3,34 @@
   "version": "2026-10-04",
   "current": {
     "status": "Alerta de El Niño Costero",
-    "comunicado": "Comunicado Oficial ENFEN N.° 17-2026",
-    "date": "2026-09-28",
-    "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-17-2026/",
-    "headline": "El Niño Costero se prolongaría hasta el otoño de 2027",
+    "comunicado": "Comunicado Oficial ENFEN N.° 19-2026",
+    "date": "2026-10-30",
+    "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-19-2026/",
+    "headline": "El Niño Costero continuaría hasta fines de otoño de 2027",
     "points": [
-      "Región Niño 1+2 (frente a la costa): magnitud extraordinaria, respecto al calentamiento del mar, hasta enero de 2027; luego reduciría su magnitud hacia el otoño de 2027.",
-      "Región Niño 3.4 (Pacífico central): magnitud muy fuerte hasta enero de 2027.",
-      "Octubre–diciembre: lluvias superiores a lo normal en la costa norte, costa central y valles occidentales andinos del norte; episodios puntuales de lluvia moderada a fuerte, sobre todo en la costa norte.",
-      "Caudales por encima de lo habitual en los ríos Tumbes, Chira, Piura, La Leche y Jequetepeque.",
-      "Verano 2027: lluvias superiores a lo normal en costa norte, costa central y sierra norte occidental; deficitarias a normales en la sierra sur y la Amazonía.",
-      "Temperaturas del aire muy superiores a lo habitual en toda la costa, con alta probabilidad de nuevos récords."
+      "Región Niño 1+2 (frente a la costa): magnitud extraordinaria hasta febrero de 2027; luego disminuiría gradualmente hasta junio de 2027.",
+      "Región Niño 3.4 (Pacífico central): calentamiento muy fuerte hasta febrero de 2027, con declive hacia una condición neutra en junio de 2027.",
+      "Noviembre 2026 a enero 2027: lluvias por encima de lo normal en costa norte, sierra occidental, costa central y sierra central occidental, con episodios de moderada a fuerte intensidad.",
+      "Verano 2027: lluvias sobre lo normal en costa norte, costa central y sierra norte occidental, más intensas y frecuentes en la costa norte; inferiores o normales en la sierra suroriental y la Amazonía central y sur.",
+      "Caudales sobre lo normal en Tumbes, Chira, Piura, La Leche y Jequetepeque; desde diciembre se acentuaría en la costa central (Chillón, Rímac y Lurín).",
+      "Nivel del mar sobre lo normal: con oleajes anómalos aumenta el riesgo de inundación y erosión costera en playas de poca pendiente."
     ],
     "rivers": [
       {"name": "Río Tumbes", "lat": -3.57, "lon": -80.45},
       {"name": "Río Chira", "lat": -4.90, "lon": -80.70},
       {"name": "Río Piura", "lat": -5.19, "lon": -80.63},
       {"name": "Río La Leche", "lat": -6.55, "lon": -79.80},
-      {"name": "Río Jequetepeque", "lat": -7.30, "lon": -79.40}
+      {"name": "Río Jequetepeque", "lat": -7.30, "lon": -79.40},
+      {"name": "Río Chillón", "lat": -11.86, "lon": -77.12},
+      {"name": "Río Rímac", "lat": -12.03, "lon": -77.13},
+      {"name": "Río Lurín", "lat": -12.27, "lon": -76.89}
     ],
-    "next": "2026-10-15",
+    "next": "2026-11-13",
     "history": [
+      {"comunicado": "N.° 18-2026", "date": "2026-10-16", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-18-2026/",
+       "text": "Se mantiene la Alerta de El Niño Costero; se exhorta a usar los escenarios de riesgo actualizados."},
+      {"comunicado": "N.° 17-2026", "date": "2026-09-28", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-17-2026/",
+       "text": "El Niño Costero se prolongaría hasta el otoño de 2027."},
       {"comunicado": "N.° 16-2026", "date": "2026-09-14", "url": "https://enfen.imarpe.gob.pe/download/comunicado-oficial-enfen-n-16-2026/",
        "text": "Mayor probabilidad de magnitud extraordinaria de setiembre 2026 a enero 2027 en Niño 1+2."},
       {"comunicado": "N.° 11-2026", "date": "2026-06-15", "url": "https://enfen.imarpe.gob.pe/2026/06/15/comunicado-oficial-enfen-n-11-2026-estado-del-sistema-de-alerta-alerta-de-el-nino-costero/",

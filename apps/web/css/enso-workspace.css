@@ -1,0 +1,108 @@
+/* El Niño 360 refina el HUD existente: rail de análisis, formularios densos y mapa protagonista. */
+.enso-workspace { border-block: var(--border) solid var(--line-strong); padding-block: var(--sp-3); font-size: var(--fs-ui); }
+.ew-header { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.ew-header h3 { margin: 0; font-family: var(--font-display); font-size: var(--fs-h1); }
+.ew-header .eyebrow { color: var(--enso-warm); }
+.ew-intro { color: var(--ink-soft); line-height: var(--lh-body); }
+.ew-pilots { margin-block: var(--sp-3); }
+.ew-pilots summary { cursor: pointer; color: var(--accent); padding-block: var(--sp-2); }
+.ew-pilots > div, .ew-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-2); }
+.ew-pilots .btn { text-align: left; flex: 1 1 100%; }
+.ew-tabs { display: flex; border-bottom: var(--border) solid var(--line); gap: var(--sp-1); margin-block: var(--sp-3); }
+.ew-tabs button { flex: 1; min-width: 0; color: var(--ink-soft); background: var(--surface-2); border: var(--border) solid var(--line); border-radius: var(--radius); padding: var(--sp-2) var(--sp-1); font: inherit; font-size: var(--fs-label); cursor: pointer; }
+.ew-tabs [aria-selected=true] { color: var(--enso-warm); border-color: var(--enso-warm); background: var(--surface-3); }
+.ew-tabs button:hover, .ew-map-pin:hover { color: var(--ink); border-color: var(--accent); }
+.ew-tabs button:active, .ew-map-pin:active { background: var(--accent-dim); }
+.enso-workspace :focus-visible, .ew-map-pin:focus-visible { outline: var(--border) solid var(--accent-strong); outline-offset: var(--sp-1); }
+.enso-workspace [disabled] { opacity: .5; cursor: not-allowed; }
+#ew-panel label { display: grid; gap: var(--sp-1); margin-block: var(--sp-2); color: var(--ink-soft); font-size: var(--fs-label); }
+#ew-panel input, #ew-panel select { width: 100%; min-width: 0; box-sizing: border-box; color: var(--ink); background: var(--surface-2); border: var(--border) solid var(--line-strong); border-radius: var(--radius); padding: var(--sp-2); font: inherit; }
+#ew-panel > select { margin-block: var(--sp-2); }
+.ew-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+.ew-notice { border-left: var(--sp-1) solid var(--warn); padding: var(--sp-2) var(--sp-3); background: var(--surface-2); line-height: var(--lh-body); }
+.ew-ready { color: var(--support); line-height: var(--lh-body); }
+.ew-status { color: var(--ink-soft); font-size: var(--fs-label); line-height: var(--lh-body); overflow-wrap: anywhere; }
+.ew-sources { display: grid; gap: var(--sp-2); font-size: var(--fs-label); }
+.ew-checklist { padding-inline-start: var(--sp-5); line-height: var(--lh-body); }
+.ew-checklist li { margin-block: var(--sp-2); }
+.ew-comparison { overflow-x: auto; }
+.ew-comparison table { border-collapse: collapse; width: 100%; font-size: var(--fs-label); }
+.ew-comparison caption { text-align: left; padding-block: var(--sp-2); }
+.ew-comparison th, .ew-comparison td { padding: var(--sp-2); border-bottom: var(--border) solid var(--line); text-align: left; }
+.ew-map-pin { color: var(--ink); background: var(--surface); border: var(--border) solid var(--enso-warm); border-radius: var(--radius); width: var(--sp-6); height: var(--sp-6); font: bold var(--fs-h2) var(--font-display); cursor: pointer; }
+@media (max-width: 768px) { .ew-tabs { gap: var(--sp-1); } .ew-actions .btn { flex: 1 1 auto; } }
+@media (max-width: 360px) { .ew-fields { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .enso-workspace *, .ew-map-pin { transition: none; animation: none; } }
+.ew-records { padding-inline-start: var(--sp-5); } .ew-records li { padding-block: var(--sp-2); border-bottom: var(--border) solid var(--line); } .ew-records strong, .ew-records span, .ew-records small { display: block; } .ew-records small { color: var(--ink-soft); overflow-wrap: anywhere; }
+
+/* Secciones replegables del panel El Niño: el resumen es el encabezado; el contenido se pliega sin perder estado. */
+.fold > summary { cursor: pointer; list-style: none; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: "+"; margin-left: auto; font-family: var(--font-mono); color: var(--ink-muted); }
+.fold[open] > summary::after { content: "−"; }
+.fold > summary:hover { color: var(--ink); }
+.fold > summary:focus-visible { outline: var(--border) solid var(--accent-strong); outline-offset: var(--sp-1); }
+.section.fold > .fold-head { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-hud); padding-bottom: var(--sp-2);
+  border-bottom: var(--border) solid var(--line); margin-bottom: var(--sp-2); display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--ink-soft); }
+.alert-band.fold > summary { display: flex; }
+
+/* Niño costero 2026-2027 — banda superior del panel, acento magenta técnico del modo */
+.nc-host { border-bottom: var(--rule) solid var(--nc-accent); padding-bottom: var(--sp-3); }
+.nc > summary { display: grid; gap: var(--sp-1); cursor: pointer; list-style: none; padding-block: var(--sp-2); position: relative; }
+.nc > summary::-webkit-details-marker { display: none; }
+.nc > summary::after { content: "−"; position: absolute; right: 0; top: var(--sp-2); font: 700 var(--fs-h2) var(--font-mono); color: var(--nc-accent); }
+.nc:not([open]) > summary::after { content: "+"; }
+.nc .eyebrow { color: var(--nc-accent); }
+.nc-title { font: 700 var(--fs-h2) var(--font-display); line-height: var(--lh-heading); }
+.nc-alert { border-left: var(--rule) solid var(--nc-accent); padding: var(--sp-2) var(--sp-3); background: var(--nc-accent-dim); font-size: var(--fs-label); line-height: var(--lh-body); }
+.nc-months { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); border: var(--border) solid var(--line); margin-block: var(--sp-3) var(--sp-2); }
+.nc-months button { display: grid; justify-items: center; padding: var(--sp-2) 0; border: 0; border-right: var(--border) solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; font: 700 var(--fs-label) var(--font-mono); min-height: var(--tap); transition: background var(--dur) var(--ease); }
+.nc-months button:last-child { border-right: 0; }
+.nc-months small { font-weight: 400; color: var(--ink-muted); font-size: var(--fs-caption); }
+.nc-months button:hover { background: var(--nc-accent-dim); color: var(--ink); }
+.nc-months button:active { background: var(--nc-accent); }
+.nc-months button[aria-checked="true"] { background: var(--nc-accent); color: var(--nc-sign-ink); }
+.nc-months button[aria-checked="true"] small { color: var(--nc-sign-ink); }
+.nc-months button:focus-visible, .nc .seg button:focus-visible, .nc input:focus-visible, .nc summary:focus-visible { outline: var(--border) solid var(--accent-strong); outline-offset: calc(var(--sp-1) * -1); }
+.nc-month { font-size: var(--fs-ui); line-height: var(--lh-body); margin-bottom: var(--sp-3); }
+.nc-month p { margin: 0 0 var(--sp-1); }
+.nc .seg button[aria-checked="true"] { background: var(--nc-accent); color: var(--nc-sign-ink); }
+.nc .seg button { color: var(--ink-soft); font-size: var(--fs-label); padding: var(--sp-1) var(--sp-2); }
+.nc-layers { border: 0; padding: 0; margin: var(--sp-3) 0 var(--sp-2); display: grid; gap: var(--sp-1); }
+.nc-layers legend, .nc-more > summary { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-hud); color: var(--ink-muted); padding-bottom: var(--sp-1); }
+.nc-layers label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; font-size: var(--fs-ui); min-height: var(--sp-6); cursor: pointer; }
+.nc-layers label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.nc input[type="checkbox"] { accent-color: var(--nc-accent); width: var(--sp-4); height: var(--sp-4); }
+.nc-key { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-caption); color: var(--ink-soft); margin-block: var(--sp-2); }
+.nc-key span { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.nc-key i { width: var(--sp-4); height: var(--sp-2); display: inline-block; }
+.nc-key .lv4 { background: var(--nc-lv-4); }
+.nc-key .lv3 { background: var(--nc-lv-3); }
+.nc-key .lv2 { background: var(--nc-lv-2); }
+.nc-key .flow { background: var(--nc-flow); height: var(--rule); }
+.nc-key .mud { background: var(--nc-mud); height: var(--sp-1); }
+.nc-sim { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2); align-items: start; border-block: var(--border) solid var(--line); padding-block: var(--sp-3); cursor: pointer; }
+.nc-sim small { display: block; color: var(--ink-soft); font-size: var(--fs-label); line-height: var(--lh-body); }
+.nc-status { font-size: var(--fs-label); color: var(--ink-soft); line-height: var(--lh-body); }
+.nc-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-2); }
+.nc-actions .btn { flex: 1 1 auto; }
+.nc-actions .btn:disabled { opacity: .5; cursor: not-allowed; }
+.nc-actions .btn[aria-busy="true"] { opacity: .6; cursor: progress; }
+.nc-more { margin-top: var(--sp-2); }
+.nc-more > summary { cursor: pointer; }
+.nc-facts { padding-inline-start: var(--sp-5); font-size: var(--fs-label); line-height: var(--lh-body); }
+.nc .sources-list { display: grid; gap: var(--sp-1); font-size: var(--fs-label); }
+
+/* lluvia ilustrativa y letreros sobre el mapa */
+.nc-rain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.nc-sign { background: var(--nc-sign-bg); color: var(--nc-sign-ink); border-left: var(--sp-1) solid var(--nc-mud); padding: var(--sp-1) var(--sp-2); font: var(--fs-caption) var(--font-body); max-width: 15rem; display: grid; pointer-events: none;
+  animation: nc-in var(--dur-slow) var(--ease) both; }
+.nc-sign b { font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-hud); color: var(--nc-lv-2); }
+.nc-sign--end { border-left-color: var(--nc-flow); }
+@keyframes nc-in { from { opacity: 0; transform: translateY(var(--sp-1)); } to { opacity: 1; transform: none; } }
+.nc-pop dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-1) var(--sp-2); font-size: var(--fs-label); margin: var(--sp-2) 0; }
+.nc-pop dt { color: var(--ink-muted); }
+.nc-pop dd { margin: 0; }
+.nc-pop b, .nc-pop small { display: block; }
+@media (max-width: 768px) { .nc-months { grid-template-columns: repeat(4, minmax(0, 1fr)); } .nc-months button:nth-child(4) { border-right: 0; } .nc-months button:nth-child(-n+4) { border-bottom: var(--border) solid var(--line); } }
+@media (prefers-reduced-motion: reduce) { .nc-sign { animation: none; } .nc-months button { transition: none; } }

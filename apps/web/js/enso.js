@@ -3,6 +3,10 @@
 import { ensureLineLayer, ensurePointLayer, flyTo, map, ptFeature, setLines, setPoints, showLayer } from './map.js'
 import { esc, fmt, getJSON, kindBadge, postJSON, toast } from './util.js'
 import { oceanKey, setOcean, setOceanColor } from './ocean.js'
+import { historyEvents, playbackDelay } from './enso-history.js'
+import { mountEnsoWorkspace } from './enso-workspace.js'
+import { startScenarioPlayer, stopScenarioPlayer } from './enso-scenario-player.js'
+import { mountNinoCostero } from './nino-costero.js'
 
 let data = null
 let story = null // { s, i, playing, timer }
@@ -57,33 +61,39 @@ export async function renderEnso() {
     <div class="panel-head"><div class="eyebrow">El Niño · Perú</div><h2>Observatorio de El Niño</h2>
       <p class="sub">Estado oficial, histórico desde 1950 y corrientes del mar.</p></div>
     <div id="enso-side" aria-live="polite"></div>
-    <section class="alert-band" aria-label="Estado oficial ENFEN"><div class="eyebrow">${esc(c.status)} · ${kindBadge('oficial', 'ENFEN')}</div>
+    <details class="fold alert-band" open aria-label="Estado oficial ENFEN"><summary class="eyebrow">${esc(c.status)} · ${kindBadge('oficial', 'ENFEN')}</summary>
       <h3>${esc(c.headline)}</h3><ul>${c.points.slice(0, 4).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
-      <p class="src-meta"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.comunicado)}</a> · ${esc(c.date)} · próximo: ${esc(c.next)}</p></section>
+      <p class="src-meta"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.comunicado)}</a> · ${esc(c.date)} · próximo: ${esc(c.next)}</p></details>
     ${d.available ? `<div class="triad">
       <div><div class="label">ICEN ${li ? `${li.y}-${String(li.m).padStart(2, '0')}` : ''}</div><div class="value">${li ? (li.v > 0 ? '+' : '') + fmt(li.v, 2) : '—'}</div><div class="unit">°C · índice oficial</div>${kindBadge('oficial', 'IGP')}</div>
       <div><div class="label">Mar Niño 1+2</div><div class="value">${wk ? (wk.anom12 > 0 ? '+' : '') + fmt(wk.anom12, 1) : '—'}</div><div class="unit">°C anomalía · ${esc(wk?.date || '')}</div>${kindBadge('oficial', 'NOAA')}</div>
       <div><div class="label">Temperatura</div><div class="value">${wk ? fmt(wk.sst12, 1) : '—'}</div><div class="unit">°C frente a la costa</div>${kindBadge('oficial', 'NOAA')}</div></div>
-    <section class="section"><h3><span>ICEN 1950–hoy · clic en un evento para ver su historia</span>${kindBadge('oficial')}</h3>${icenChart(d)}
-      <p class="src-meta">Rojo: El Niño costero · azul: La Niña costera (lista oficial IGP/ENFEN 2024). Líneas: umbrales débil 0,4 · moderado 1,0 · fuerte 1,7 · extraordinario 3,0.</p></section>
-    <section class="section"><h3><span>¿Qué tan fuerte es hoy?</span>${kindBadge('calculado')}</h3>
+    <details class="section fold"><summary class="fold-head"><span>ICEN 1950–hoy · clic en un evento para ver su historia</span>${kindBadge('oficial')}</summary>${icenChart(d)}
+      <p class="src-meta">Rojo: El Niño costero · azul: La Niña costera (lista oficial IGP/ENFEN 2024). Líneas: umbrales débil 0,4 · moderado 1,0 · fuerte 1,7 · extraordinario 3,0.</p></details>
+    <details class="section fold"><summary class="fold-head"><span>¿Qué tan fuerte es hoy?</span>${kindBadge('calculado')}</summary>
       <div class="bars">${d.comparison.items.map((x, i) => `<div class="bar-row"><span>${esc(x.title)} · máx. ${fmt(x.peak, 2)} (${esc(x.peak_period)})</span>
         <span class="val">${fmt(x.ratio * 100, 0)} %</span><div class="track"><div class="fill calc" style="--i:${i};width:${Math.min(100, x.ratio * 100)}%"></div></div></div>`).join('')}</div>
-      <p class="src-meta">${esc(d.comparison.method)}</p></section>` : `<p class="note">${esc(d.reason)}</p>`}
-    <section class="section"><h3><span>Historias de eventos</span>${kindBadge('oficial', 'con fuentes')}</h3><div class="story-list">
+      <p class="src-meta">${esc(d.comparison.method)}</p></details>` : `<p class="note">${esc(d.reason)}</p>`}
+    <details class="section fold" open><summary class="fold-head"><span>Historias de eventos</span>${kindBadge('oficial', 'con fuentes')}</summary><div class="story-list">
       ${d.storylines.map((s) => `<button type="button" class="story-btn" data-story="${esc(s.id)}"><span class="play" aria-hidden="true">▶</span>
-        <span><b>${esc(s.title)}</b><br><small>${esc(s.summary)}</small></span><span class="mag">${esc(s.official?.magnitude || (s.end ? '' : 'en curso'))}${s.duration_months ? ` · ${s.duration_months} m` : ''}</span></button>`).join('')}</div></section>
-    <section class="section"><h3><span>Corrientes del mar ahora</span>${kindBadge('proyeccion', 'modelo')}</h3>
+        <span><b>${esc(s.title)}</b><br><small>${esc(s.summary)}</small></span><span class="mag">${esc(s.official?.magnitude || (s.end ? '' : 'en curso'))}${s.duration_months ? ` · ${s.duration_months} m` : ''}</span></button>`).join('')}</div></details>
+    <details class="section fold"><summary class="fold-head"><span>Corrientes del mar ahora</span>${kindBadge('proyeccion', 'modelo')}</summary>
       <div class="seg" role="group" aria-label="Corrientes"><button type="button" data-ocean="sst" aria-pressed="false">Temperatura</button>
         <button type="button" data-ocean="delta" aria-pressed="false">Cambio 7 días</button><button type="button" data-ocean="off" aria-pressed="true">Ocultar</button></div>
-      <div id="ocean-info" class="section-gap"></div></section>
-    <section class="ai-box" aria-label="Lectura con IA"><div class="ai-head"><strong>Lectura guiada</strong>${kindBadge('ia')}</div>
+      <div id="ocean-info" class="section-gap"></div></details>
+    <details class="fold ai-box" aria-label="Lectura con IA"><summary class="ai-head"><strong>Lectura guiada</strong>${kindBadge('ia')}</summary>
       <label class="sr-only" for="enso-q">Pregunta</label><textarea id="enso-q" placeholder="¿Cómo se compara con 1997-98? ¿Qué zonas vigilar?"></textarea>
       <div class="ai-actions"><button class="btn btn-primary" type="button" id="enso-ai">Explicar</button><span class="src-meta">La IA no pronostica: cita el pronóstico oficial ENFEN y verifica cada cifra.</span></div>
-      <div class="ai-out" id="enso-out" aria-live="polite"></div></section>
-    <section class="section"><h3>Fuentes</h3><div class="sources-list">${(d.provenance || []).map((p) => `<div class="src">${kindBadge(p.kind, p.institution)}
-      <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name)}</a><div class="src-meta">Descargado: ${esc((p.downloaded || '—').slice(0, 10))}</div></div>`).join('')}</div></section></div>`
+      <div class="ai-out" id="enso-out" aria-live="polite"></div></details>
+    <details class="section fold"><summary class="fold-head">Fuentes</summary><div class="sources-list">${(d.provenance || []).map((p) => `<div class="src">${kindBadge(p.kind, p.institution)}
+      <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name)}</a><div class="src-meta">Descargado: ${esc((p.downloaded || '—').slice(0, 10))}</div></div>`).join('')}</div></details></div>`
   bindEnso()
+  const workspace = document.createElement('section')
+  body().prepend(workspace)
+  mountEnsoWorkspace(workspace, d, { playStory })
+  const costero = document.createElement('section')
+  body().prepend(costero)
+  mountNinoCostero(costero)
 }
 
 function bindEnso() {
@@ -147,7 +157,7 @@ export function ensoChoropleth(level) {
   if (!evs) return null
   const len = { departamento: 2, provincia: 4, distrito: 6 }[level]
   const n = {}
-  for (const e of evs.events) if (!evOff.has(e[2]) && e[12]?.length >= len) n[e[12].slice(0, len)] = (n[e[12].slice(0, len)] || 0) + 1
+  for (const e of historyEvents(evs.events, { hidden: evOff, date: story?.all ? null : story?.s.chapters[story.i].date })) if (e[12]?.length >= len) n[e[12].slice(0, len)] = (n[e[12].slice(0, len)] || 0) + 1
   return { available: true, dataset: 'enso', level, title: `${story.s.title} · registros por ${level}`, rows: Object.entries(n).map(([ubigeo, count]) => ({ ubigeo, count })),
     measures: { count: { label: 'Registros', unit: 'registros del período (tipos visibles)', kind: 'calculado' } }, default_measure: 'count' }
 }
@@ -158,8 +168,7 @@ async function sideUpdate() {
   if (!evs || !story) return (el.innerHTML = '')
   const on = Object.keys(evs.types).filter((k) => !evOff.has(k) && evs.counts[k])
   const places = {}
-  for (const e of evs.events) {
-    if (evOff.has(e[2])) continue
+  for (const e of historyEvents(evs.events, { hidden: evOff, date: story?.all ? null : story?.s.chapters[story.i].date })) {
     const k = shortPlace(e[5])
     const p = (places[k] ??= { n: 0, lon: e[0], lat: e[1], t: e[2] })
     p.n++
@@ -167,7 +176,7 @@ async function sideUpdate() {
   const top = Object.entries(places).sort((a, b) => b[1].n - a[1].n).slice(0, 10)
   const tipo = story.cmp && on.includes(story.cmp) ? story.cmp : on[0]
   el.innerHTML = `<section class="section"><h3><span>${esc(story.s.title)} · dónde hubo más registros</span>${kindBadge('calculado')}</h3>
-    <p class="src-meta">${on.map((k) => esc(evs.types[k])).join(' · ') || 'Ningún tipo visible'}</p>
+    <p class="src-meta">${story.all ? 'Período completo' : `Acumulado hasta ${esc(story.s.chapters[story.i].date.slice(0, 7))}`} · ${on.map((k) => esc(evs.types[k])).join(' · ') || 'Ningún tipo visible'}</p>
     <ol class="ev-rank">${top.map(([k, p]) => `<li><button type="button" data-fly="${p.lon},${p.lat}" data-type="${p.t}"><span>${esc(k)}</span><b>${p.n}</b></button></li>`).join('')}</ol></section>
     ${tipo ? `<section class="section"><h3><span>Comparar Niños</span>${kindBadge('calculado')}</h3>
       <label class="sr-only" for="enso-cmp">Tipo a comparar</label><select id="enso-cmp">${on.map((k) => `<option value="${k}" ${k === tipo ? 'selected' : ''}>${esc(evs.types[k])}</option>`).join('')}</select>
@@ -206,7 +215,9 @@ function evFilter() {
   if (!evs) return
   onEvChange?.()
   sideUpdate()
-  setPoints('enso-ev', evs.events.flatMap((e, i) => (evOff.has(e[2]) ? [] : [ptFeature(e[0], e[1], { t: e[2], i })])), true)
+  const visible = new Set(historyEvents(evs.events, { hidden: evOff, date: story?.all ? null : story?.s.chapters[story.i].date }))
+  window.dispatchEvent(new CustomEvent('enso360:records', { detail: { events: [...visible], provenance: evs.provenance, date: story?.all ? null : story?.s.chapters[story.i].date, episodeId: story?.s.id, types: evs.types, coverageNote: evs.coverage_note } }))
+  setPoints('enso-ev', evs.events.flatMap((e, i) => visible.has(e) ? [ptFeature(e[0], e[1], { t: e[2], i })] : []), true)
 }
 
 function evClick(f, lngLat) {
@@ -265,7 +276,8 @@ function drawAll() {
   })
   const b = new maplibregl.LngLatBounds()
   s.chapters.forEach((c) => { b.extend([c.lon, c.lat]); (c.path || []).forEach((p) => b.extend(p)) })
-  map.fitBounds(b, { padding: { top: 80, bottom: 80, left: 380, right: 380 }, maxZoom: 9, duration: reduce() ? 0 : 900 })
+  const width = map.getContainer().clientWidth
+  map.fitBounds(b, { padding: { top: 80, bottom: 80, left: Math.min(380, width * 0.1), right: Math.min(380, width * 0.1) }, maxZoom: 9, duration: reduce() ? 0 : 900 })
 }
 
 function render() {
@@ -274,11 +286,16 @@ function render() {
   markers.forEach((m, k) => m.getElement().setAttribute('aria-current', String(k === i)))
   const el = document.getElementById('story')
   el.hidden = false
+  document.body.classList.add('enso-timeline-on')
   el.classList.toggle('min', !!story.min)
+  el.classList.add('enso-timeline')
   el.innerHTML = `<div class="story-head"><span class="when">${esc(s.title)}${s.duration_months ? ` · ${s.duration_months} meses` : ''}</span>
       <span><button class="btn btn-ghost btn-icon" type="button" data-st="min" aria-expanded="${!story.min}" aria-label="${story.min ? 'Mostrar' : 'Ocultar'} el panel">${story.min ? '▴' : '▾'}</button>
       <button class="btn btn-ghost btn-icon" type="button" data-st="close" aria-label="Cerrar la historia">✕</button></span></div>
-    <div class="story-body">${evBlock()}
+    <div class="story-body"><p class="src-meta">${story.all ? 'Período completo' : `Registros acumulados hasta ${esc(ch.date.slice(0, 7))}`} · cadencia de lectura; no representa la velocidad del fenómeno.</p>${evBlock()}
+    <div class="story-nav"><label>Episodio <select id="st-episode" aria-label="Episodio histórico">${data.storylines.map((x) => `<option value="${esc(x.id)}" ${x.id === s.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select></label>
+    <label>Lectura <select id="st-speed" aria-label="Velocidad de lectura">${[0.5, 1, 2, 4].map((v) => `<option value="${v}" ${v === story.speed ? 'selected' : ''}>${v}×</option>`).join('')}</select></label>
+    <label>Fecha <input id="st-date" type="range" min="0" max="${s.chapters.length - 1}" value="${i}" aria-label="Capítulo histórico"></label></div>
     <ol class="ev-list">${s.chapters.map((c, k) => `<li><button type="button" data-st="go" data-k="${k}" data-type="${esc(c.type || 'mar')}" aria-current="${k === i}">
       <span class="n">${k + 1}</span><span><b>${esc(c.title)}</b><small>${esc(TYPE[c.type] || '')} · ${esc(c.date)} · ICEN ${icenTxt(c)} · mar ${sstTxt(c)}</small></span></button></li>`).join('')}</ol>
     <div class="ev-detail"><h3>${i + 1}. ${esc(ch.title)}</h3><p>${esc(ch.text)}</p>
@@ -293,15 +310,18 @@ function render() {
   if (story.playing && !reduce()) {
     bar.style.transition = 'none'
     bar.style.transform = 'scaleX(0)'
-    requestAnimationFrame(() => { bar.style.transition = 'transform 9s linear'; bar.style.transform = 'scaleX(1)' })
+    requestAnimationFrame(() => { if (!story || !bar.isConnected) return; bar.style.transition = `transform ${playbackDelay(story.speed)}ms linear`; bar.style.transform = 'scaleX(1)' })
   }
   clearTimeout(story.timer)
-  if (story.playing) story.timer = setTimeout(() => (story.i < s.chapters.length - 1 ? go(story.i + 1) : pause()), 9000)
+  if (story.playing) story.timer = setTimeout(() => (story.i < s.chapters.length - 1 ? go(story.i + 1) : pause()), playbackDelay(story.speed))
 }
 
 function go(i) {
   story.i = i
+  story.all = false
+  evFilter()
   const ch = story.s.chapters[i]
+  import('./enso-explain.js').then((x) => { if (story?.s.chapters[story.i].date === ch.date) x.syncHistoricalDate(ch.date) })
   flyTo(ch.lon, ch.lat, ch.zoom || 6)
   render()
 }
@@ -313,6 +333,7 @@ function pause() {
 }
 
 function close() {
+  document.body.classList.remove('enso-timeline-on')
   clearTimeout(story?.timer)
   clearInterval(dashTimer)
   story = null
@@ -328,20 +349,28 @@ function close() {
 }
 
 export async function playStory(id) {
+  stopScenarioPlayer()
   const d = await load()
   const s = d.storylines.find((x) => x.id === id)
   if (!s) return toast('Historia no disponible')
   if (story) close()
-  story = { s, i: 0, playing: false, timer: null, min: false }
-  import('./enso-explain.js').then((x) => x.foldExplain())
+  story = { s, i: 0, playing: false, timer: null, min: false, all: false, speed: 1 }
+  import('./enso-explain.js').then((x) => { x.foldExplain(); if (story?.s.id === id) x.syncHistoricalDate(s.chapters[0].date) })
   drawAll()
   render()
   loadEvents(id)
 }
 
-export const closeStory = () => story && close()
+export const closeStory = () => { stopScenarioPlayer(); if (story) close() }
 
 export function initStory() {
+  window.addEventListener('enso360:scenario', (e) => { if (story) close(); startScenarioPlayer(e.detail) })
+  document.getElementById('story').addEventListener('change', (e) => {
+    if (!story) return
+    if (e.target.id === 'st-episode') playStory(e.target.value)
+    if (e.target.id === 'st-speed') { story.speed = Number(e.target.value); render() }
+    if (e.target.id === 'st-date') go(Number(e.target.value))
+  })
   document.getElementById('story').addEventListener('click', (e) => {
     const ev = e.target.closest('[data-ev]')
     if (ev && story) {
@@ -362,6 +391,8 @@ export function initStory() {
     else if (a === 'go') go(+b.dataset.k)
     else if (a === 'all') {
       story.playing = false
+      story.all = true
+      evFilter()
       drawAll()
       render()
     } else if (a === 'play') {
@@ -369,5 +400,5 @@ export function initStory() {
       story.playing ? go(story.i) : render()
     }
   })
-  document.addEventListener('keydown', (e) => e.key === 'Escape' && story && close())
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeStory() })
 }
