@@ -71,10 +71,42 @@ def tile_url(z, x, y, observation):
         'STYLES':'reflectance','FORMAT':'image/png','TRANSPARENT':'true','CRS':'EPSG:3857','BBOX':','.join(map(str,bbox)),
         'WIDTH':256,'HEIGHT':256,'TIME':observation})
 
-def tile(z, x, y, observation=None):
+# Clave de nube como GOdEyes (src/layers/weather/infraredAlpha.js, MIT): el brillo lineal entre 0,4 y 0,7 pasa a
+# opacidad con smoothstep; lo cálido (suelo, mar) queda transparente y las nubes frías se ven como velo blanco.
+KEY_T0, KEY_T1 = 0.4, 0.7
+_keyed = {}
+_keyed_lock = threading.Lock()
+
+
+def cloud_key(png):
+    import io
+    import numpy as np
+    from PIL import Image
+    img = np.asarray(Image.open(io.BytesIO(png)).convert('RGBA')).astype(np.float32)
+    linear = (img[..., :3].max(axis=2) / 255.0) ** 2.2
+    t = np.clip((linear - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
+    alpha = img[..., 3] * (t * t * (3 - 2 * t)) * 0.92
+    gray = 228 + 27 * t  # blanco suave; los topes más fríos, casi blanco puro
+    out = np.dstack([gray, gray, np.minimum(255, gray + 4), alpha]).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(out, 'RGBA').save(buf, 'PNG')
+    return buf.getvalue()
+
+
+def tile(z, x, y, observation=None, key=False):
     metadata = manifest()
     observation = observation or metadata['time']
     if observation not in metadata['times']: raise ValueError('Fecha no publicada por NOAA')
+    cache_key = (z, x, y, observation)
+    if key:
+        with _keyed_lock:
+            hit = _keyed.get(cache_key)
+        if hit: return hit
     payload = http_get(tile_url(z,x,y,observation), timeout=20, retries=1)
     if len(payload) > 2*1024*1024 or not payload.startswith(b'\x89PNG\r\n\x1a\n'): raise ValueError('Imagen satelital no válida')
-    return payload
+    if not key: return payload
+    keyed = cloud_key(payload)
+    with _keyed_lock:
+        if len(_keyed) > 1500: _keyed.clear()  # varias horas × teselas visibles; se reinicia antes de crecer sin límite
+        _keyed[cache_key] = keyed
+    return keyed

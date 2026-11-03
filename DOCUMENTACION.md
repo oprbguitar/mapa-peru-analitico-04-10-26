@@ -1,5 +1,21 @@
 # Documentación — Mapa Perú Analítico
 
+## Leyendas ocultables, nubes y tráfico animados e integraciones de GOdEyes · 2 de noviembre de 2026
+
+| Pedido | Resultado |
+|---|---|
+| La leyenda «Anomalía de temperatura del mar» colgaba en todo el mapa | La tarjeta «El Niño en el mapa» plegada ya no dibuja nada: ni la capa NASA del mar, ni su leyenda, ni flechas, rótulos o corrientes. La temperatura del mar y su leyenda aparecen al desplegar la tarjeta o con la casilla **Temperatura del mar (NASA) y su leyenda** del panel Niño costero. |
+| Leyenda por colores y líneas de la simulación, ocultable | Leyenda flotante **Leyenda · mes** abajo a la izquierda: solo muestra lo visible (niveles, cauces al mar/Amazonía, flujo, frente de huaico, lluvia, puntos y tramos ANA, zonas INGEMMET). Se pliega a su título; en pantallas menores de 1024 px empieza plegada. |
+| Desactivar el mapa de color | Interruptor **Mapa de color**: apaga juntos los rellenos de distritos, la mancha de susceptibilidad y el mar NASA; quedan cauces, puntos y animación. |
+| Nubes reales como en GOdEyes | Infrarrojo NOAA nowCOAST con la **clave de brillo de GOdEyes** (`infraredAlpha.js`, MIT): brillo lineal 0,4–0,7 → opacidad *smoothstep*; suelo y mar transparentes, topes fríos como velo blanco. Bucle de las últimas 5 horas observadas con fundido (0,9 s por hora, pausa en la más reciente); con movimiento reducido, solo la última. `…/clouds/tiles/{z}/{x}/{y}.png?time=&key=1`. |
+| Tráfico TomTom animado como en GOdEyes | Desde nivel 11, teselas vectoriales TomTom «Traffic flow» (`/api/v1/intel/traffic/flow/{z}/{x}/{y}.pbf`, clave solo en el servidor): vehículos que avanzan por cada vía con color y velocidad según `traffic_level` (verde ≥ 0,85, ámbar ≥ 0,55, rojo menor; umbrales de GOdEyes); vías cerradas sin vehículos. En vista amplia sigue el ráster de color. |
+| Integraciones de GOdEyes | **Radios del Perú** (radio-browser.info, 64 emisoras HTTPS con ubicación; clic para escucharlas en el mapa) en Infraestructura, y **Próximos lanzamientos espaciales** (Launch Library 2) junto a Satélites. Ambas con respaldo en disco: si el proveedor falla se muestra la última copia con «desactualizado (N min)» y un aviso, nunca como dato en vivo. |
+
+Fuera de esta entrega (GOdEyes usa CesiumJS y servicios de EE. UU./Europa sin equivalente peruano verificado): CCTV públicas,
+radar meteorológico CONUS, receptores locales ADS-B/AIS y ampliaciones de voz. Quedan en `docs/ROADMAP.md`.
+Verificación: 207 pruebas (`PYTHONIOENCODING=utf-8`), `design-lint` APROBADO; navegador en una instancia temporal: nubes en bucle
+sobre la Amazonía, 585 tramos de tráfico animados en Lima (z14), 159 puntos de radio, leyenda del mar oculta hasta pedirla.
+
 ## Niño costero 2026–2027: lluvias, quebradas y huaicos sobre el mapa · 2 de noviembre de 2026
 
 **Qué se hizo.** En el modo **El Niño**, la ficha derecha abre con la banda **Niño costero 2026–2027** (replegable). Permite filtrar

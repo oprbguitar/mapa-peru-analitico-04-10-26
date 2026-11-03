@@ -73,14 +73,6 @@
 .nc-layers label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; font-size: var(--fs-ui); min-height: var(--sp-6); cursor: pointer; }
 .nc-layers label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
 .nc input[type="checkbox"] { accent-color: var(--nc-accent); width: var(--sp-4); height: var(--sp-4); }
-.nc-key { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-caption); color: var(--ink-soft); margin-block: var(--sp-2); }
-.nc-key span { display: inline-flex; align-items: center; gap: var(--sp-1); }
-.nc-key i { width: var(--sp-4); height: var(--sp-2); display: inline-block; }
-.nc-key .lv4 { background: var(--nc-lv-4); }
-.nc-key .lv3 { background: var(--nc-lv-3); }
-.nc-key .lv2 { background: var(--nc-lv-2); }
-.nc-key .flow { background: var(--nc-flow); height: var(--rule); }
-.nc-key .mud { background: var(--nc-mud); height: var(--sp-1); }
 .nc-sim { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2); align-items: start; border-block: var(--border) solid var(--line); padding-block: var(--sp-3); cursor: pointer; }
 .nc-sim small { display: block; color: var(--ink-soft); font-size: var(--fs-label); line-height: var(--lh-body); }
 .nc-status { font-size: var(--fs-label); color: var(--ink-soft); line-height: var(--lh-body); }
@@ -92,6 +84,35 @@
 .nc-more > summary { cursor: pointer; }
 .nc-facts { padding-inline-start: var(--sp-5); font-size: var(--fs-label); line-height: var(--lh-body); }
 .nc .sources-list { display: grid; gap: var(--sp-1); font-size: var(--fs-label); }
+
+/* leyenda flotante del Niño costero: abajo a la izquierda, se pliega a su título */
+.nc-legend { position: absolute; z-index: 3; left: calc(var(--rail-space) + var(--gap) * 2); bottom: calc(var(--spine-space) + var(--gap) + var(--attrib-h));
+  background: var(--glass-strong); border: var(--border) solid var(--line); border-left: var(--rule) solid var(--nc-accent); padding: var(--sp-2) var(--sp-3); max-width: 17rem; font-size: var(--fs-label); }
+body[data-rail="off"] .nc-legend { left: calc(var(--gap) * 3 + var(--edge-tab)); }
+.nc-legend summary { cursor: pointer; font: 700 var(--fs-caption) var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-hud); color: var(--ink-soft); }
+.nc-legend summary:hover { color: var(--ink); }
+.nc-legend summary:focus-visible { outline: var(--border) solid var(--accent-strong); outline-offset: var(--sp-1); }
+.nc-legend ul { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
+.nc-legend li { display: grid; grid-template-columns: var(--sp-5) minmax(0, 1fr); align-items: center; gap: var(--sp-2); }
+.nc-legend .src-meta { margin: var(--sp-2) 0 0; }
+.nc-legend i { display: block; width: var(--sp-5); }
+.nc-legend .sw { height: var(--sp-3); }
+.nc-legend .sw.soft { opacity: .6; }
+.nc-legend .lv4 { background: var(--nc-lv-4); }
+.nc-legend .lv3 { background: var(--nc-lv-3); }
+.nc-legend .lv2 { background: var(--nc-lv-2); }
+.nc-legend .ln { height: var(--sp-1); }
+.nc-legend .ln.flow { background: var(--nc-flow); }
+.nc-legend .ln.amazon { background: var(--nc-amazon); }
+.nc-legend .ln.dash { background: repeating-linear-gradient(90deg, var(--nc-flow-hi) 0 var(--sp-1), transparent var(--sp-1) var(--sp-2)); }
+.nc-legend .ln.mud { background: linear-gradient(90deg, transparent, var(--nc-mud)); height: var(--sp-2); }
+.nc-legend .ln.rain { background: repeating-linear-gradient(110deg, var(--fx-rain) 0 1px, transparent 1px var(--sp-1)); height: var(--sp-3); }
+.nc-legend .ln.crit { background: var(--nc-crit); height: var(--sp-1); }
+.nc-legend .pt { width: var(--sp-3); height: var(--sp-3); border-radius: 50%; border: var(--border) solid var(--inst-ring); justify-self: center; }
+.nc-legend .pt.crit { background: var(--nc-crit); }
+.nc-legend .pt.mud { background: var(--nc-mud); }
+.nc-legend .pt.zone { background: var(--nc-zone); }
+@media (max-width: 1023px) { .nc-legend { left: var(--gap); bottom: calc(var(--tap) + var(--gap) * 2 + var(--attrib-h)); max-width: 13rem; } }
 
 /* lluvia ilustrativa y letreros sobre el mapa */
 .nc-rain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }

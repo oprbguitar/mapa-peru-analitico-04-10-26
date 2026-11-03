@@ -68,3 +68,6 @@ Consultar el apartado «El Niño 360» de DOCUMENTACION.md para uso y límites. 
 - ✅ Cauces HydroRIVERS con vertiente y km al mar; flujo animado por cercanía, simulación ilustrativa de lluvia y huaico con letrero, 3D.
 - 🟡 Cauces OSM por vista (`/layers/waterways`) dependen de Overpass; aún sin botón en la interfaz.
 - ⬜ Avisos meteorológicos SENAMHI diarios y escenarios CENEPRED «con base en avisos» (lbam) como capa de corto plazo.
+- ✅ Leyendas ocultables (mar NASA solo a pedido, leyenda flotante del Niño costero) e interruptor «Mapa de color».
+- ✅ Nubes NOAA con clave de brillo y bucle horario; tráfico TomTom vectorial animado; radios del Perú y lanzamientos (GOdEyes).
+- ⬜ De GOdEyes aún sin equivalente peruano verificado: CCTV públicas, radar meteorológico, receptores locales ADS-B/AIS, voz ampliada.

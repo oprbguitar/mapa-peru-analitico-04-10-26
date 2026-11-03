@@ -4,7 +4,7 @@ import { map, mapReady, onStyleReady } from './map.js'
 import { cssVar, dateTime, esc, fmt, getJSON, state, timeAgo, toast } from './util.js'
 import { setLiveMeta } from './rail.js'
 
-const INTERVAL = { flights: 15000, vessels: 20000, seismic: 120000, eonet: 1800000, fires: 600000, weather: 600000 }
+const INTERVAL = { launches: 1800000, flights: 15000, vessels: 20000, seismic: 120000, eonet: 1800000, fires: 600000, weather: 600000 }
 const timers = {}
 const markers = { weather: [] }
 let satTimer = null
@@ -38,6 +38,46 @@ onStyleReady(() => {
   if (!map.hasImage('pi-arrow')) map.addImage('pi-arrow', arrowImage(), { sdf: true })
 })
 
+// ── tráfico vivo animado (inspirado en GOdEyes): TomTom «Traffic flow», traffic_level = velocidad / flujo libre ──
+const TRAFFIC_FLOW = ['traffic-flow-base', 'traffic-flow-free', 'traffic-flow-slow', 'traffic-flow-jam']
+const BUCKET = { free: ['>=', ['get', 'traffic_level'], 0.85], slow: ['all', ['>=', ['get', 'traffic_level'], 0.55], ['<', ['get', 'traffic_level'], 0.85]],
+  jam: ['<', ['get', 'traffic_level'], 0.55] }
+const CAR_PERIOD = 6
+// cada fotograma corre la fase del guion; un vehículo es un guion corto con extremos rectos
+const CARS = Array.from({ length: 12 }, (_, i) => { const p = (i / 12) * (CAR_PERIOD - 1); return [0, p, 1, CAR_PERIOD - 1 - p] })
+let trafficRaf = 0
+function addTrafficFlow() {
+  if (map.getSource('traffic-flow')) return
+  map.addSource('traffic-flow', { type: 'vector', tiles: [`${location.origin}/api/v1/intel/traffic/flow/{z}/{x}/{y}.pbf`], minzoom: 10, maxzoom: 18,
+    attribution: '© TomTom · flujo en vivo' })
+  const width = ['interpolate', ['linear'], ['zoom'], 11, 1.6, 14, 3, 17, 5]
+  const color = ['case', BUCKET.free, cssVar('--traffic-free'), BUCKET.slow, cssVar('--traffic-slow'), cssVar('--traffic-jam')]
+  map.addLayer({ id: 'traffic-flow-base', type: 'line', source: 'traffic-flow', 'source-layer': 'Traffic flow', minzoom: 11, layout: { visibility: 'none', 'line-cap': 'round' },
+    filter: ['!=', ['get', 'road_closure'], true], paint: { 'line-color': color, 'line-width': ['*', 1.8, width], 'line-opacity': 0.28 } })
+  for (const b of ['free', 'slow', 'jam']) {
+    map.addLayer({ id: `traffic-flow-${b}`, type: 'line', source: 'traffic-flow', 'source-layer': 'Traffic flow', minzoom: 11, layout: { visibility: 'none', 'line-cap': 'butt' },
+      filter: ['all', ['!=', ['get', 'road_closure'], true], BUCKET[b]],
+      paint: { 'line-color': cssVar(`--traffic-${b}`), 'line-width': width, 'line-dasharray': CARS[0] } })
+  }
+}
+/** Libre avanza cada fotograma, lento cada 2 y congestionado cada 5: la velocidad visual sigue a traffic_level. */
+function animateTraffic(on) {
+  cancelAnimationFrame(trafficRaf)
+  if (!on || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  let n = 0, last = 0
+  const tick = (now) => {
+    trafficRaf = requestAnimationFrame(tick)
+    if (document.hidden || now - last < 60 || map.getZoom() < 11) return
+    last = now
+    n++
+    for (const [b, every] of [['free', 1], ['slow', 2], ['jam', 5]]) {
+      if (n % every || !map.getLayer(`traffic-flow-${b}`)) continue
+      map.setPaintProperty(`traffic-flow-${b}`, 'line-dasharray', CARS[(n / every) % CARS.length | 0])
+    }
+  }
+  trafficRaf = requestAnimationFrame(tick)
+}
+
 export function initLive() {
   popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 10, maxWidth: '300px' })
   if (!map.hasImage('pi-arrow')) map.addImage('pi-arrow', arrowImage(), { sdf: true })
@@ -49,7 +89,9 @@ export function initLive() {
     map.on('mouseleave', id, () => (map.getCanvas().style.cursor = ''))
   }
   map.addSource('traffic', { type: 'raster', tiles: ['/api/v1/intel/traffic/tiles/{z}/{x}/{y}.png'], tileSize: 256, minzoom: 5, maxzoom: 18 })
-  map.addLayer({ id: 'traffic', type: 'raster', source: 'traffic', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.85 } })
+  // vista amplia: teselas de color TomTom; desde z11, flujo vectorial animado (vehículos que avanzan según la congestión)
+  map.addLayer({ id: 'traffic', type: 'raster', source: 'traffic', maxzoom: 11, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.85 } })
+  addTrafficFlow()
   add('ports', { type: 'circle', paint: { 'circle-radius': 6, 'circle-color': cssVar('--live-port'), 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--surface-2') } })
   add('datacenters', { type: 'circle', paint: { 'circle-radius': 4, 'circle-color': cssVar('--live-dc'), 'circle-stroke-width': 1.5, 'circle-stroke-color': cssVar('--surface-2') } })
   add('fires', { type: 'circle', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 2, 10, 5], 'circle-color': cssVar('--live-fire'), 'circle-opacity': 0.85 } })
@@ -68,6 +110,9 @@ export function initLive() {
   add('flights', { type: 'symbol', layout: { 'icon-image': 'pi-arrow', 'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.55, 9, 0.85], 'icon-rotate': ['get', 'track'],
     'icon-allow-overlap': true, 'icon-rotation-alignment': 'map' }, paint: { 'icon-color': cssVar('--live-flight'), 'icon-halo-color': cssVar('--surface-2'), 'icon-halo-width': 1.5 } })
   queueMicrotask(markLive)
+  add('radios', { type: 'circle', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 3, 12, 7], 'circle-color': cssVar('--live-radio'),
+    'circle-stroke-width': 1.5, 'circle-stroke-color': cssVar('--surface-2') } })
+  add('launches', { type: 'circle', paint: { 'circle-radius': 6, 'circle-color': cssVar('--live-launch'), 'circle-stroke-width': 2, 'circle-stroke-color': cssVar('--surface-2') } })
   add('satellites', { type: 'circle', paint: { 'circle-radius': 3.5, 'circle-color': cssVar('--live-sat'), 'circle-stroke-width': 1, 'circle-stroke-color': cssVar('--surface-2') } })
 }
 
@@ -75,9 +120,10 @@ export async function toggle(id, on) {
   await mapReady
   await liveReady // sources y capas creadas
   clearInterval(timers[id])
-  const layerIds = { weather: [] }[id] ?? [id]
+  const layerIds = { weather: [], traffic: ['traffic', ...TRAFFIC_FLOW] }[id] ?? [id]
   for (const l of layerIds) map.getLayer(l) && map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none')
   if (id === 'weather') clearWeather()
+  if (id === 'traffic') animateTraffic(on)
   if (id === 'satellites') {
     clearInterval(satTimer)
     satRecs = []
@@ -99,6 +145,7 @@ export async function refresh(id) {
       return
     }
     if (id === 'ports') return ports()
+    if (id === 'radios' || id === 'launches') return feed(id)
     if (id === 'datacenters') return datacenters()
     if (id === 'satellites') return satellites()
     if (id === 'weather') return weather()
@@ -138,6 +185,21 @@ async function ports() {
   if (!d.available) return setLiveMeta('ports', 'sin datos')
   map.getSource('ports').setData(fc(d.ports.map((p) => pt(p.lon, p.lat, { ...p, teu: JSON.stringify(p.teuAnnual || {}), tm: JSON.stringify(p.tmAnnual || {}), vessels: JSON.stringify(d.vessels?.by_port?.[p.locode] || null) }))))
   setLiveMeta('ports', String(d.ports.length))
+}
+
+/** Antigüedad legible y aviso de respaldo: un dato servido desde la copia guardada nunca se presenta como en vivo. */
+export function freshness(d) {
+  if (!d?.stale) return ''
+  const m = Math.round((d.age_s || 0) / 60)
+  return ` · desactualizado (${m < 60 ? `${m} min` : `${Math.round(m / 60)} h`})`
+}
+
+async function feed(id) {
+  const d = await getJSON(`/api/v1/intel/layers/${id}`)
+  if (!d.available) { setLiveMeta(id, 'sin respuesta'); return toast(d.reason || 'Proveedor sin respuesta.') }
+  map.getSource(id).setData(fc(d.items.map((x) => pt(x.lon, x.lat, x))))
+  setLiveMeta(id, `${d.items.length}${freshness(d)}`)
+  if (d.stale) toast(d.fallback)
 }
 
 async function datacenters() {
@@ -263,6 +325,15 @@ async function onClick(id, f, lngLat) {
       ${v ? `<div class="pop-row"><span>Barcos AIS cerca</span><b>${v.near}</b></div><div class="pop-row"><span>Con destino declarado aquí</span><b>${v.declared_destination}</b></div>` : '<div class="src-meta">Activa «Embarcaciones» (AIS) para ver barcos cercanos.</div>'}`
   }
   if (id === 'datacenters') html = `<div class="pop-title">${esc(p.nombre)}</div>${tag('vivo_tercero', 'OpenStreetMap')}<div>${esc(p.operador || '')}</div>`
+  if (id === 'radios') html = `<div class="pop-title">📻 ${esc(p.name)}</div>${tag('vivo_tercero', 'radio-browser.info · comunitario')}
+      <div class="pop-row"><span>Región</span><b>${esc(p.state || '—')}</b></div><div class="pop-row"><span>Formato</span><b>${esc(p.codec || '—')}${p.bitrate ? ` · ${fmt(p.bitrate)} kbps` : ''}</b></div>
+      ${p.tags ? `<div class="src-meta">${esc(p.tags)}</div>` : ''}<audio class="pop-audio" controls preload="none" src="${esc(p.stream)}" aria-label="Escuchar ${esc(p.name)}"></audio>
+      ${p.homepage ? `<a href="${esc(p.homepage)}" target="_blank" rel="noopener">Sitio de la emisora</a>` : ''}<div class="src-meta">Ubicación declarada por la comunidad.</div>`
+  if (id === 'launches') html = `<div class="pop-title">🚀 ${esc(p.name)}</div>${tag('vivo_tercero', 'Launch Library 2')}
+      <div class="pop-row"><span>Fecha (NET, UTC)</span><b>${esc(String(p.net || '').replace('T', ' ').slice(0, 16))}</b></div>
+      <div class="pop-row"><span>Estado</span><b>${esc(p.status_name || p.status || '—')}</b></div><div class="pop-row"><span>Operador</span><b>${esc(p.provider || '—')}</b></div>
+      <div class="pop-row"><span>Plataforma</span><b>${esc(p.pad || '—')}</b></div>${p.orbit ? `<div class="pop-row"><span>Órbita</span><b>${esc(p.orbit)}</b></div>` : ''}
+      ${p.mission ? `<div class="src-meta">${esc(p.mission)}</div>` : ''}`
   if (id === 'satellites') html = `<div class="pop-title">${esc(p.name)}</div>${tag('calculado', 'Posición calculada · CelesTrak')}<div class="pop-row"><span>Altitud</span><b>${fmt(p.alt_km)} km</b></div>`
   popup.setLngLat(lngLat).setHTML(html).addTo(map)
 }

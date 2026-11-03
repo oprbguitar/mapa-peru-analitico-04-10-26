@@ -27,6 +27,25 @@ class TrafficProvider:
     def tile(self, z: int, x: int, y: int) -> bytes | None:
         raise NotImplementedError
 
+    def flow_vector(self, z: int, x: int, y: int) -> bytes | None:
+        """Tesela vectorial de flujo (capa «Traffic flow», traffic_level = velocidad actual / flujo libre)."""
+        if not self.configured() or not (6 <= z <= 22) or not (0 <= x < 2 ** z and 0 <= y < 2 ** z):
+            return None
+        k = ("pbf", z, x, y)
+        with self._lock:
+            hit = self._cache.get(k)
+            if hit and time.time() - hit[0] < self.TILE_TTL:
+                return hit[1]
+        url = (f"https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.pbf"
+               f"?key={urllib.parse.quote(self.key())}")
+        data = http_get(url, timeout=15, retries=1, min_interval=0.02)
+        with self._lock:
+            if len(self._cache) > 3000:
+                self._cache.clear()
+            self._cache[k] = (time.time(), data)
+        registry.set_live_status(self.source_id, "ok")
+        return data
+
     def point(self, lat: float, lon: float) -> dict:
         raise NotImplementedError
 

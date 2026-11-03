@@ -171,6 +171,7 @@ select option { background: var(--surface-2); color: var(--ink); }
 .maplibregl-popup-tip { display: none; }
 .maplibregl-popup-close-button { color: var(--ink-soft); }
 .pop-title { font: 700 var(--fs-ui) var(--font-display); }
+.pop-audio { width: 100%; margin-block: var(--sp-2); height: var(--sp-6); }
 .pop-row { display: flex; justify-content: space-between; gap: var(--sp-3); }
 .pop-row b { font-family: var(--font-mono); font-weight: 700; }
 .maplibregl-ctrl-group { border-radius: var(--radius) !important; background: var(--glass) !important; border: var(--border) solid var(--line-strong); box-shadow: none !important; }

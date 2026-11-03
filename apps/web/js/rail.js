@@ -58,11 +58,13 @@ const FAMILIES = [
     { id: 'telecom:antenna', label: 'Antenas de telecomunicaciones', hint: 'OpenStreetMap · área visible', kind: 'vivo_tercero' },
     { id: 'telecom:tower', label: 'Torres de comunicación', hint: 'OpenStreetMap · área visible', kind: 'vivo_tercero' },
     { id: 'ports', label: 'Puertos', hint: 'APN + World Port Index', kind: 'oficial' },
+    { id: 'radios', label: 'Radios del Perú (escuchar)', hint: 'radio-browser.info · comunitario · clic para oír', kind: 'vivo_tercero' },
     { id: 'cameras', label: 'Cámaras propias', hint: 'Vision Edge · botón «Cámaras» para conectar', kind: 'vivo_tercero' },
     { id: 'datacenters', label: 'Centros de datos', hint: 'OpenStreetMap', kind: 'vivo_tercero' },
   ], extra: [{ id: 'cam107', label: 'Cámaras municipales operativas', hint: 'MININTER · indicador 107', kind: 'oficial', patch: { dataset: 'indicador', code: 107 } }] },
   { id: 'espacio', label: 'Espacio', live: [
     { id: 'satellites', label: 'Satélites', hint: 'CelesTrak + satellite.js', kind: 'vivo_tercero' },
+    { id: 'launches', label: 'Próximos lanzamientos espaciales', hint: 'Launch Library 2 · plataformas en el mundo', kind: 'vivo_tercero' },
   ] },
 ]
 

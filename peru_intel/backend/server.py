@@ -45,6 +45,7 @@ def csp() -> str:
         _CSP_CACHE.update(t=time.time(), v=CSP.replace("connect-src 'self'", f"connect-src 'self' {extra}".rstrip()))
     return _CSP_CACHE["v"]
 TILE_RX = re.compile(r"^/api/v1/intel/traffic/tiles/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png$")
+FLOW_RX = re.compile(r"^/api/v1/intel/traffic/flow/(\d{1,2})/(\d{1,7})/(\d{1,7})\.pbf$")
 WX_TILE_RX = re.compile(r"^/api/v1/intel/weather/tiles/(gibs|senamhi|owm|tomorrow)/([a-z0-9_]{1,24})/(\d{1,2})/(\d{1,7})/(\d{1,7})\.(png|jpg)$")
 SNAP_RX = re.compile(r"^/api/v1/intel/vision/snap/([0-9a-f]{6,16})/(\d{1,2})\.jpg$")
 BASE_TILE_RX = re.compile(r"^/tiles/base/([a-z0-9]{1,12})/(\d{1,2})/(\d{1,7})/(\d{1,7})$")
@@ -196,7 +197,7 @@ class Handler(BaseHTTPRequestHandler):
             m = CLOUD_TILE_RX.fullmatch(path)
             if m:
                 from ..weather import clouds
-                data = api._provider_call(clouds.tile, *map(int, m.groups()), api._one(query, "time"))
+                data = api._provider_call(clouds.tile, *map(int, m.groups()), api._one(query, "time"), api._one(query, "key") == "1")
                 return self._send(200, data, "image/png", "max-age=600", compress=False)
             m = STREET_IMAGE_RX.fullmatch(path)
             if m:
@@ -212,6 +213,10 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 data = api.TRAFFIC.tile(*map(int, m.groups()))
                 return self._send(200, data, "image/png", "max-age=60") if data else self._send(204, b"", "image/png")
+            m = FLOW_RX.fullmatch(path)
+            if m:
+                data = api._provider_call(api.TRAFFIC.flow_vector, *map(int, m.groups()))
+                return self._send(200, data, "application/x-protobuf", "max-age=60", compress=False) if data else self._send(204, b"", "application/x-protobuf")
             m = WX_TILE_RX.match(path)
             if m:
                 r = wx_overlays.tile(m[1], m[2], int(m[3]), int(m[4]), int(m[5]), api._one(query, "date"))

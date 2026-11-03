@@ -51,7 +51,7 @@ try {
   }
   await page.locator('details[data-f="ambiente"] summary').click()
   await page.locator('input[value="wxfx"]').check()
-  await page.waitForFunction(() => !!window.__piMap.getLayer('observed-clouds-raster'), null, { timeout: 60000 })
+  await page.waitForFunction(() => window.__piMap.getStyle().layers.some((l) => l.id.startsWith('observed-clouds-')), null, { timeout: 60000 })
   console.log('PASS real NOAA cloud layer', await page.locator('[data-live-meta="wxfx"]').textContent())
   await page.locator('[data-mode="vuelos"]').click()
   await page.getByRole('button', { name: 'Buscar vuelos guardados' }).click()

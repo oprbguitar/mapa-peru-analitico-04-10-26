@@ -271,6 +271,12 @@ def route_get(path: str, q: dict):
                                          _one(q, "scope", "cg"), bounds, status=_one(q, "status", "covered"))
         except ValueError as e:
             raise ApiError(400, str(e))
+    if p == ["layers", "radios"]:
+        from ..live import feeds
+        return feeds.radios()
+    if p == ["layers", "launches"]:
+        from ..live import feeds
+        return feeds.launches()
     if p == ["layers", "waterways"]:
         try:
             return waterways.within_view(_bbox_values(q))

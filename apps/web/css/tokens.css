@@ -45,6 +45,7 @@
   --live-flight: #e6f1f7; --live-vessel: #4dabf7; --live-quake: #ff9466; --live-fire: #ff6b2b;
   --live-port: #6ff0e4; --live-dc: #b197fc; --live-sat: #ffd43b; --live-weather: #3ddc84;
   --live-volcano: #f06595; --live-flood: #74c0fc; --live-storm: #9775fa; --live-event: #adb5bd;
+  --live-radio: #ffa8e2; --live-launch: #ff922b;
 
   /* paletas del choropleth (elegibles en la leyenda). Rampas de magnitud RELATIVA (cuantiles), nunca un semáforo oficial de riesgo.
      espectral: azul → verde → amarillo → rojo (por defecto, a pedido del usuario) · calor · viridis (apta para daltonismo) · cian HUD */
@@ -57,6 +58,8 @@
   --inst-comisaria: #3d8bfd; --inst-serenazgo: #ffc233; --inst-fiscalia: #ff5c6c; --inst-judicial: #b197fc; --inst-ring: #05080c;
   /* nivel de calle: verde de cobertura Mapillary (identidad del proveedor) y cian de la secuencia elegida */
   --street-cov: #05cb63; --street-sel: #35d0ff;
+  /* tráfico en vivo: convención vial verde/ámbar/rojo (paleta GOdEyes), siempre con texto en la leyenda */
+  --traffic-free: #2ecc71; --traffic-slow: #f0b23e; --traffic-jam: #e05252;
   /* focos (territorios con mayor valor) y alerta: coral de la dirección v0.3 */
   --hot: #ff4d5e;
   /* animación del clima */
@@ -152,6 +155,7 @@
   --live-flight: #12181f; --live-vessel: #1971c2; --live-quake: #c4532b; --live-fire: #e8590c;
   --live-port: #0b7285; --live-dc: #5f3dc4; --live-sat: #b08400; --live-weather: #087f5b;
   --live-volcano: #a61e4d; --live-flood: #1864ab; --live-storm: #6741d9; --live-event: #495057;
+  --live-radio: #c2255c; --live-launch: #d9480f;
   --inst-comisaria: #1c64d8; --inst-serenazgo: #c98a00; --inst-fiscalia: #d6283a; --inst-judicial: #6a45c9; --inst-ring: #ffffff;
   --street-cov: #03994a; --street-sel: #0b84b8;
   --hot: #d6283a; --fx-sun: #f0a500; --fx-rain: #1971c2; --fx-storm: #6a45c9; --fx-cloud: #7d8a96; --fx-wind: #3d4a57; --fx-frost: #0b7285; --fx-fog: #7d8a96;

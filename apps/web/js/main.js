@@ -666,7 +666,7 @@ async function boot() {
         return
       }
       if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return
-      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|eonet|fires|satellites|datacenters|rt-)/.test(f.layer.id))
+      const hit = map.queryRenderedFeatures(e.point).some((f) => /^(enso-|st-|pl-|cam-|ports|flights|vessels|seismic|eonet|fires|satellites|datacenters|radios|launches|traffic-flow|rt-)/.test(f.layer.id))
       if (mode === 'ninio' && !hit) {
         showPanel()
         probeEnsoTerritory(e.lngLat)

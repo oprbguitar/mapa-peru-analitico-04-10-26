@@ -39,6 +39,7 @@ const CALLOUTS = [[-84.6, -2.2], [-84.8, -7.8], [-78.6, -5.0], [-77.4, -8.6], [-
 let on = false, card = null, legend = null, cmap = null, frames = [], fi = 0, step = 0
 let playTimer = 0, flowRaf = 0, popup = null, callouts = [], cityMarkers = []
 let historicalDate = null
+let seaForced = false   // «Temperatura del mar» pedida desde el panel Niño costero con la tarjeta plegada
 let probeGeneration = 0
 const uncoveredHistory = () => historicalDate && !frames.some((d) => d.slice(0, 7) === historicalDate.slice(0, 7))
 
@@ -104,6 +105,28 @@ function cardHtml() {
       ${kindBadge('proyeccion', 'modelo')} Corrientes: partículas del modelo Open-Meteo Marine.</p></div>`
 }
 
+/** Plegada = sin capas de la explicación. La temperatura del mar y su leyenda solo aparecen al desplegar o al pedirla. */
+function applyVisibility() {
+  if (!card) return
+  const open = !card.classList.contains('min')
+  const sea = open || seaForced
+  for (const id of ['ex-ssta', 'ex-precip']) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', sea ? 'visible' : 'none')
+  if (legend) legend.style.display = sea ? '' : 'none'
+  for (const m of [...callouts, ...cityMarkers]) m.getElement().style.display = open ? '' : 'none'
+  if (!open) {
+    cancelAnimationFrame(flowRaf)
+    for (const id of FLOW_IDS) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none')
+    setOcean(false)
+  }
+}
+
+/** Muestra u oculta la temperatura del mar NASA y su leyenda sin desplegar la explicación. */
+export function setSeaView(onSea) {
+  seaForced = !!onSea
+  applyVisibility()
+}
+export const seaViewOn = () => seaForced
+
 function renderCard() {
   if (!card) return
   const min = card.classList.contains('min')
@@ -125,6 +148,7 @@ function setFrame(i) {
   if (r) r.value = String(fi)
   for (const [k, dis] of [['prev', fi === 0], ['next', fi === frames.length - 1]]) { const b = card?.querySelector(`[data-ex="${k}"]`); if (b) b.disabled = dis }
   if (legend) legend.innerHTML = legendHtml()
+  applyVisibility()
 }
 
 // ── flujos animados (cometas que avanzan por cada trazo) ───────────────────
@@ -208,6 +232,7 @@ async function goStep(k, { fly = true } = {}) {
   if (cur) { cur.checked = k <= 1; await setOcean(k <= 1, 'sst') }
   drawCallouts()
   showFlows()
+  applyVisibility()
 }
 
 let stepsTimer = 0
@@ -272,7 +297,11 @@ function onCard(e) {
   else if (a === 'next') setFrame(fi + 1)
   else if (a === 'play') togglePlay()
   else if (a === 'steps') playSteps()
-  else if (a === 'min') card.classList.toggle('min')
+  else if (a === 'min') {
+    card.classList.toggle('min')
+    if (card.classList.contains('min')) applyVisibility()
+    else goStep(step, { fly: false })   // al desplegar vuelven las capas del paso actual
+  }
 }
 
 export async function startExplain() {
@@ -308,7 +337,7 @@ export async function startExplain() {
   ensureFlows()
   if (historicalDate) { renderCard(); foldExplain(); syncHistoricalDate(historicalDate); return }
   setFrame(fi)
-  await goStep(0, { fly: true })
+  await goStep(0, { fly: false })   // plegada al inicio: no mueve el mapa ni muestra capas
 }
 
 export function stopExplain() {
@@ -316,6 +345,7 @@ export function stopExplain() {
   historicalDate = null
   if (!on) return
   on = false
+  seaForced = false
   clearInterval(playTimer); playTimer = 0
   clearInterval(stepsTimer)
   cancelAnimationFrame(flowRaf)

@@ -1,5 +1,12 @@
 # DESIGN.md — Mapa Perú Analítico
 
+## Leyendas, nubes y tráfico · 2 de noviembre de 2026
+
+Divulgación progresiva: cada leyenda aparece solo con su capa visible y se pliega a su título. Nubes: velo blanco con
+transparencia por brillo (GOdEyes) y fundido de 600 ms entre horas; tráfico: guiones cortos que avanzan con velocidad por
+congestión, `--traffic-free/slow/jam` (convención vial, siempre rotulada); radios `--live-radio`, lanzamientos `--live-launch`.
+Con `prefers-reduced-motion`: última hora de nubes fija y tráfico sin desplazamiento.
+
 ## Niño costero 2026–2027 · 2 de noviembre de 2026
 
 design-pick (`Niño costero 2026-27`, dashboard) propuso bandas a sangre · hielo + magenta técnico · Public Sans/IBM Plex Mono · bloque

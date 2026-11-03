@@ -53,7 +53,7 @@ try {
         window.__piMap.isStyleLoaded = () => false // Real trigger: another raster still has pending tiles.
         try { await (await import('/js/wxfx.js')).setWeatherFx(true) }
         finally { window.__piMap.isStyleLoaded = previous }
-        return !!window.__piMap.getLayer('observed-clouds-raster')
+        return window.__piMap.getStyle().layers.some((l) => l.id.startsWith('observed-clouds-'))
       })
       check('Nubes se añaden mientras otras teselas cargan', cloudReady)
       await page.route('**/api/v1/flights/history?*', route => route.fulfill({ json: { items: [{ hex: 'abc123', count: 3 }] } }))

@@ -31,14 +31,16 @@ const LAYERS = [
   ['criticos', 'Tramos y puntos críticos ANA', 'oficial'],
   ['zonas', 'Zonas críticas INGEMMET', 'oficial'],
   ['susc', 'Susceptibilidad PMLL (mancha)', 'oficial'],
+  ['mar', 'Temperatura del mar (NASA) y su leyenda', 'oficial'],
 ]
+const COLOR_LAYERS = new Set(['dist', 'susc', 'mar']) // rellenos que pesan: se apagan juntos con «Mapa de color»
 const MIN_FLOW_ZOOM = 7
 const MIN_SIM_ZOOM = 9
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const st = {
   host: null, meta: null, month: '2026-11', hazard: 'm', on: new Set(['dist', 'pacifico', 'criticos']), sim: true, open: true,
-  loaded: false, frame: 0, last: 0, step: 0, sign: null, endSign: null, wind: null, windAt: 0, ai: '',
+  colors: true, legendOpen: innerWidth >= 1024, legend: null, loaded: false, frame: 0, last: 0, step: 0, sign: null, endSign: null, wind: null, windAt: 0, ai: '',
 }
 let popup = null
 let canvas = null
@@ -127,16 +129,45 @@ function filters() {
   map.setFilter('enso-nc-huayco', ['all', ['==', ['get', 'v'], 'P'], ['>=', ['get', st.hazard === 'i' ? k : (month().sc === 'base' ? 'bm' : 'rm')], 3], ...(month().rain ? [] : [['==', 1, 0]])])
   map.setPaintProperty('enso-nc-dist-fill', 'fill-color', lvColor())
   const vis = (id, on) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
-  vis('enso-nc-dist-fill', st.on.has('dist'))
-  vis('enso-nc-dist-line', st.on.has('dist'))
+  const shown = (id) => st.on.has(id) && (st.colors || !COLOR_LAYERS.has(id))
+  vis('enso-nc-dist-fill', shown('dist'))
+  vis('enso-nc-dist-line', shown('dist'))
   vis('enso-nc-cauce', slopes.length > 0)
   vis('enso-nc-flow', slopes.length > 0)
   vis('enso-nc-huayco', st.sim && st.on.has('pacifico'))
   vis('enso-nc-crit-line', st.on.has('criticos'))
   vis('enso-nc-crit-pt', st.on.has('criticos'))
   vis('enso-nc-zc', st.on.has('zonas'))
-  vis('enso-nc-susc-i', st.on.has('susc') && st.hazard === 'i')
-  vis('enso-nc-susc-m', st.on.has('susc') && st.hazard === 'm')
+  vis('enso-nc-susc-i', shown('susc') && st.hazard === 'i')
+  vis('enso-nc-susc-m', shown('susc') && st.hazard === 'm')
+  import('./enso-explain.js').then((x) => x.setSeaView(shown('mar')))
+  renderLegend()
+}
+
+// ── leyenda flotante del mapa: solo lo que está visible; se pliega a una pestaña ──
+function renderLegend() {
+  if (!st.host) return
+  if (!st.legend) {
+    st.legend = document.createElement('section')
+    st.legend.className = 'nc-legend hud'
+    st.legend.setAttribute('aria-label', 'Leyenda del Niño costero')
+    st.legend.addEventListener('toggle', (e) => { st.legendOpen = e.target.open }, true)
+    map.getContainer().appendChild(st.legend)
+  }
+  const on = (id) => st.on.has(id) && (st.colors || !COLOR_LAYERS.has(id))
+  const haz = st.hazard === 'i' ? 'inundación' : 'huaicos y deslizamientos'
+  const rows = [
+    ...(on('dist') ? [['lv4', 'Muy alto'], ['lv3', 'Alto'], ['lv2', 'Medio']].map(([c, t]) => `<li><i class="sw ${c}"></i>${t} · ${haz}</li>`) : []),
+    ...(on('susc') ? ['<li><i class="sw lv3 soft"></i>Susceptibilidad PMLL (mancha)</li>'] : []),
+    ...(on('pacifico') ? ['<li><i class="ln flow"></i>Cauce que va al mar</li>', '<li><i class="ln dash"></i>Flujo aguas abajo (desde nivel 7)</li>',
+      ...(st.sim ? ['<li><i class="ln mud"></i>Frente de huaico simulado (nivel 9)</li>', '<li><i class="ln rain"></i>Lluvia ilustrativa</li>'] : [])] : []),
+    ...(on('amazonia') ? ['<li><i class="ln amazon"></i>Cauce a la Amazonía / Titicaca</li>'] : []),
+    ...(on('criticos') ? ['<li><i class="pt crit"></i>Punto crítico ANA · inundación</li>', '<li><i class="pt mud"></i>Punto crítico ANA · huaico</li>', '<li><i class="ln crit"></i>Tramo crítico (inicio → fin)</li>'] : []),
+    ...(on('zonas') ? ['<li><i class="pt zone"></i>Zona crítica INGEMMET</li>'] : []),
+  ]
+  st.legend.hidden = !rows.length
+  st.legend.innerHTML = `<details ${st.legendOpen ? 'open' : ''}><summary>Leyenda · ${esc(month().label)} ${month().year}</summary><ul>${rows.join('')}</ul>
+    <p class="src-meta">Niveles publicados por CENEPRED; animaciones ilustrativas.</p></details>`
 }
 
 function hideAll() {
@@ -334,7 +365,7 @@ function render() {
     <div class="nc-month"><p>${esc(m.text)}</p><p class="src-meta">Mar: ${esc(m.sea)} · ${esc(SC_LABEL[m.sc])}</p></div>
     <div class="seg" role="radiogroup" aria-label="Amenaza"><button type="button" role="radio" data-nc-haz="m" aria-checked="${st.hazard === 'm'}">Huaicos y deslizamientos</button><button type="button" role="radio" data-nc-haz="i" aria-checked="${st.hazard === 'i'}">Inundación</button></div>
     <fieldset class="nc-layers"><legend>En el mapa</legend>${LAYERS.map(([id, label, kind]) => `<label><input type="checkbox" data-nc-layer="${id}" ${st.on.has(id) ? 'checked' : ''}${id === 'susc' && !st.meta?.rasters?.inund ? ' disabled' : ''}><span>${esc(label)}</span>${kindBadge(kind)}</label>`).join('')}</fieldset>
-    <div class="nc-key" aria-label="Leyenda"><span><i class="lv4"></i>Muy alto</span><span><i class="lv3"></i>Alto</span><span><i class="lv2"></i>Medio</span><span><i class="flow"></i>Al mar</span><span><i class="mud"></i>Huaico</span></div>
+    <label class="nc-sim nc-colors"><input type="checkbox" data-nc="colors" ${st.colors ? 'checked' : ''}><span><b>Mapa de color</b><small>Apágalo para dejar solo cauces, puntos y animación: el mapa carga menos.</small></span></label>
     <label class="nc-sim"><input type="checkbox" data-nc="sim" ${st.sim ? 'checked' : ''}><span><b>Simulación automática al acercar</b><small>Lluvia, frente de huaico y letrero solo en la zona que miras de cerca. Ilustrativa: no es un pronóstico.</small></span></label>
     <div id="nc-status" class="nc-status" aria-live="polite"></div>
     <div class="nc-actions"><button class="btn" type="button" data-nc="wind">Viento y lluvia en vivo</button><button class="btn" type="button" data-nc="ai">Lectura con IA de esta vista</button></div>
@@ -382,6 +413,7 @@ function bind() {
     const id = e.target.dataset.ncLayer
     if (id) { e.target.checked ? st.on.add(id) : st.on.delete(id); filters(); placeSign() }
     if (e.target.dataset.nc === 'sim') { st.sim = e.target.checked; filters(); placeSign(); startLoop() }
+    if (e.target.dataset.nc === 'colors') { st.colors = e.target.checked; filters() }
   })
   st.host.addEventListener('toggle', (e) => { if (e.target.classList.contains('nc')) st.open = e.target.open }, true)
 }
@@ -410,6 +442,7 @@ export function unmountNinoCostero() {
   clearSigns()
   popup?.remove()
   if (canvas) canvas.hidden = true
+  st.legend?.remove(); st.legend = null
   hideAll()
 }
 

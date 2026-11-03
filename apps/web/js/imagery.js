@@ -133,7 +133,7 @@ function addMain(src, opacity) {
   removeMain()
   if (!src) return
   map.addSource('imagery-a', { type: 'raster', tiles: src.tiles, tileSize: 256, maxzoom: src.maxzoom, ...(src.bounds ? { bounds: src.bounds } : {}), attribution: src.attribution })
-  const before = map.getLayer('observed-clouds-raster') ? 'observed-clouds-raster' : map.getStyle().layers.find((l) => l.id === 'departamentos-fill' || l.id.startsWith('pl-') || l.id === 'imagery-aoi-line')?.id
+  const before = map.getStyle().layers.find((l) => l.id.startsWith('observed-clouds-'))?.id || map.getStyle().layers.find((l) => l.id === 'departamentos-fill' || l.id.startsWith('pl-') || l.id === 'imagery-aoi-line')?.id
   map.addLayer({ id: 'imagery-a', type: 'raster', source: 'imagery-a', paint: { 'raster-opacity': opacity, 'raster-fade-duration': 0 } }, before)
   if (map.getLayer('imagery-aoi-line')) map.moveLayer('imagery-aoi-line')
 }
